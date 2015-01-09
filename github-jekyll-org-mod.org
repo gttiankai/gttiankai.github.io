@@ -2,8 +2,8 @@
 * 前言
 今天晚上在看文章的时候突然想起来上次没有成功使用github+org-mode+jekyll写blog的事情,今晚正好有时间,所以就索性配置一下,将自己配置遇到的问题,记录下来,以方便大家如果遇到我出现的问题,可以快速的结果.
 * 系统情况
-Mac OX 10.95
-org-mode: emacs24.4.1 自带的org-mode
+Mac OX 10.95\\
+org-mode: emacs24.4.1 自带的org-mode\\
 (至于为什么会写明自己使用的环境,是为了让大家更好的解决问题,因为我自己以前遇到问题,在网上查到了解决方式,可是最后发现和别人使用的环境不同,造成浪费了好多时间,还没有解决问题)
 * 关于为什么要这么配置
 一开始我是在网上无意中看了文章
@@ -18,7 +18,8 @@ github的官网上有如何使用git page的wiki建立个人blog的指导教程,
 github上关于使用Jekyll的链接在这里:[[https://help.github.com/articles/using-jekyll-with-pages/][Using Jekyll with Pages]]
 
 ** 安装 Ruby
-上面的教程中虽然说了在Mac系统已经安装了Ruby,所以不需要安装Ruby了,但是我已开始尝试的时候,发现在进行第二步安装bundler的过程中,不能正常安装提示权限问题,问了一下google,发现一篇blog([[http://blog.lessfun.com/blog/2014/05/20/clone-exists-octopress-blog-to-new-mac/][链接]]),上面说如果直接使用sudo命令继续安装,在后边会继续遇到问题(ps:本人没有亲自尝试).所以本人重新安装了Ruby,安装命令如下:
+上面的教程中虽然说了在Mac系统已经安装了Ruby,所以不需要安装Ruby了,但是我已开始尝试的时候,发现在进行第二步安装bundler的过程中,不能正常安装提示权限问题,问了一下google,发现一篇blog([[http://blog.lessfun.com/blog/2014/05/20/clone-exists-octopress-blog-to-new-mac/][链接]]),上面说如果直接使用sudo命令继续安装,在后边会继续遇到问题(ps:本人没有亲自尝试).\\
+所以本人重新安装了Ruby,安装命令如下:
 #+BEGIN_SRC shell
 brew install ruby
 #+END_SRC
@@ -38,7 +39,7 @@ ERROR:  While executing gem ... (Gem::FilePermissionError)
   source 'https://rubygems.org'
   gem 'github-pages'
 #+end_example
-然后执行命令 bundle install,进行安装Jekyll.
+然后执行命令 bundle install,进行安装Jekyll.\\
 ps: 在安装的过程中有可能会出现问题,别担心,上面会有提示该怎么操作,只要按上面的提示,进行操作,然后重新执行命令: bundle insatll 就可以了.
 * Running Jekyll 
 根据github上得教程运行安装好的Jekyll,
