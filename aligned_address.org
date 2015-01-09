@@ -1,0 +1,28 @@
+#+TITLE:关于C语言中得页对齐的总结
+
+问题就是系统中得mask和我们自己定义的不一样.所以会产生问题,下面对Android中得页对齐进行分析,该对齐方式,也可以用在别的系统上.所以可以总结一下.
+#+BEGIN_SRC c
+#difine PAGESIZE = 4096;             // 0X0000 1000
+#difine PAGEMASK = (~(PAGESIZE - 1));//0FFFF F000
+// 对一个地址进行对齐
+address_aligened =  address & PAGEMASK; 
+#+END_SRC
+还有一个地方需要注意就是下面的情况:
+#+BEGIN_SRC Cint
+mprotect(void *addr, size_t len, int prot);
+#+END_SRC
+上面的函数功能是改变[add , addr+size-1]的内存区域的"读写执行"的状态 ,
+addr必须是要叶对齐的,所以我们在将一个地址address和一定size的内存进行操作的时候,就需要注意该函数参数的构造.
+[[/Users/tiankai/Documents/GTD/aligned_page.png]]
+
+address 是原来的地址,aligned address是对齐后的地址,size是我们需要改变状态的内存区域的大小.所以当我们将address的地址对齐之后,我们也必须该拜年len的大小,
+现在的len的大小如下所示:
+#+BEGIN_SRC C
+length = ( (~ PAGEMASK) + size);
+#+END_SRC
+所以现在我们要执行的状态就是如下所示;
+#+BEGIN_SRC C
+unsigned int address = addr & PAGEMASK;
+unsigned int length = size + (address & (~PAGEMASK)); 
+mprotect( address, length, prot);
+#+END_SRC
