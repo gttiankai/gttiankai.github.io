@@ -1,3 +1,26 @@
 highlighter: pygments
 github: [Repository metadata]
 markdown: rdiscount
+permalink: /:categories/:title.html
+url:
+lsi: false
+highlighter: true
+safe: true
+auto: false
+
+paginate: 8
+paginate_path: "page:num"
+
+# presonal config
+title: Tian Kai's Blog
+description: Tian Kai's Blog, powered by Jekyll...
+
+author: Tiankai
+
+seo:
+  keyword:
+  description:
+config:
+  js_dir:
+  img_dir:
+  css_dir:
