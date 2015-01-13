@@ -1,26 +1,48 @@
-highlighter: pygments
-github: [Repository metadata]
-markdown: rdiscount
-permalink: /:categories/:title.html
-url:
-lsi: false
-highlighter: true
-safe: true
-auto: false
+permalink: /:year/:month/:day/:title.html # 博文的固定链接
+paginate: 10 #每页的博文数量
+markdown: kramdown
 
-paginate: 8
-paginate_path: "page:num"
+kramdown:
+  input: GFM
 
-# presonal config
-title: Tian Kai's Blog
-description: Tian Kai's Blog, powered by Jekyll...
+# 作者信息
+author: 
+  name: Tin Kai
+  email: gttiankai@163.com
+  link: gttiankai.github.io
+  github: http://github.com/gttiankai
 
-author: Tiankai
+# 站点信息
+title: Tiankai`s Blog
+description: Tiankai`s Blog
+url: gttiankai.github.io
+rss_url: /pages/atom.xml
 
-seo:
-  keyword:
-  description:
-config:
-  js_dir:
-  img_dir:
-  css_dir:
+# gavatar头像及Favicon
+gavatar: http://7u2ho6.com1.z0.glb.clouddn.com/gavatar.png
+favicon: http://7u2ho6.com1.z0.glb.clouddn.com/favicon.ico
+
+# google analytics 设置
+ga:
+  id: UA-54767140-1
+  url: gttiankai.github.io
+
+# disqus 设置
+disqus:
+  shortname: Tiankai-zh
+
+# 主题设置，自动激活某个标签
+active: 技术
+
+# 首页除了最新文章外显示分类
+cates: 
+  - Python
+  - OpenStack
+
+# 中文本地化
+locals:
+  tags: 标签
+  about: 关于
+  newest: 最新文章
+  archive: 归档
+  content: 目录

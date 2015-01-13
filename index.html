@@ -1,50 +1,37 @@
 ---
-layout: default
-title: "Tiankai's Blog - powered by Jekyll & GitPages."
+layout: page
+title: 首页
 ---
-<h1 class="page-header">
-  <small>
-    Android, Cocos2d, Java, Linux, reading...
-  </small>
-</h1>
-{% include recommend.html %}
 
-<!-- Loop output paged posts -->
-{% for post in paginator.posts %}
-<h2>
-  <a href="{{ post.url }}">
-    {{ post.title }}
-  </a>
-  <div class="post-date">
-    <span class="glyphicon glyphicon-time"></span>
-    {{ post.date | date_to_string }}
+<br>
+<div class="row">
+  <div class="col-md-12">
+    <div class="panel panel-primary">
+      <div class="panel-heading">{{ site.locals.newest }}</div>
+      {% for post in paginator.posts %}
+        <a  href='{{ post.url }}' class="list-group-item pjaxlink clearfix">
+          {{post.title}}
+          <span class="badge">{{ post.date | date:"%Y年%m月%d日" }}</span>
+        </a>
+      {% endfor %}
+    </div>
   </div>
-</h2>
-<hr>
-{{ post.excerpt }}
-<p> <a href="{{ post.url }}"><span >阅读全文 &raquo; </span></a></p>
-<hr>
-{% endfor %}
-
-<!-- Pager indicator -->
-<ul class="pager">
-  {% if paginator.previous_page %} {% if paginator.previous_page == 1 %}
-  <li class="previous">
-    <a href="{{ site.url }}/">
-      &larr; Older
-    </a>
-  </li>
-  {% else %}
-  <li class="previous">
-    <a href="{{ site.url }}/page{{ paginator.previous_page }}">
-      &larr; Older
-    </a>
-  </li>
-  {% endif %} {% endif %} {% if paginator.next_page %}
-  <li class="next">
-    <a href="{{ site.url }}/page{{ paginator.next_page }}">
-      Newer &rarr;
-    </a>
-  </li>
-  {% endif %>
-</ul>
+  {% for cate in site.cates %}
+    <div class="col-md-12">
+      <div class="panel panel-primary">
+        <div class="panel-heading">{{ cate }}</div>
+        {% for tag in site.tags %} 
+          {% if tag[0] == cate %}
+            {% for post in tag[1] %}
+              <a  href='{{ post.url }}' class="list-group-item pjaxlink clearfix">
+                {{post.title}}
+                <span class="badge">{{ post.date | date:"%Y年%m月%d日" }}</span>
+              </a>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  {% endfor %}
+</div>
+ 
