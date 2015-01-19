@@ -17,7 +17,7 @@ title: Tiankai`s Blog
 description: Tiankai`s Blog
 url: gttiankai.github.io
 rss_url: /pages/atom.xml
-
+img_url: http://gttiankai.github.com/public/img
 # gavatar头像及Favicon
 gavatar: http://7u2ho6.com1.z0.glb.clouddn.com/gavatar.png
 favicon: http://7u2ho6.com1.z0.glb.clouddn.com/favicon.ico
@@ -36,8 +36,8 @@ active: 技术
 
 # 首页除了最新文章外显示分类
 cates: 
-  - Python
-  - OpenStack
+  - Android
+  - 
 
 # 中文本地化
 locals:
