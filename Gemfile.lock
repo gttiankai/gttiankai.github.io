@@ -95,6 +95,8 @@ GEM
     net-dns (0.8.0)
     nokogiri (1.6.5)
       mini_portile (~> 0.6.0)
+    org-ruby (0.9.12)
+      rubypants (~> 0.2)
     parslet (1.5.0)
       blankslate (~> 2.0)
     posix-spawn (0.3.9)
@@ -107,6 +109,7 @@ GEM
       ffi (>= 0.5.0)
     rdiscount (2.1.7)
     redcarpet (3.1.2)
+    rubypants (0.2.0)
     safe_yaml (1.0.4)
     sass (3.4.9)
     terminal-table (1.4.5)
@@ -124,3 +127,4 @@ PLATFORMS
 
 DEPENDENCIES
   github-pages
+  org-ruby (~> 0.9.12)
