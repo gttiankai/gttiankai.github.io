@@ -1,6 +1,3 @@
-#+STARTUP: showall
-#+STARTUP: hidestars
-#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
 #+LAYOUT: post
 #+AUTHOR: 田凯
 #+DATE: 2015-05-27 Wed 14:23
