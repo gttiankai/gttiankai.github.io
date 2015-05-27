@@ -1,0 +1,1124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Tiankai`s Blog</title>
+    <link>gttiankai.github.io</link>
+    <description>Tiankai`s Blog</description>
+    
+      <item>
+        <title>基于Xposed框架的一种通用破解签名校验的方式</title>
+        <link>gttiankai.github.io/2015/05/27/%E4%B8%80%E7%A7%8D%E9%80%9A%E7%94%A8%E7%9A%84%E5%9F%BA%E4%BA%8EXposed%E6%A1%86%E6%9E%B6%E7%9A%84%E7%AD%BE%E5%90%8D%E7%A0%B4%E8%A7%A3%E6%96%B9%E5%BC%8F.html</link>
+        <guid isPermaLink="true">gttiankai.github.io/2015/05/27/%E4%B8%80%E7%A7%8D%E9%80%9A%E7%94%A8%E7%9A%84%E5%9F%BA%E4%BA%8EXposed%E6%A1%86%E6%9E%B6%E7%9A%84%E7%AD%BE%E5%90%8D%E7%A0%B4%E8%A7%A3%E6%96%B9%E5%BC%8F.html</guid>
+        <pubDate>Wed, 27 May 2015 14:23:00 +0800</pubDate>
+        <description>
+&lt;h1&gt;常见的android完整性检测方式&lt;/h1&gt;
+&lt;ol&gt;
+  &lt;li&gt;检测签名&lt;/li&gt;
+  &lt;li&gt;检验classes.dex&lt;/li&gt;
+  &lt;li&gt;校验整个apk文件(这种方式比较少见)&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;判断使用的那种签名方式:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;先直接对apk进行签名，然后安装运行，如果运行出错那么可以推测有签名检测；&lt;/li&gt;
+  &lt;li&gt;如果第一步没有问题,那反编译再回编译APK,进行安装运行出问题，那么说明有校验classes.dex校验.&lt;/li&gt;
+  &lt;li&gt;只有首先查找出apk使用的哪种签名校验的方式,才能再下一步的破解过程中进行相应的处理.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;通过调查发现,现在市场上90%以上的签名校验方式,都是直接对签名文件(*.RSA)进行校验,基于此,现在有下面这种很通用的破解签名校验方式,&lt;/p&gt;
+&lt;h1&gt;签名校验原理介绍&lt;/h1&gt;
+&lt;h2&gt;apk安装过程中的签名校验的原理&lt;/h2&gt;
+&lt;p&gt;apk在进行安装的过程中,Android系统会对系统的签名文件做一次校验,这次校验的目的是保证,APK中的每个文件,在APK签名后,没有被修改,
+  在一定程度上保证了Apk的安全性.&lt;/p&gt;
+&lt;h2&gt;使用检测签名校验的方式的原理&lt;/h2&gt;
+&lt;p&gt;apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,会对自己发布的apk做完整性校验,其中一种非常有效的方式就是通过校验签名的方式,
+  对apk进行完整性检测.做法就是解析签名之后的RSA文件,然后在本地(手机上)或者远程服务器中进行校验,如果检验不通过则停止该APK的运行.
+  如果程序校验通过,则正常执行该APK的功能.
+  该方案的核心就是解析RSA文件.&lt;/p&gt;
+&lt;h1&gt;破解原理&lt;/h1&gt;
+&lt;p&gt;因为该方案的核心就是解析RSA文件,所以我们可以通过偷梁换柱的方式,将重打包之后的apk中RSA文件替换成为,正常APK的RSA文件,但此时重打包的APK
+  时无法安装的.因为通不过系统的校验.&lt;/p&gt;
+&lt;p&gt;通过阅读Android源代码,我们发现进行签名校验的方法是java.security.Signature方法,我们可以利用Xposed提供的框架,Hook该方法的返回结果,
+  使我们重打包,替换RSA文件的APK能够正常安装,以破解APK的签名校验过程.&lt;/p&gt;
+&lt;h1&gt;软件使用&lt;/h1&gt;
+&lt;p&gt;基于Xposed框架的Hook系统方法java.security.Signature的Xposed模块,在Xposed模块仓库中已经存在,可以直接下载,我们也可以自己实现.&lt;/p&gt;
+&lt;p&gt;代码如下所示:&lt;/p&gt;
+
+
+</description>
+      </item>
+    
+      <item>
+        <title>测试org2jekyll的功能</title>
+        <link>gttiankai.github.io/2015/04/29/org2jekyll.html</link>
+        <guid isPermaLink="true">gttiankai.github.io/2015/04/29/org2jekyll.html</guid>
+        <pubDate>Wed, 29 Apr 2015 23:26:00 +0800</pubDate>
+        <description>
+&lt;h1&gt;初步使用org2blog&lt;/h1&gt;
+&lt;p&gt;首先我们需要测试一下org2blog的功能能不能正常的运行&lt;/p&gt;
+&lt;p&gt;SVN Note&lt;/p&gt;
+&lt;h1&gt;svn 安装&lt;/h1&gt;
+&lt;p&gt;在ubuntu上:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;sudo apt-get install subversion 
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;还有一个subversion的工具需要安装一下:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;sudo apt-get install subversion-tools
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h1&gt;svn使用笔记&lt;/h1&gt;
+&lt;h2&gt;从远程仓库中copy一份文件(检出)&lt;/h2&gt;
+&lt;p&gt;使用svn做版本控制的第一步一般都是从远程仓库中复制一个副本,使用的命令是:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;svn checkout https//.... --username yourusername
+&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;这个命令和git中的命令很不一样,个人感觉还是git中的命令比较直白,该命令等同
+  于git:中的命令:&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;git clone url-to-reposity
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2&gt;将文件加入版本库&lt;/h2&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;svn add filename
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2&gt;commit&lt;/h2&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;svn commit -m &amp;quot; some message&amp;quot;
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2&gt;update&lt;/h2&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;svn update
+svn update -r 
+svn update file-name
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2&gt;merge&lt;/h2&gt;
+&lt;p&gt;关于svn merge的内容建议看一下链接:&lt;a href=&quot;http://svnbook.red-bean.com/en/1.6/svn.ref.svn.c.merge.html&quot;&gt;点这里&lt;/a&gt;.&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;$ svn merge --reintegrate http://svn.example.com/repos/calc/branches/my-calc-branch
+--- Merging differences between repository URLs into &amp;#39;.&amp;#39;:
+U    button.c
+U    integer.c
+U    Makefile
+U   .
+
+$ # build, test, verify, ...
+
+$ svn commit -m &amp;quot;Merge my-calc-branch back into trunk!&amp;quot;
+Sending        .
+Sending        button.c
+Sending        integer.c
+Sending        Makefile
+Transmitting file data ..
+Committed revision 391.
+&lt;/pre&gt;&lt;/div&gt;
+&lt;h2&gt;冲突解决&lt;/h2&gt;
+&lt;p&gt;使用版本控制软件和别人进行合作开发,避免不了冲突的产生,所以解决冲突是非常重要的技能.网上有一篇比较好的帖子:&lt;a href=&quot;http://svnbook.red-bean.com/en/1.6/svn.ref.svn.c.resolve.html&quot;&gt;点这里&lt;/a&gt; &lt;br /&gt;
+  使用的命令: svn resolve PATH&amp;#8230;&lt;/p&gt;
+&lt;p&gt;Description&lt;/p&gt;
+&lt;p&gt;Resolve “conflicted” state on working copy files or directories. This routine does not semantically resolve conflict markers; however, it replaces PATH with the version specified by the &amp;#8211;accept argument and then removes conflict-related artifact files. This allows PATH to be committe again—that is, it tells Subversion that the conflicts have been “resolved.”. You can pass the following arguments to the &amp;#8211;accept command depending on your desired resolution:&lt;/p&gt;
+&lt;p&gt;base
+  Choose the file that was the BASE revision before you updated your working copy. That is, the file that you checked out before you made your latest edits.&lt;/p&gt;
+&lt;p&gt;working
+  Assuming that you&amp;#8217;ve manually handled the conflict resolution, choose the version of the file as it currently stands in your working copy.&lt;/p&gt;
+&lt;p&gt;mine-full
+  Resolve all conflicted files with copies of the files as they stood immediately before you ran svn update.&lt;/p&gt;
+&lt;p&gt;theirs-full
+  Resolve all conflicted files with copies of the files that were fetched from the server when you ran svn update.&lt;/p&gt;
+&lt;p&gt;See the section called “Resolve Any Conflicts” for an in-depth look at resolving conflicts.&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;$ svn update
+Conflict discovered in &amp;#39;foo.c&amp;#39;.
+Select: (p) postpone, (df) diff-full, (e) edit,
+        (mc) mine-conflict, (tc) theirs-conflict,
+        (s) show all options: p
+C    foo.c
+Updated to revision 5.
+Summary of conflicts:
+  Text conflicts: 1
+$ svn resolve --accept mine-full foo.c
+Resolved conflicted state of &amp;#39;foo.c&amp;#39;
+&lt;/pre&gt;&lt;/div&gt;
+
+
+</description>
+      </item>
+    
+      <item>
+        <title>svn 使用笔记(持续更新)</title>
+        <link>gttiankai.github.io/2015/01/21/Svn.html</link>
+        <guid isPermaLink="true">gttiankai.github.io/2015/01/21/Svn.html</guid>
+        <pubDate>Wed, 21 Jan 2015 00:00:00 +0800</pubDate>
+        <description>&lt;div id=&quot;table-of-contents&quot;&gt;
+&lt;h2&gt;Table of Contents&lt;/h2&gt;
+&lt;div id=&quot;text-table-of-contents&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-1&quot;&gt;1. 前言&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2&quot;&gt;2. Svn 安装&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2-1&quot;&gt;2.1. 在ubuntu上:&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2-2&quot;&gt;2.2. Mac OX&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3&quot;&gt;3. Svn初使用&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3-1&quot;&gt;3.1. 从远程仓库中copy一份文件(检出)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3-2&quot;&gt;3.2. 将文件加入版本库&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3-3&quot;&gt;3.3. Commit&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3-4&quot;&gt;3.4. Update&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3-5&quot;&gt;3.5. Delete&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3-5-1&quot;&gt;3.5.1. 可能出现的异常&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-4&quot;&gt;4. 删除svn代码仓库中.svn文件&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;h1 id=&quot;a-idsec-1-namesec-1a&quot;&gt;前言&lt;a id=&quot;sec-1&quot; name=&quot;sec-1&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;今天在公司使用svn的时候,操作出现了异常,倒不是bug,但是记得上次遇到过,这次又忘记了,所以要好好的总结一下.a&lt;/p&gt;
+
+&lt;h1 id=&quot;svn-a-idsec-2-namesec-2a&quot;&gt;Svn 安装&lt;a id=&quot;sec-2&quot; name=&quot;sec-2&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;h2 id=&quot;ubuntua-idsec-2-1-namesec-2-1a&quot;&gt;在ubuntu上:&lt;a id=&quot;sec-2-1&quot; name=&quot;sec-2-1&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Sudo Apt-Get Install Subversion
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;还有一个subversion的工具需要安装一下:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Sudo Apt-Get Install Subversion-Tools
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;mac-oxa-idsec-2-2-namesec-2-2a&quot;&gt;Mac OX&lt;a id=&quot;sec-2-2&quot; name=&quot;sec-2-2&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;brew install subversion
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h1 id=&quot;svna-idsec-3-namesec-3a&quot;&gt;Svn初使用&lt;a id=&quot;sec-3&quot; name=&quot;sec-3&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;h2 id=&quot;copya-idsec-3-1-namesec-3-1a&quot;&gt;从远程仓库中copy一份文件(检出)&lt;a id=&quot;sec-3-1&quot; name=&quot;sec-3-1&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;p&gt;使用svn做版本控制的第一步一般都是从远程仓库中复制一个副本,使用的命令是:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Svn Checkout Https//.... --Username Yourusername
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;这个命令和git中的命令很不一样,个人感觉还是git中的命令比较直白,该命令等同&lt;br /&gt;
+于git:中的命令:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Git Clone Url-To-Reposity
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;a-idsec-3-2-namesec-3-2a&quot;&gt;将文件加入版本库&lt;a id=&quot;sec-3-2&quot; name=&quot;sec-3-2&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Svn Add Filename
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;commita-idsec-3-3-namesec-3-3a&quot;&gt;Commit&lt;a id=&quot;sec-3-3&quot; name=&quot;sec-3-3&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Svn Commit -M &quot; Some Message&quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;updatea-idsec-3-4-namesec-3-4a&quot;&gt;Update&lt;a id=&quot;sec-3-4&quot; name=&quot;sec-3-4&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;pre&gt;&lt;code&gt;Svn Update
+Svn Update -R 
+Svn Update File-Name
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;deletea-idsec-3-5-namesec-3-5a&quot;&gt;Delete&lt;a id=&quot;sec-3-5&quot; name=&quot;sec-3-5&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;p&gt;svn中要删除文件的时候,如果直接删除代码库中的文件,然后commit,svn是不会将库中的代码,直接删除的,要使用下面的代码删除命令&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;svn delete file-name/directory-name
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;注意在svn中,删除文件和文件夹使用同一个命令&lt;/p&gt;
+
+&lt;h3 id=&quot;a-idsec-3-5-1-namesec-3-5-1a&quot;&gt;可能出现的异常&lt;a id=&quot;sec-3-5-1&quot; name=&quot;sec-3-5-1&quot;&gt;&lt;/a&gt;&lt;/h3&gt;
+
+&lt;p&gt;当用户A删除了某个文件夹direct1中的代码,然后A提交之后,用户B更新代码仓库之后,不能正常的删除某个文件夹direct1&lt;/p&gt;
+
+&lt;p&gt;问题的原因: 这可能是因为用户B修改了direct1中的内容,此时svn不会将你修改的文件删除,所以此时会遇到更新之后,文件夹不能更新的情况&lt;/p&gt;
+
+&lt;p&gt;问题的解决: 知道了问题的原因,剩下的就非常和解决了.只需要删除自己修改过的文件.当然这么做的前提是你确实不需要这个修改过的代码了.&lt;/p&gt;
+
+&lt;h1 id=&quot;svnsvna-idsec-4-namesec-4a&quot;&gt;删除svn代码仓库中.svn文件&lt;a id=&quot;sec-4&quot; name=&quot;sec-4&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;在svn代码仓库中 &lt;strong&gt;每个&lt;/strong&gt; 文件夹的目录下都会存在名称为 &lt;strong&gt;.svn&lt;/strong&gt; 的隐藏文件.该文件是记录文件变动的svn记录文件,svn能够对代码做版本控制靠得就是这个隐藏的文件.在很多情况下我们可能需要删除每个目录下面的.svn文件,手动删除实在太麻烦了.所以写了下面的脚本,来使用下面的脚本删除指定目录以及子目录.svn文件.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;#!/bin/bash
+#Walk all the files in the $1 dir
+function walk_dir()
+{
+    local dir2walk=$1
+    local files2walk=(`ls -a ${dir2walk}`)
+    local file
+
+    for file in ${files2walk[@]}; do
+        local next2walk=${dir2walk}/${file}
+        if [[ -d ${next2walk} ]]; then
+            if [[ ${file} != &quot;.&quot; &amp;amp;&amp;amp; ${file} != &quot;..&quot; &amp;amp;&amp;amp; ${file} != &quot;.svn&quot; ]]; then
+                walk_dir ${next2walk}
+            elif [[ ${file} == &quot;.svn&quot; ]]; then
+                rm -rf &quot;${next2walk}&quot;
+                echo &quot;rm ${next2walk}&quot;
+            fi
+        else 
+            echo ${next2walk}
+        fi
+    done
+}
+
+function main()
+{
+    local dir2walk=$1
+    walk_dir ${dir2walk}
+}
+
+#set -x
+main $@
+#set +x
+&lt;/code&gt;&lt;/pre&gt;
+</description>
+      </item>
+    
+      <item>
+        <title>流加密RC4的C语言实现</title>
+        <link>gttiankai.github.io/2015/01/18/Rc4.html</link>
+        <guid isPermaLink="true">gttiankai.github.io/2015/01/18/Rc4.html</guid>
+        <pubDate>Sun, 18 Jan 2015 00:00:00 +0800</pubDate>
+        <description>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Strict//EN&quot;
+&quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;title&gt;2015-01-18-Rc4&lt;/title&gt;
+&lt;!-- 2015-01-20 Tue 01:01 --&gt;
+&lt;meta  http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt;
+&lt;meta  name=&quot;generator&quot; content=&quot;Org-mode&quot; /&gt;
+&lt;meta  name=&quot;author&quot; content=&quot;Tiankai&quot; /&gt;
+&lt;style type=&quot;text/css&quot;&gt;
+ &lt;!--/*--&gt;&lt;![CDATA[/*&gt;&lt;!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: &#39;sh&#39;; }
+  pre.src-bash:before  { content: &#39;sh&#39;; }
+  pre.src-emacs-lisp:before { content: &#39;Emacs Lisp&#39;; }
+  pre.src-R:before     { content: &#39;R&#39;; }
+  pre.src-perl:before  { content: &#39;Perl&#39;; }
+  pre.src-java:before  { content: &#39;Java&#39;; }
+  pre.src-sql:before   { content: &#39;SQL&#39;; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]&gt;*/--&gt;
+&lt;/style&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+&lt;!--/*--&gt;&lt;![CDATA[/*&gt;&lt;!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = &quot;code-highlighted&quot;;
+     elem.className   = &quot;code-highlighted&quot;;
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]&gt;*///--&gt;
+&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;content&quot;&gt;
+&lt;h1 class=&quot;title&quot;&gt;2015-01-18-Rc4&lt;/h1&gt;
+&lt;div id=&quot;table-of-contents&quot;&gt;
+&lt;h2&gt;Table of Contents&lt;/h2&gt;
+&lt;div id=&quot;text-table-of-contents&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-1&quot;&gt;1. 前言&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2&quot;&gt;2. RC4算法介绍&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2-1&quot;&gt;2.1. 算法原理的介绍&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2-2&quot;&gt;2.2. 伪代码实现&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3&quot;&gt;3. 算法实现&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-4&quot;&gt;4. 算法的优缺点&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-5&quot;&gt;5. 需要注意的地方&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-6&quot;&gt;6. 感悟&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;outline-container-sec-1&quot; class=&quot;outline-2&quot;&gt;
+&lt;h2 id=&quot;sec-1&quot;&gt;&lt;span class=&quot;section-number-2&quot;&gt;1&lt;/span&gt; 前言&lt;/h2&gt;
+&lt;div class=&quot;outline-text-2&quot; id=&quot;text-1&quot;&gt;
+&lt;p&gt;
+这段时间弄了一下加密算法RC4，一开始感觉这个算法很简单，就试着弄了一下，结果自己写了一下代码，调试了很久，都没通过，又用了网上的开源的代码，结果还是调试不通过，后来经过别人的提醒，才发现自己错在了那里，事后一想感觉自己太不应该了，所以想写一篇blog出来，总结一下自己为什么会出现这么幼稚的问题，再顺便把RC4算法的实现记录一下。
+&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;outline-container-sec-2&quot; class=&quot;outline-2&quot;&gt;
+&lt;h2 id=&quot;sec-2&quot;&gt;&lt;span class=&quot;section-number-2&quot;&gt;2&lt;/span&gt; RC4算法介绍&lt;/h2&gt;
+&lt;div class=&quot;outline-text-2&quot; id=&quot;text-2&quot;&gt;
+&lt;p&gt;
+关于RC4算法的历史的介绍，这里不再多介绍了，如果你感兴趣，可以点这里&lt;a href=&quot;http://zh.wikipedia.org/wiki/RC4&quot;&gt;维基百科-rc4&lt;/a&gt;&lt;br  /&gt;
+&lt;/p&gt;
+&lt;/div&gt;
+&lt;div id=&quot;outline-container-sec-2-1&quot; class=&quot;outline-3&quot;&gt;
+&lt;h3 id=&quot;sec-2-1&quot;&gt;&lt;span class=&quot;section-number-3&quot;&gt;2.1&lt;/span&gt; 算法原理的介绍&lt;/h3&gt;
+&lt;div class=&quot;outline-text-3&quot; id=&quot;text-2-1&quot;&gt;
+&lt;p&gt;
+RC4算法有下面几个部分构成
+&lt;/p&gt;
+&lt;ol class=&quot;org-ol&quot;&gt;
+&lt;li&gt;Sbox(S盒):256Byte(256个字节),Sbox是unsigned char类型的数据
+该算法的关键的数据结构,构成加密操作的一个不可获取的结构.
+&lt;/li&gt;
+&lt;li&gt;key(秘钥):长度范围是[1 Byte,255 Byte].
+加密数据输入的秘钥,任何加密数据里面都有秘钥的存在.为了是该算法的加密行更好一点,可以使秘钥长度大一点,当秘钥长度大于128位,就无法使用暴力破解的方式进行破解.
+&lt;/li&gt;
+&lt;li&gt;inputByte/outputByte(要加密的数据/要解密的数据)
+该算法的特殊之处就在于加密和解密使用同一个算法,所以输入的是明文,输出的就是密文,输入的密文,输出的就是明文.
+&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;
+该算法的核心就是两部分一个是伪随机数生成器,一个是异或操作.所以在我们实现的过程中,只需要实现这两个部分就可以了.
+&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;outline-container-sec-2-2&quot; class=&quot;outline-3&quot;&gt;
+&lt;h3 id=&quot;sec-2-2&quot;&gt;&lt;span class=&quot;section-number-3&quot;&gt;2.2&lt;/span&gt; 伪代码实现&lt;/h3&gt;
+&lt;div class=&quot;outline-text-3&quot; id=&quot;text-2-2&quot;&gt;
+&lt;p&gt;
+该算法首先使用伪代码实现以下,然后再后边在使用c语言将伪代码实现出来.下面就是具体的伪代码的实现&lt;br  /&gt;
+&lt;/p&gt;
+
+&lt;ol class=&quot;org-ol&quot;&gt;
+&lt;li&gt;构造Sbox
+作为RC4算法的最重要的部分,该算法的第一部分就是构造Sbox,实现的伪代码如下所示
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&quot;example&quot;&gt;
+  for i from 0 to 255
+    S[i] := i
+  endfor
+  j := 0
+  for( i=0 ; i&amp;lt;256 ; i++)
+    j := (j + S[i] + key[i mod keylength]) % 256
+    swap values of S[i] and S[j]
+endfor
+&lt;/pre&gt;
+&lt;p&gt;
+构造Sbox的第一步就是先将初始化长度为256的sbox,然后为了制造伪随机数,使用输入的key,Sbox[i]和j的值(每次都会改变),这三个项结合在一起,将初始化后的Sbox打乱.
+&lt;/p&gt;
+&lt;ol class=&quot;org-ol&quot;&gt;
+&lt;li&gt;对数据进行亦或运算
+伪代码的实现如下所示:
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;pre class=&quot;example&quot;&gt;
+i := 0
+j := 0
+while GeneratingOutput:
+    i := (i + 1) mod 256   // 1
+    j := (j + S[i]) mod 256 // 2
+    swap values of S[i] and S[j]  //3
+    k := inputByte ^ S[(S[i] + S[j]) % 256] //4
+    output K
+endwhile
+&lt;/pre&gt;
+&lt;p&gt;
+对数据进行亦或操作主要在代码4处进行,代码1,2,3处的代码主要进行的工作也是对sbox进行处理,从这里看出,该算法的核心就是sbox.
+&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;outline-container-sec-3&quot; class=&quot;outline-2&quot;&gt;
+&lt;h2 id=&quot;sec-3&quot;&gt;&lt;span class=&quot;section-number-2&quot;&gt;3&lt;/span&gt; 算法实现&lt;/h2&gt;
+&lt;div class=&quot;outline-text-2&quot; id=&quot;text-3&quot;&gt;
+&lt;p&gt;
+rc4的实现,网上有很多的版本,而且别的blog中,也有c和c++的版本实现.本人参考了一下,发现网上的c++版本的RC4实现,比较繁琐.C代码的实现主要是在Windows平台上,移植性差了点.所以我就想实现一个Linux平台上的RC4.本博客中,使用的是开源项目的代码,该代码的链接:&lt;a href=&quot;http://www.opensource.apple.com/source/xnu/xnu-1456.1.26/bsd/crypto/rc4/rc4.c&quot;&gt;点这里&lt;/a&gt;&lt;br  /&gt;
+一开始我是自己实现的上面的算法,但是发现自己实现的和开源组织的代码还是有一定差距的,所以这里直接使用开源的代码,并且学习一下别人的实现.
+&lt;/p&gt;
+
+&lt;p&gt;
+代码如下:
+&lt;/p&gt;
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-C&quot; id=&quot;rc4.h&quot;&gt;&lt;span style=&quot;color: #A6E22E;&quot;&gt;  #if&lt;/span&gt;&lt;span style=&quot;color: #A6E22E; font-weight: bold;&quot;&gt;n&lt;/span&gt;&lt;span style=&quot;color: #A6E22E;&quot;&gt;def&lt;/span&gt; _SYS_CRYPTO_RC4_RC4_H_
+&lt;span style=&quot;color: #A6E22E;&quot;&gt;#define&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;_SYS_CRYPTO_RC4_RC4_H_&lt;/span&gt;
+
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;struct&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;rc4_state&lt;/span&gt; {
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt;  &lt;span style=&quot;color: #F92672;&quot;&gt;perm&lt;/span&gt;[256];
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt;  &lt;span style=&quot;color: #F92672;&quot;&gt;index1&lt;/span&gt;;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt;  &lt;span style=&quot;color: #F92672;&quot;&gt;index2&lt;/span&gt;;
+};
+
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;extern&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;void&lt;/span&gt; &lt;span style=&quot;color: #F92672; font-style: italic;&quot;&gt;rc4_init&lt;/span&gt;(&lt;span style=&quot;color: #66D9EF;&quot;&gt;struct&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;rc4_state&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;state&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;key&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;keylen&lt;/span&gt;);
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;extern&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;void&lt;/span&gt; &lt;span style=&quot;color: #F92672; font-style: italic;&quot;&gt;rc4_crypt&lt;/span&gt;(&lt;span style=&quot;color: #66D9EF;&quot;&gt;struct&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;rc4_state&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;state&lt;/span&gt;,
+        &lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;inbuf&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;outbuf&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;buflen&lt;/span&gt;);
+
+&lt;span style=&quot;color: #A6E22E;&quot;&gt;#endif&lt;/span&gt;
+&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-C&quot; id=&quot;RC4.c&quot;&gt;&lt;span style=&quot;color: #A6E22E;&quot;&gt;#include&lt;/span&gt; &lt;span style=&quot;color: #E6DB74;&quot;&gt;&amp;lt;sys/types.h&amp;gt;&lt;/span&gt;
+&lt;span style=&quot;color: #A6E22E;&quot;&gt;#include&lt;/span&gt; &lt;span style=&quot;color: #E6DB74;&quot;&gt;&amp;lt;crypto/rc4/rc4.h&amp;gt;&lt;/span&gt;
+
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;static&lt;/span&gt; __inline &lt;span style=&quot;color: #66D9EF;&quot;&gt;void&lt;/span&gt;
+&lt;span style=&quot;color: #F92672; font-style: italic;&quot;&gt;swap_bytes&lt;/span&gt;(&lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;a&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;b&lt;/span&gt;)
+{
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;temp&lt;/span&gt;;
+
+    temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/*&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; * Initialize an RC4 state buffer using the supplied key,&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; * which can have arbitrary length.&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;void&lt;/span&gt;
+&lt;span style=&quot;color: #F92672; font-style: italic;&quot;&gt;rc4_init&lt;/span&gt;(&lt;span style=&quot;color: #66D9EF;&quot;&gt;struct&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;rc4_state&lt;/span&gt; *&lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;state&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;key&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;keylen&lt;/span&gt;)
+{
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;j&lt;/span&gt;;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;i&lt;/span&gt;;
+
+    &lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/* &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;Initialize state with identity permutation &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;for&lt;/span&gt; (i = 0; i &amp;lt; 256; i++)
+        state-&amp;gt;perm[i] = (&lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt;)i; 
+    state-&amp;gt;index1 = 0;
+    state-&amp;gt;index2 = 0;
+
+    &lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/* &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;Randomize the permutation using key data &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;for&lt;/span&gt; (j = i = 0; i &amp;lt; 256; i++) {
+        j += state-&amp;gt;perm[i] + key[i % keylen]; 
+        swap_bytes(&amp;amp;state-&amp;gt;perm[i], &amp;amp;state-&amp;gt;perm[j]);
+    }
+}
+
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/*&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; * Encrypt some data using the supplied RC4 state buffer.&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; * The input and output buffers may be the same buffer.&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; * Since RC4 is a stream cypher, this function is used&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; * for both encryption and decryption.&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt; &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;void&lt;/span&gt;
+&lt;span style=&quot;color: #F92672; font-style: italic;&quot;&gt;rc4_crypt&lt;/span&gt;(&lt;span style=&quot;color: #66D9EF;&quot;&gt;struct&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;rc4_state&lt;/span&gt; *&lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;state&lt;/span&gt;,
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;inbuf&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; *&lt;span style=&quot;color: #F92672;&quot;&gt;outbuf&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;buflen&lt;/span&gt;)
+{
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;i&lt;/span&gt;;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;u_char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;j&lt;/span&gt;;
+
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;for&lt;/span&gt; (i = 0; i &amp;lt; buflen; i++) {
+
+        &lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/* &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;Update modification indicies &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+        state-&amp;gt;index1++;
+        state-&amp;gt;index2 += state-&amp;gt;perm[state-&amp;gt;index1];
+
+        &lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/* &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;Modify permutation &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+        swap_bytes(&amp;amp;state-&amp;gt;perm[state-&amp;gt;index1],
+            &amp;amp;state-&amp;gt;perm[state-&amp;gt;index2]);
+
+        &lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;/* &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;Encrypt/decrypt next byte &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;*/&lt;/span&gt;
+        j = state-&amp;gt;perm[state-&amp;gt;index1] + state-&amp;gt;perm[state-&amp;gt;index2];
+        outbuf[i] = inbuf[i] ^ state-&amp;gt;perm[j];
+    }
+}
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;
+该算法的比较有特色的地方就是将Sbox直接封装成一个结构体,而不是想我自己一样,直接就是一个长度为256的数组中.其余的就和伪代码一样了.
+&lt;/p&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;outline-container-sec-4&quot; class=&quot;outline-2&quot;&gt;
+&lt;h2 id=&quot;sec-4&quot;&gt;&lt;span class=&quot;section-number-2&quot;&gt;4&lt;/span&gt; 算法的优缺点&lt;/h2&gt;
+&lt;div class=&quot;outline-text-2&quot; id=&quot;text-4&quot;&gt;
+&lt;ol class=&quot;org-ol&quot;&gt;
+&lt;li&gt;优点:
+&lt;ul class=&quot;org-ul&quot;&gt;
+&lt;li&gt;容易实现,不用依赖第三方库.
+&lt;/li&gt;
+&lt;li&gt;算法的输入和输出可以是同一个文件,也就是说可以在原地进行加密和解密.
+&lt;/li&gt;
+&lt;li&gt;根据目前的分析结果，没有任何的分析对于密钥长度达到128位的RC4有效，所以，RC4是目前最安全的加密算法之一.
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;缺点:
+&lt;ul class=&quot;org-ul&quot;&gt;
+&lt;li&gt;由于RC4算法加密是采用的xor，所以，一旦子密钥序列出现了重复，密文就有可能被破解.于如何破解xor加密，请参看Bruce Schneier的Applied Cryptography一书的1.4节Simple XOR.
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;outline-container-sec-5&quot; class=&quot;outline-2&quot;&gt;
+&lt;h2 id=&quot;sec-5&quot;&gt;&lt;span class=&quot;section-number-2&quot;&gt;5&lt;/span&gt; 需要注意的地方&lt;/h2&gt;
+&lt;div class=&quot;outline-text-2&quot; id=&quot;text-5&quot;&gt;
+&lt;p&gt;
+在需要注意的这个地方就是在调用的时候,一定要注意构造Sbox,一开始在加密的时候,要初始化Sbox,在解密中,也要 &lt;b&gt;初始化Sbox&lt;/b&gt; .我就是在解密的时候没有初始化Sbox,所以在解密的时候,就是不正确.
+&lt;/p&gt;
+
+&lt;p&gt;
+原因分析:该算法的加解密都是基于Sbox,当在加密的过程当中,对Sbox,进行初始化,然后对数据进行加密,会改变Sbox中数据的顺序.所以进行解密的时候,要重新初始化Sbox,在进行解密,这意味着,只要秘钥一样,每次初始化的Sbox,都是一样的.这个可以从算法中看出来.调用的代码如下所示:
+&lt;/p&gt;
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-c&quot; id=&quot;main.c&quot;&gt;  &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672; font-style: italic;&quot;&gt;main&lt;/span&gt;(&lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;argc&lt;/span&gt;, &lt;span style=&quot;color: #66D9EF;&quot;&gt;char&lt;/span&gt;* &lt;span style=&quot;color: #F92672;&quot;&gt;argv&lt;/span&gt;[]){
+
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;dataLength&lt;/span&gt; = 8;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;keyLength&lt;/span&gt; = 8;
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;const&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;unsigned&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;dataStream&lt;/span&gt;[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;before\n&quot;&lt;/span&gt;);
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;for&lt;/span&gt; (&lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;i&lt;/span&gt; = 0; i &amp;lt; dataLength ; i++) {
+        printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;%x,&quot;&lt;/span&gt;,dataStream[i]);
+    }
+    printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;\n&quot;&lt;/span&gt;);
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;unsigned&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;encryp&lt;/span&gt;[dataLength];
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;unsigned&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;decryp&lt;/span&gt;[dataLength];
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;unsigned&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;char&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;key&lt;/span&gt;[8] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef};
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;struct&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;rc4_state&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;state&lt;/span&gt;;
+
+    rc4_init(&amp;amp;state, key, keyLength);&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;// &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;this code is very important&lt;/span&gt;
+
+    rc4_crypt(&amp;amp;state, dataStream, encryp, dataLength);
+    printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;\nencrypt\n&quot;&lt;/span&gt;);
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;for&lt;/span&gt; (&lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;i&lt;/span&gt; = 0; i &amp;lt; dataLength ; i++) {
+        printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;%x,&quot;&lt;/span&gt;,encryp[i]);
+    }
+    printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;\nafter \n&quot;&lt;/span&gt;);
+    rc4_init(&amp;amp;state, key, keyLength);&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;// &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;this code is very important&lt;/span&gt;
+    rc4_crypt(&amp;amp;state, encryp, decryp, dataLength);
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;for&lt;/span&gt; (&lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;i&lt;/span&gt; = 0; i &amp;lt; dataLength ; i++) {
+        printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;%x,&quot;&lt;/span&gt;,decryp[i]);
+    }
+    printf(&lt;span style=&quot;color: #E6DB74;&quot;&gt;&quot;\n&quot;&lt;/span&gt;);
+    &lt;span style=&quot;color: #66D9EF;&quot;&gt;return&lt;/span&gt; 0;
+}
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;div id=&quot;outline-container-sec-6&quot; class=&quot;outline-2&quot;&gt;
+&lt;h2 id=&quot;sec-6&quot;&gt;&lt;span class=&quot;section-number-2&quot;&gt;6&lt;/span&gt; 感悟&lt;/h2&gt;
+&lt;div class=&quot;outline-text-2&quot; id=&quot;text-6&quot;&gt;
+&lt;p&gt;
+在实现RC4的过程中,遇到的问题到时不多,唯一一个问题就是在解密的时候,怎么都不能正常的解密,原因就是没有对Sbox进行重新初始化,究其原因就是对算法的原理没有搞明白.还有就是没有好好的对别人的代码进行深入的理解.总是停留在表面上.这样是难以提高自己的能力.以后的工作中,要注意两点:
+&lt;/p&gt;
+&lt;ol class=&quot;org-ol&quot;&gt;
+&lt;li&gt;静下心来研究代码.
+&lt;/li&gt;
+&lt;li&gt;做个有心人,多学习人家代码中实现的好的地方.
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;postamble&quot; class=&quot;status&quot;&gt;
+&lt;p class=&quot;author&quot;&gt;Author: Tiankai&lt;/p&gt;
+&lt;p class=&quot;date&quot;&gt;Created: 2015-01-20 Tue 01:01&lt;/p&gt;
+&lt;p class=&quot;creator&quot;&gt;&lt;a href=&quot;http://www.gnu.org/software/emacs/&quot;&gt;Emacs&lt;/a&gt; 24.4.1 (&lt;a href=&quot;http://orgmode.org&quot;&gt;Org&lt;/a&gt; mode 8.2.10)&lt;/p&gt;
+&lt;p class=&quot;validation&quot;&gt;&lt;a href=&quot;http://validator.w3.org/check?uri=referer&quot;&gt;Validate&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</description>
+      </item>
+    
+      <item>
+        <title>C语言中关于页对齐的总结</title>
+        <link>gttiankai.github.io/2015/01/13/aligned_address.html</link>
+        <guid isPermaLink="true">gttiankai.github.io/2015/01/13/aligned_address.html</guid>
+        <pubDate>Tue, 13 Jan 2015 00:00:00 +0800</pubDate>
+        <description>&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot;?&gt;
+&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Strict//EN&quot;
+&quot;http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd&quot;&gt;
+&lt;html xmlns=&quot;http://www.w3.org/1999/xhtml&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;title&gt;关于C语言中得页对齐的总结&lt;/title&gt;
+&lt;!-- 2015-01-09 Fri 22:52 --&gt;
+&lt;meta  http-equiv=&quot;Content-Type&quot; content=&quot;text/html;charset=utf-8&quot; /&gt;
+&lt;meta  name=&quot;generator&quot; content=&quot;Org-mode&quot; /&gt;
+&lt;meta  name=&quot;author&quot; content=&quot;Tiankai&quot; /&gt;
+&lt;style type=&quot;text/css&quot;&gt;
+ &lt;!--/*--&gt;&lt;![CDATA[/*&gt;&lt;!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: &#39;sh&#39;; }
+  pre.src-bash:before  { content: &#39;sh&#39;; }
+  pre.src-emacs-lisp:before { content: &#39;Emacs Lisp&#39;; }
+  pre.src-R:before     { content: &#39;R&#39;; }
+  pre.src-perl:before  { content: &#39;Perl&#39;; }
+  pre.src-java:before  { content: &#39;Java&#39;; }
+  pre.src-sql:before   { content: &#39;SQL&#39;; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]&gt;*/--&gt;
+&lt;/style&gt;
+&lt;script type=&quot;text/javascript&quot;&gt;
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+&lt;!--/*--&gt;&lt;![CDATA[/*&gt;&lt;!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = &quot;code-highlighted&quot;;
+     elem.className   = &quot;code-highlighted&quot;;
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]&gt;*///--&gt;
+&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;content&quot;&gt;
+&lt;h1 class=&quot;title&quot;&gt;关于C语言中得页对齐的总结&lt;/h1&gt;
+&lt;p&gt;
+问题就是系统中得mask和我们自己定义的不一样.所以会产生问题,下面对Android中得页对齐进行分析,该对齐方式,也可以用在别的系统上.所以可以总结一下.
+&lt;/p&gt;
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-c&quot;&gt;&lt;span style=&quot;color: #A6E22E;&quot;&gt;#difine&lt;/span&gt; PAGESIZE = 4096;             &lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;// &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;0X0000 1000&lt;/span&gt;
+&lt;span style=&quot;color: #A6E22E;&quot;&gt;#difine&lt;/span&gt; PAGEMASK = (~(PAGESIZE - 1));&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;//&lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;0FFFF F000&lt;/span&gt;
+&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;// &lt;/span&gt;&lt;span style=&quot;color: #465457; font-style: italic;&quot;&gt;&amp;#23545;&amp;#19968;&amp;#20010;&amp;#22320;&amp;#22336;&amp;#36827;&amp;#34892;&amp;#23545;&amp;#40784;&lt;/span&gt;
+address_aligened =  address &amp;amp; PAGEMASK;
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;
+还有一个地方需要注意就是下面的情况:
+&lt;/p&gt;
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-Cint&quot;&gt;mprotect(void *addr, size_t len, int prot);
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;
+上面的函数功能是改变[add , addr+size-1]的内存区域的&quot;读写执行&quot;的状态 ,
+addr必须是要叶对齐的,所以我们在将一个地址address和一定size的内存进行操作的时候,就需要注意该函数参数的构造.
+&lt;img src=&quot;http://gttiankai.github.io/public/img/aligned_page.png&quot; alt=&quot;aligned_page.png&quot; /&gt;
+&lt;/p&gt;
+
+&lt;p&gt;
+address 是原来的地址,aligned address是对齐后的地址,size是我们需要改变状态的内存区域的大小.所以当我们将address的地址对齐之后,我们也必须该拜年len的大小,
+现在的len的大小如下所示:
+&lt;/p&gt;
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-C&quot;&gt;length = ( (~ PAGEMASK) + size);
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;p&gt;
+所以现在我们要执行的状态就是如下所示;
+&lt;/p&gt;
+&lt;div class=&quot;org-src-container&quot;&gt;
+
+&lt;pre class=&quot;src src-C&quot;&gt;&lt;span style=&quot;color: #66D9EF;&quot;&gt;unsigned&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;address&lt;/span&gt; = addr &amp;amp; PAGEMASK;
+&lt;span style=&quot;color: #66D9EF;&quot;&gt;unsigned&lt;/span&gt; &lt;span style=&quot;color: #66D9EF;&quot;&gt;int&lt;/span&gt; &lt;span style=&quot;color: #F92672;&quot;&gt;length&lt;/span&gt; = size + (address &amp;amp; (~PAGEMASK)); 
+mprotect( address, length, prot);
+&lt;/pre&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+&lt;div id=&quot;postamble&quot; class=&quot;status&quot;&gt;
+&lt;p class=&quot;author&quot;&gt;Author: Tiankai&lt;/p&gt;
+&lt;p class=&quot;date&quot;&gt;Created: 2015-01-09 Fri 22:52&lt;/p&gt;
+&lt;p class=&quot;creator&quot;&gt;&lt;a href=&quot;http://www.gnu.org/software/emacs/&quot;&gt;Emacs&lt;/a&gt; 24.4.1 (&lt;a href=&quot;http://orgmode.org&quot;&gt;Org&lt;/a&gt; mode 8.2.10)&lt;/p&gt;
+&lt;p class=&quot;validation&quot;&gt;&lt;a href=&quot;http://validator.w3.org/check?uri=referer&quot;&gt;Validate&lt;/a&gt;&lt;/p&gt;
+&lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</description>
+      </item>
+    
+      <item>
+        <title>在Github上搭建自己的Jekyll博客</title>
+        <link>gttiankai.github.io/2015/01/12/github-jekyll-org-mod.html</link>
+        <guid isPermaLink="true">gttiankai.github.io/2015/01/12/github-jekyll-org-mod.html</guid>
+        <pubDate>Mon, 12 Jan 2015 00:00:00 +0800</pubDate>
+        <description>&lt;div id=&quot;table-of-contents&quot;&gt;
+&lt;h2&gt;Table of Contents&lt;/h2&gt;
+&lt;div id=&quot;text-table-of-contents&quot;&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-1&quot;&gt;1. 前言&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-2&quot;&gt;2. 系统情况&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-3&quot;&gt;3. 关于为什么要这么配置&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-4&quot;&gt;4. 在github上建立自己的blog&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-4-1&quot;&gt;4.1. github pages 创建失败&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-5&quot;&gt;5. 搭建Jekyll环境&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-5-1&quot;&gt;5.1. 安装 Ruby&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-5-2&quot;&gt;5.2. 安装 bundler&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-5-3&quot;&gt;5.3. 安装Jekyll&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-6&quot;&gt;6. Running Jekyll&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-7&quot;&gt;7. Configuring Jekyll&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-8&quot;&gt;8. 创建自己的blog&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-9&quot;&gt;9. 将org文件转换成markdown文件&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-10&quot;&gt;10. jekyll中文乱码问题的初步解决&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#sec-11&quot;&gt;11. jekyll中文乱码问题的完美解决&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/div&gt;
+&lt;/div&gt;
+
+&lt;h1 id=&quot;a-idsec-1-namesec-1a&quot;&gt;前言&lt;a id=&quot;sec-1&quot; name=&quot;sec-1&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;今天晚上在看文章的时候突然想起来上次没有成功使用github+org-mode+jekyll写blog的事情,今晚正好有时间,所以就索性配置一下,将自己配置遇到的问题,记录下来,以方便大家如果遇到我出现的问题,可以快速的结果.&lt;/p&gt;
+
+&lt;h1 id=&quot;a-idsec-2-namesec-2a&quot;&gt;系统情况&lt;a id=&quot;sec-2&quot; name=&quot;sec-2&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;Mac OX 10.95   &lt;br /&gt;
+org-mode: emacs24.4.1 自带的org-mode   &lt;br /&gt;
+(ps:至于为什么会写明自己使用的环境,是为了让大家更好的解决问题,因为我自己以前遇到问题,在网上查到了解决方式,可是最后发现和别人使用的环境不同,造成浪费了好多时间,还没有解决问题)&lt;/p&gt;
+
+&lt;h1 id=&quot;a-idsec-3-namesec-3a&quot;&gt;关于为什么要这么配置&lt;a id=&quot;sec-3&quot; name=&quot;sec-3&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;一开始我是在网上无意中看了文章&lt;/p&gt;
+
+&lt;h1 id=&quot;githubbloga-idsec-4-namesec-4a&quot;&gt;在github上建立自己的blog&lt;a id=&quot;sec-4&quot; name=&quot;sec-4&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;github的官网上有如何使用git page的wiki建立个人blog的指导教程,很详细,大家可以按照上面的步骤一步一步的进行操作,就可以了,并且上面也有使用jekyll,绑定用户自己的域名的介绍,很详细.大家可以看看.所以这里就不在罗嗦了.&lt;br /&gt;
+链接在这里:&lt;a href=&quot;https://pages.github.com/&quot;&gt;github的page页面&lt;/a&gt; &lt;br /&gt;
+(ps:一定要创建index.html文件,不然你会遇到下面的问题)&lt;/p&gt;
+
+&lt;h2 id=&quot;github-pages-a-idsec-4-1-namesec-4-1a&quot;&gt;github pages 创建失败&lt;a id=&quot;sec-4-1&quot; name=&quot;sec-4-1&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;p&gt;解决方式: 创建一个名为 index.html的文件&lt;/p&gt;
+
+&lt;p&gt;出现这个问题的原因分析(如果感兴趣的话):  &lt;br /&gt;
+我安装官网上得进行设置,但是竟然会遇到蛋疼的不能自动创建git pages的问题,而且别人即使创建不成功,也会收到邮件说,创建不成功,但是我遇到的问题就比较蛋疼,居然连通知邮件都没有,我在找找原因,实在不行,就只能将新建的仓库删除,然后重新建立了.&lt;/p&gt;
+
+&lt;p&gt;我仔细的查看了该仓库的配置信息,发现该仓库的信息里面提示了该”Your site is published at username.github.io”已经创建成功了,但是为什么我去访问&lt;a href=&quot;http://usrename.github.io&quot;&gt;http://usrename.github.io&lt;/a&gt; 不能招到网页呢?我就想起了,在我自己创建username.github.io的仓库的时候,因为里面已经有文件了,所以就图省事,没有创建index.html文件.  &lt;br /&gt;
+当我们访问&lt;a href=&quot;http://username.github.io&quot;&gt;http://username.github.io&lt;/a&gt; 的时候,github会再文件目录下面自动的查找index.html文件,找不到就会显示&lt;a href=&quot;http://username.github.io&quot;&gt;http://username.github.io&lt;/a&gt; 地址找不到,index.html一般是网站的默认的主页文件,所以只要创建一个index.html文件就可以了.现在再去看一下&lt;a href=&quot;http://username.github.io&quot;&gt;http://username.github.io&lt;/a&gt;, 这个时候应该创建成功了.&lt;/p&gt;
+
+&lt;h1 id=&quot;jekylla-idsec-5-namesec-5a&quot;&gt;搭建Jekyll环境&lt;a id=&quot;sec-5&quot; name=&quot;sec-5&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;我看的是github官网上得教程,关于使用Jekyll,但是我在安装工程中遇到一些问题,所以在这里记录下来.&lt;/p&gt;
+
+&lt;p&gt;github上关于使用Jekyll的链接在这里:&lt;a href=&quot;https://help.github.com/articles/using-jekyll-with-pages/&quot;&gt;Using Jekyll with Pages&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;rubya-idsec-5-1-namesec-5-1a&quot;&gt;安装 Ruby&lt;a id=&quot;sec-5-1&quot; name=&quot;sec-5-1&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;p&gt;上面的教程中虽然说了在Mac系统已经安装了Ruby,所以不需要安装Ruby了,但是我已开始尝试的时候,发现在进行第二步安装bundler的过程中,不能正常安装提示权限问题,问了一下google,发现一篇blog(&lt;a href=&quot;http://blog.lessfun.com/blog/2014/05/20/clone-exists-octopress-blog-to-new-mac/&quot;&gt;链接&lt;/a&gt;),上面说如果直接使用sudo命令继续安装,在后边会继续遇到问题(ps:本人没有亲自尝试).  &lt;br /&gt;
+所以本人重新安装了Ruby,安装命令如下:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;brew install ruby
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;安装完成之后,我使用ruby -version 命令显示的还是原来系统安装的ruby-2.0.0,不是新安装的ruby-2.2.0(应该是shell得配置文件还没有起作用),这个时候不能直接进行下一步的安装,可以重启当前的shell.&lt;/p&gt;
+
+&lt;p&gt;然后就可以下面的安装了.&lt;/p&gt;
+
+&lt;h2 id=&quot;bundlera-idsec-5-2-namesec-5-2a&quot;&gt;安装 bundler&lt;a id=&quot;sec-5-2&quot; name=&quot;sec-5-2&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;p&gt;安装&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;gem install bundler
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果遇到下面的问题,请重新进行上一步安装Ruby的操作&lt;br /&gt;
+ERROR:  While executing gem … (Gem::FilePermissionError)&lt;br /&gt;
+    You don’t have write permissions for the /Library/Ruby/Gems/2.0.0 directory.&lt;/p&gt;
+
+&lt;h2 id=&quot;jekylla-idsec-5-3-namesec-5-3a&quot;&gt;安装Jekyll&lt;a id=&quot;sec-5-3&quot; name=&quot;sec-5-3&quot;&gt;&lt;/a&gt;&lt;/h2&gt;
+
+&lt;p&gt;在github下的要作为blog的仓库的目录下创建一个名为Gemfile的文件.文件的内容如下:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;source &#39;https://rubygems.org&#39;
+gem &#39;github-pages&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;然后执行命令 bundle install,进行安装Jekyll.  &lt;br /&gt;
+ps: 在安装的过程中有可能会出现问题,别担心,上面会有提示该怎么操作,只要按上面的提示,进行操作,然后重新执行命令: bundle insatll 就可以了.&lt;/p&gt;
+
+&lt;h1 id=&quot;running-jekylla-idsec-6-namesec-6a&quot;&gt;Running Jekyll&lt;a id=&quot;sec-6&quot; name=&quot;sec-6&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;根据github上得教程运行安装好的Jekyll,&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;bundle exec jekyll serve or (jekyll server)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;当你执行这条指令的时候,终端中会提示你开启的jekyll服务器是否成功,如果成功,然后在浏览器中打开&lt;a href=&quot;http://localhost:4000/&quot;&gt;http://localhost:4000/&lt;/a&gt;, 会出现下面的错误&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;Forbidden
+no access permission to `/&#39;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;看到这个先不要着急,在安装jekyll的过程中,会生成一个&lt;sub&gt;site文件夹&lt;/sub&gt;,如果里面有html文件的话,你试着访问这个文件,我在&lt;sub&gt;site文件夹下面有个hello&lt;/sub&gt;.html的页面,使用虾下面的URL试一下:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;http://localhost:4000/hello.html
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;如果正常实现,说明我们已经将Jekyll正确的安装了.&lt;/p&gt;
+
+&lt;p&gt;还有一种解决方式就是在git仓库的目录下创建一个名为index.html的文件,这个时候,再访问&lt;a href=&quot;http://localhost:4000/&quot;&gt;http://localhost:4000/&lt;/a&gt; 应该就可以了.&lt;/p&gt;
+
+&lt;h1 id=&quot;configuring-jekylla-idsec-7-namesec-7a&quot;&gt;Configuring Jekyll&lt;a id=&quot;sec-7&quot; name=&quot;sec-7&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;按照github帮助网页上得说明进行配置就可以.&lt;br /&gt;
+主要就是在网站的根目录下面创建一个名为config.yml的文件,然后在里面添加下面的代码&lt;/p&gt;
+
+&lt;div class=&quot;text&quot;&gt;
+highlighter: pygments  
+  github: [Repository metadata]
+
+&lt;/div&gt;
+
+&lt;h1 id=&quot;bloga-idsec-8-namesec-8a&quot;&gt;创建自己的blog&lt;a id=&quot;sec-8&quot; name=&quot;sec-8&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;通过上面的步骤,现在自己已经可以创建自己的第一份blog了.由于本人学习喜欢从头到尾进行学习,所以我自己就去jekyll的官网上大致的浏览了一遍官方的教程,如果你也想去看的话,可以直接点击&lt;a href=&quot;http://jekyllcn.com/&quot;&gt;中文jekyll官网&lt;/a&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;orgmarkdowna-idsec-9-namesec-9a&quot;&gt;将org文件转换成markdown文件&lt;a id=&quot;sec-9&quot; name=&quot;sec-9&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;现在到了将org写的文章转换为blog了,jekyll是不直接支持org文件格式的,如果上传一个org的文件,github会将该文件看做一个可下载的文件.现在网上有三种方式将org文件和jekyll结合在一起,我个人感觉都不是很好,幸好我自己又找到一种方式,既简单有高效还准确.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;org 导出html，直接交给 jekyll 处理。这么做有个问题，org生成的html可能和 markdown 产生的html有差异，有的时候兼容性不好。比如，插入 &amp;lt;!–more–&amp;gt; 语句时，由于 org 生成的 html 充满了 div ，导致在有 headline 的情况下页面可能会乱掉。&lt;/li&gt;
+  &lt;li&gt;org 文件通过 emacs 的插件转换为 markdown 格式，再由 jekyll 处理。可以到这里 找到相关资源。&lt;/li&gt;
+  &lt;li&gt;org-ruby。 通过Ruby将 org 文件转化为 html，而不是通过emacs&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;(ps:以上的三种方式来源于网络,原blog的地址在这里:emacs + org-mode + octopress + github)&lt;br /&gt;
+我考虑到jekyll是对markdown文件做了优化的,并且直接将markdown文件放在post文件下,就可以直接解析了.所以我最终决定使用第二种方式.&lt;br /&gt;
+因为我自己不懂lisp语言,经过第二种方式的指导,也没有配置成功,所以上面说的第二种方式,我没有能实现出来,再想别的办法.&lt;/p&gt;
+
+&lt;p&gt;我突然想到,想markdown这种标记性语言是很有名气的,而且org作为我最钟爱的写blog得神器,她应该肯定支持,将org-mode转换成markdown文件,所以我org的官网上一搜索,果然是可以将org文件转换为markdown.但是这里要注意,org的版本必须&amp;gt;=8.0才可以.&lt;/p&gt;
+
+&lt;p&gt;至于查看org的版本号的命令页一并赠送:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;M+x org-version
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;官网上详细的链接请点&lt;a href=&quot;http://orgmode.org/worg/exporters/ox-overview.html&quot;&gt;这里&lt;/a&gt;&lt;br /&gt;
+虽然官网上说了可以直接将org文件转换为markdown文件,当时当我使用C-c C-e 的时候找了好久,竟然没有发现将org文件导出为markdown文件的选项,继续研究.&lt;br /&gt;
+在google上查了一下,发现使用的方式非常简答:&lt;/p&gt;
+
+&lt;p&gt;在emacs的配置文件中添加下面的命令&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;(eval-after-load &quot;org&quot; &#39;(require &#39;ox-md nil t))
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;将当前的emacs的配置更新:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;eval-buffer
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;将当前的org文件导出为markdown文件&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;org-md-export-to-markdown
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;也可以将当前的org文件直接导出为markdown文件,命令如下:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;org-md-export-as-markdown
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;通过上面的命令就可以将org文件直接导出为markdown文件了.是不是很简单!^_^&lt;/p&gt;
+
+&lt;h1 id=&quot;jekylla-idsec-10-namesec-10a&quot;&gt;jekyll中文乱码问题的初步解决&lt;a id=&quot;sec-10&quot; name=&quot;sec-10&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+
+&lt;p&gt;经过上面的步骤,有很多的中文的乱码的问题,找了好多的网上的资料,没有解决.原因就是jekyll对中文的支持实在是太差了. 我的解决方法就是将将org文件,直接住转换为html文件,这时候就不会设计编码问题了.&lt;/p&gt;
+
+&lt;h1 id=&quot;jekylla-idsec-11-namesec-11a&quot;&gt;jekyll中文乱码问题的完美解决&lt;a id=&quot;sec-11&quot; name=&quot;sec-11&quot;&gt;&lt;/a&gt;&lt;/h1&gt;
+</description>
+      </item>
+    
+  </channel>
+</rss>
