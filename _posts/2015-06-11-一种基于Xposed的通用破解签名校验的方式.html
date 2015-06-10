@@ -1,0 +1,92 @@
+---
+layout: post
+title: 基于xposed的通用破解签名的方法
+date: 2015-06-11
+categories: 
+- 工具
+author: tiankai
+excerpt: 工具
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">常见的android完整性检测方式</h2>
+<div class="outline-text-2" id="text-1">
+<ol class="org-ol">
+<li>检测签名
+</li>
+<li>检验classes.dex
+</li>
+<li>校验整个apk文件(这种方式比较少见)
+</li>
+</ol>
+<p>
+判断使用的那种签名方式:
+</p>
+<ol class="org-ol">
+<li>先直接对apk进行签名，然后安装运行，如果运行出错那么可以推测有签名检测；
+</li>
+<li>如果第一步没有问题,那反编译再回编译APK,进行安装运行出问题，那么说明有校验classes.dex校验.
+</li>
+<li>只有首先查找出apk使用的哪种签名校验的方式,才能再下一步的破解过程中进行相应的处理.
+</li>
+</ol>
+<p>
+通过调查发现,现在市场上90%以上的签名校验方式,都是直接对签名文件(*.RSA)进行校验,基于此,现在有下面这种很通用的破解签名校验方式,
+</p>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">签名校验原理介绍</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1">apk安装过程中的签名校验的原理</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+apk在进行安装的过程中,Android系统会对系统的签名文件做一次校验,这次校验的目的是保证,APK中的每个文件,在APK签名后,没有被修改,
+在一定程度上保证了Apk的安全性.
+</p>
+</div>
+</div>
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2">使用检测签名校验的方式的原理</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,会对自己发布的apk做完整性校验,其中一种非常有效的方式就是通过校验签名的方式,
+对apk进行完整性检测.做法就是解析签名之后的RSA文件,然后在本地(手机上)或者远程服务器中进行校验,如果检验不通过则停止该APK的运行.
+如果程序校验通过,则正常执行该APK的功能.
+该方案的核心就是解析RSA文件.
+</p>
+</div>
+</div>
+</div>
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">破解原理</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+因为该方案的核心就是解析RSA文件,所以我们可以通过偷梁换柱的方式,将重打包之后的apk中RSA文件替换成为,正常APK的RSA文件,但此时重打包的APK
+时无法安装的.因为通不过系统的校验.
+</p>
+
+<p>
+通过阅读Android源代码,我们发现进行签名校验的方法是java.security.Signature方法,我们可以利用Xposed提供的框架,Hook该方法的返回结果,
+使我们重打包,替换RSA文件的APK能够正常安装,以破解APK的签名校验过程.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">软件使用</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+基于Xposed框架的Hook系统方法java.security.Signature的Xposed模块,在Xposed模块仓库中已经存在,可以直接下载,我们也可以自己实现.
+</p>
+
+<p>
+代码如下所示:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"></pre>
+</div>
+</div>
+</div>
