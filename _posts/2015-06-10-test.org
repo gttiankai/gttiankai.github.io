@@ -3,10 +3,10 @@
 layout: post
 title: Test
 date: 2015-06-10
-categories: 
-- Test
-author: nil
-excerpt: test
+categories: Test
+tags: test              
+keywords: test                       
+description:                                   
 ---
 #+END_HTML
 #+STARTUP: showall
