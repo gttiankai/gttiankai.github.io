@@ -1,0 +1,272 @@
+---
+layout: post
+title: 条件测试
+date: 2015-06-25
+categories: 
+- 技术
+author: tiankai
+excerpt: shell
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">shell中的条件测试</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+test命令用于测试字符串、文件状态和数字，
+</p>
+
+<p>
+expr测试和执行数值输出,一般用于整数值，但也可以用于字符串.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">test命令</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1">test的格式</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+Test格式：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">test condition or test [ condition ]
+</pre>
+</div>
+<p>
+需要特别注意的是condition的两边都要有一个空格，否则会报错.
+test命令返回0表示成功。
+</p>
+</div>
+</div>
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2">文件状态测试</h3>
+<div class="outline-text-3" id="text-2-2">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">-d</td>
+<td class="left">测试是否文件夹</td>
+</tr>
+
+<tr>
+<td class="left">-f</td>
+<td class="left">测试是否一般文件</td>
+</tr>
+
+<tr>
+<td class="left">-L</td>
+<td class="left">测试是否链接文件</td>
+</tr>
+
+<tr>
+<td class="left">-r</td>
+<td class="left">测试文件是否可读</td>
+</tr>
+
+<tr>
+<td class="left">-w</td>
+<td class="left">测试文件是否可写</td>
+</tr>
+
+<tr>
+<td class="left">-x</td>
+<td class="left">测试文件是否可执行</td>
+</tr>
+
+<tr>
+<td class="left">-s</td>
+<td class="left">测试文件是否非空</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3">字符串测试</h3>
+<div class="outline-text-3" id="text-2-3">
+<p>
+五种格式：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">test  “string”
+test  string_operator  “string”
+test  “string”  string_operator  “string”
+[ string_operator  “string” ]
+[ “string”  string_operator  “string” ]
+</pre>
+</div>
+
+<p>
+其中string<sub>operator可以为：</sub>       
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">=</td>
+<td class="left">两字符串相等</td>
+</tr>
+
+<tr>
+<td class="left">!=</td>
+<td class="left">两字符串不等</td>
+</tr>
+
+<tr>
+<td class="left">-z</td>
+<td class="left">空串</td>
+</tr>
+
+<tr>
+<td class="left">-n</td>
+<td class="left">非空串</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-4" class="outline-3">
+<h3 id="sec-2-4">数值测试</h3>
+<div class="outline-text-3" id="text-2-4">
+<p>
+两种格式： 
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">“number”  number_operator  “number”
+[ “number”  number_operator  “number” ]
+</pre>
+</div>
+<p>
+其中：number<sub>operator</sub> 可以为：
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">-eq</td>
+<td class="left">相等</td>
+</tr>
+
+<tr>
+<td class="left">-ne</td>
+<td class="left">不等于</td>
+</tr>
+
+<tr>
+<td class="left">-gt</td>
+<td class="left">大于</td>
+</tr>
+
+<tr>
+<td class="left">-lt</td>
+<td class="left">小于</td>
+</tr>
+
+<tr>
+<td class="left">-ge</td>
+<td class="left">大于或等于</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+更多的关于操作符的信息可以点击这里:<a href="http://www.tldp.org/LDP/abs/html/comparison-ops.html">链接</a>  
+</p>
+
+<p>
+例如：  NUMBER=130
+[ “990”  –le  “995”  –a  “NUMBER”  -gt  “133” ]
+(其中-a表示前后结果相“与”)
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">expr测试</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+expr命令一般用于整数值，但也可以用于字符串。
+</p>
+</div>
+<div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1">格式</h3>
+<div class="outline-text-3" id="text-3-1">
+<div class="org-src-container">
+
+<pre class="src src-bash">expr srgument operator  argument
+</pre>
+</div>
+
+<p>
+例如：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">expr 10 + 10
+expr 10 ^ 2 (10的平方)
+expr $value + 10
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-3-2" class="outline-3">
+<h3 id="sec-3-2">增量计数――expr在循环中最基本的用法</h3>
+<div class="outline-text-3" id="text-3-2">
+<p>
+例如：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">LOOP=0
+LOOP=`expr $LOOP + 1`
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-3-3" class="outline-3">
+<h3 id="sec-3-3">模式匹配：通过指定的冒号选项计算字符串中的字符数</h3>
+<div class="outline-text-3" id="text-3-3">
+<p>
+例如：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">value=account.doc
+expr $value : `\(.*\).doc`
+</pre>
+</div>
+<p>
+输出 account</p>
+</div>
+</div>
+</div>
