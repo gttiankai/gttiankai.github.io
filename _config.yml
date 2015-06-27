@@ -17,9 +17,9 @@ title: Tiankai`s Blog
 description: Tiankai`s Blog
 url: gttiankai.github.io
 rss_url: /pages/atom.xml
-iamge_url: http://gttiankai.github.com/public/img
+iamge_url: http://gttiankai.github.com/img
 # gavatar头像及Favicon
-#gavatar: http://7u2ho6.com1.z0.glb.clouddn.com/gavatar.png
+#gavatar: 
 #favicon: http://7u2ho6.com1.z0.glb.clouddn.com/favicon.ico
 
 # google analytics 设置
@@ -32,12 +32,11 @@ disqus:
   shortname: Tiankai-zh
 
 # 主题设置，自动激活某个标签
-active: 技术
+active: tags
 
 # 首页除了最新文章外显示分类
 cates: 
-  - Android
-  - 
+  - Android 
 
 # 中文本地化
 locals:
