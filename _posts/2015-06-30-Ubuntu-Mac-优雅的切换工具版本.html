@@ -1,0 +1,200 @@
+---
+layout: post
+title: Ubuntu-Mac-优雅的切换工具版本
+date: 2015-06-30
+categories: 
+- 工具
+author: tiankai
+excerpt: Ubuntu mac update-alternatives
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">blog来龙去脉</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+今天在Ubuntu12.04上编译Android4.0的源码,发现出现了好多重复定义的问题,在网上一搜索发现是使用的gcc的版本不对.我自己的gcc版本是gcc4.6,默认的编译Android4.0
+源码的gcc版本是4.4,安装gcc4.4版本之后，就面临着切换gcc版本的问题，比较常见的做法就是自己去修改/usr/bin/gcc的链接位置.比较麻烦，记起以前自己使用的一种比较
+简单的方式，可以很容易的进行切换。那就是使用update-alternatives。但是使用了几次之后，都没记住具体的用法，这次索性记录一下。
+</p>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">Ubuntu系统</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+在linux系统中使用『update-alternatives』的命令进行工具的版本切换，非常的简单。
+</p>
+</div>
+<div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1">man update-alternatives</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+我们在Ubuntu系统中使用
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">man update-alternatives
+</pre>
+</div>
+<p>
+之后就可以看到update-alternatives的帮助文件。
+</p>
+<pre class="example">
+Name
+
+update-alternatives - maintain symbolic links determining default commands 
+Synopsis
+
+update-alternatives [options] --install link name path priority [--slave link name path]... [--initscript service]a
+update-alternatives [options] --remove name path
+
+update-alternatives [options] --set name path
+
+update-alternatives [options] --auto name
+
+update-alternatives [options] --display name
+
+update-alternatives [options] --config name
+</pre>
+<p>
+从上面可以看到update-alternatvaes的作用就是系统默认的符号链接问题
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2">命令的详解</h3>
+<div class="outline-text-3" id="text-2-2">
+<ol class="org-ol">
+<li>列出可用的候选命令
+update-alternatives &#x2013;list java
+</li>
+
+<li>显示和修改实际指向的候选命令,
+sudo update-alternatives &#x2013;config java
+</li>
+
+<li>配置系统上所有的候选命令
+sudo update-alternatives &#x2013;all
+</li>
+
+<li>显示一个命令链接的所有可选命令
+update-alternatives &#x2013;display editor
+</li>
+
+<li>将 &lt;名称&gt; 的主链接切换到自动模式
+sudo update-alternatives &#x2013;auto editor
+</li>
+
+<li>在系统中加入一组替换项
+sudo update-alternatives &#x2013;install x-cursor-theme x-cursor-theme /etc/X11/cursors/Gold.theme 70
+</li>
+</ol>
+</div>
+</div>
+
+
+<div id="outline-container-sec-2-3" class="outline-3">
+<h3 id="sec-2-3">gcc切换实例</h3>
+<div class="outline-text-3" id="text-2-3">
+</div><ul class="org-ul"><li><a id="sec-2-3-1" name="sec-2-3-1"></a>自动切换例子<br  /><div class="outline-text-4" id="text-2-3-1">
+<p>
+通过优先级的方式自动设置gcc的版本
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">   updatenn
+
+-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.4 100
+   update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.6 50
+   update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.4 100
+   update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.6 50
+   update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-4.4 100
+   update-alternatives --install /usr/bin/cpp cpp-bin /usr/bin/cpp-4.6 50
+</pre>
+</div>
+</div>
+</li>
+
+<li><a id="sec-2-3-2" name="sec-2-3-2"></a>手动切换例子<br  /><div class="outline-text-4" id="text-2-3-2">
+<div class="org-src-container">
+
+<pre class="src src-bash">root@ubuntu:~# ls /usr/bin/gcc* -l
+</pre>
+</div>
+<pre class="example">
+lrwxrwxrwx 1 root root 21 Sep 18 04:42 /usr/bin/gcc -&gt; /etc/alternatives/gcc	
+-rwxr-xr-x 1 root root 224544 Apr 15 22:58 /usr/bin/gcc-4.4
+-rwxr-xr-x 1 root root 306200 Apr 15 19:45 /usr/bin/gcc-4.6
+</pre>
+<div class="org-src-container">
+
+<pre class="src src-bash">root@ubuntu:~#update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.4 50
+root@ubuntu:~#update-alternatives --install /usr/bin/g++ gcc /usr/bin/g++-4.4 50
+</pre>
+</div>
+<p>
+选择方法（根据编译器选择其一）：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">root@ubuntu:~#update-alternatives --config gcc
+root@ubuntu:~#update-alternatives --config g++
+</pre>
+</div>
+<p>
+然后就会出现如下的界面
+</p>
+<pre class="example">
+参考选择界面：
+
+01	root@ubuntu:~# update-alternatives --config g++
+02	There are 2 choices for the alternative g++ (providing /usr/bin/g++).
+03	 
+04	  Selection    Path              Priority   Status
+05	------------------------------------------------------------
+06	* 0            /usr/bin/g++-4.4   100       auto mode
+07	  1            /usr/bin/g++-4.4   100       manual mode
+08	  2            /usr/bin/g++-4.6   50        manual mode
+09	 
+10	Press enter to keep the current choice[*], or type selection number: 2
+11	update-alternatives: using /usr/bin/g++-4.6 to provide /usr/bin/g++ (g++) in manual mode.
+12	root@ubuntu:~#
+</pre>
+</div>
+</li></ul>
+</div>
+</div>
+
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">Mac系统</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+既然Ubuntu上有这么方便的工具，进行版本的切换，那么Mac系统上对应的工具是什么呢？
+因为我的mac山的软件基本上都是通过brew安装的，所以我查看了一下brew的帮助文件，发现brew自带了版本切换的命令，感觉mac上的软件就是做的好，很贴心。
+</p>
+<pre class="example">
+brew  -switch： switch name version: Symlink all of the specific version of name's install to Homebrew prefix.
+</pre>
+
+<p>
+用法就是：
+</p>
+<pre class="example">
+brew -switch name version
+brew -switch gcc 4.6
+</pre>
+</div>
+</div>
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">参考的blog</h2>
+<div class="outline-text-2" id="text-4">
+<ol class="org-ol">
+<li><a href="http://persevere.iteye.com/blog/1479524">在Ubuntu中通过update-alternatives切换软件版本</a>
+</li>
+<li><a href="http://www.path8.net/tn/archives/5545">update-alternatives命令说明简介及用法</a>
+</li>
+</ol>
+</div>
+</div>
