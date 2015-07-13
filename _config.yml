@@ -17,10 +17,10 @@ title: Tiankai`s Blog
 description: Tiankai`s Blog
 url: gttiankai.github.io
 rss_url: /pages/atom.xml
-iamge_url: http://gttiankai.github.com/img
+iamge_url: http://gttiankai.github.com/public/img
 # gavatar头像及Favicon
-#gavatar: 
-#favicon: http://7u2ho6.com1.z0.glb.clouddn.com/favicon.ico
+gavatar: /public/img/mypicture.png
+#favicon: 
 
 # google analytics 设置
 ga:
