@@ -1,0 +1,89 @@
+---
+layout: post
+title: C语言声明的优先级规则
+date: 2015-07-15
+categories: 
+- 技术
+tags: 
+- C语言
+author: tiankai
+excerpt: C 声明 优先级
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">C语言声明的优先级规则</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+今天看《C专家编程》,其中由有一张讲声明,其中讲声明的优先级很有用,现在记录一下,以备后期查看.
+</p>
+<ol class="org-ol">
+<li>声明从它的名字开始读取,然后按照优先级的顺序依次读取.
+</li>
+<li>优先级从高到低依次是:
+<ol class="org-ol">
+<li>声明中括号括起来的部分
+</li>
+<li>后缀操作符:
+括号() 表示这是一个函数,返回&#x2026;的函数
+方括号[]表示这是一个数组
+</li>
+<li>前缀操作符:
+星号*表示"指向&#x2026;的指针"
+</li>
+</ol>
+</li>
+<li>如果const和(或)volatile关键字后面紧跟类型说明符(如:int,long等),那么他作用于类型说明符,在其他情况下,
+const和(或)volatile关键字作用于它左边紧邻的指针星号, 这个指针是&#x2026;类型
+</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">实例</h2>
+<div class="outline-text-2" id="text-2">
+</div><div id="outline-container-sec-2-1" class="outline-3">
+<h3 id="sec-2-1">1. char * const *(*next)()</h3>
+<div class="outline-text-3" id="text-2-1">
+<p>
+我们来分析上面的这个声明
+</p>
+<ol class="org-ol">
+<li>根据上面的规则1, 确定名字是next.其中括号括起来的部分是(*next)
+</li>
+<li>根据2.3确认next是指向&#x2026;的指针.
+</li>
+<li>分析完了(*next),然后我们将(*next)作为一个整体.
+再根据2.2的原则,(*next)后边是一个括号,便是一个函数,说明next现在是: 指向函数的指针, 指向一个返回&#x2026;的函数,此时(*next)()是一个整体.
+</li>
+<li>再根据2.3, 处理前缀(*next)()的前缀"*",说明这个函数返回一个指针,这个指针指向&#x2026;类型.将*(*next)()作为一个整体.
+</li>
+<li>根据3的原则,const修饰的时他左边紧邻的指针星号.char * const说明是一个指向char类型的常量指针.
+</li>
+</ol>
+<p>
+所以最后总结起来就是: next是一个指针,它指向一个指针,该函数返回另一个指针,这个指针指向一个类型为char的常量指针.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2-2" class="outline-3">
+<h3 id="sec-2-2">2. void ( *signal(int sig, void(*func)(int) ))( int )</h3>
+<div class="outline-text-3" id="text-2-2">
+<p>
+我们来分析上面的这个声明:
+</p>
+<ol class="org-ol">
+<li>我们根据上面的规则进行分析,首先先找到声明,我们从左到右查找最内层的声明,找到如下声明:
+<pre class="example">
+void(*func)(int)
+</pre>
+<p>
+说明他是这是一个指向函数的指针.该函数的形参为int,返回值为void
+</p>
+</li>
+<li></li>
+</ol>
+</div>
+</div>
+</div>
