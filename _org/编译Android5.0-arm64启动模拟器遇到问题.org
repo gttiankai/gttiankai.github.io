@@ -1,0 +1,28 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-06-29 Mon 17:01
+#+TITLE: 编译Android5.0-arm64启动模拟器遇到的问题
+#+DESCRIPTION: Android 5.0 arm 64 ubuntu12.04 
+#+TAGS: Android
+#+CATEGORIES: 记录
+
+* 系统版本
+ubuntu:12.04 64
+android:5.0.1_r1
+编译的类型：Android-arm-64
+* 产生的bug
+正常编译完成之后，启动模拟器不能正常启动
+#+begin_src bash
+emulator: ERROR: Could not load OpenGLES emulation library: lib64OpenglRender.so: cannot open shared object file: No such file or directory
+emulator: WARNING: Could not initialize OpenglES emulation, using software renderer.  
+#+end_src
+
+* 解决方案
+找到系统中的sdk的目录，然后在sdk目录下找到tools/lib64
+然后执行：
+#+begin_src bash
+export LD_LIBRARY_PATH=~/sdk-home-directory/tools/lib64:$LD_LIBRARY_PATH
+#+end_src

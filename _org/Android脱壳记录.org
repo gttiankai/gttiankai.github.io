@@ -1,0 +1,17 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-07-03 Fri 13:55
+#+TITLE: Android脱壳记录
+#+DESCRIPTION: Android 脱壳 
+#+TAGS: Android
+#+CATEGORIES: 技术
+
+* Zjdroid
+使用zjdroid发现只能脱掉不加固的库,一旦加固之后就不能脱壳了,不知道怎么回事。
+* Indroid
+编译源码要选个4.2的,因为我使用4.0的源码发现不能使用,里面有一些不能使用.
+* DexExtrator
+脱壳

@@ -1,0 +1,97 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-06-25 Thu 22:50
+#+TITLE: shell中的条件测试
+#+DESCRIPTION: shell
+#+TAGS: bash
+#+CATEGORIES: 技术
+
+* shell中的条件测试
+test命令用于测试字符串、文件状态和数字，
+
+expr测试和执行数值输出,一般用于整数值，但也可以用于字符串.
+
+* test命令
+** test的格式
+Test格式：
+#+begin_src bash
+test condition or test [ condition ]
+#+end_src
+需要特别注意的是condition的两边都要有一个空格，否则会报错.
+test命令返回0表示成功。
+** 文件状态测试
+| -d | 测试是否文件夹     |
+| -f | 测试是否一般文件   |
+| -L | 测试是否链接文件   |
+| -r | 测试文件是否可读   |
+| -w | 测试文件是否可写   |
+| -x | 测试文件是否可执行 |
+| -s | 测试文件是否非空   |
+
+** 字符串测试
+五种格式：
+#+begin_src bash
+test  “string”
+test  string_operator  “string”
+test  “string”  string_operator  “string”
+[ string_operator  “string” ]
+[ “string”  string_operator  “string” ]
+#+end_src
+
+其中string_operator可以为：       
+| =  | 两字符串相等 |
+| != | 两字符串不等 |
+| -z | 空串       |
+| -n | 非空串       |
+
+
+** 数值测试
+两种格式： 
+#+begin_src bash
+“number”  number_operator  “number”
+[ “number”  number_operator  “number” ]
+#+end_src
+其中：number_operator 可以为：
+| -eq | 相等       |
+| -ne | 不等于     |
+| -gt | 大于       |
+| -lt | 小于       |
+| -ge | 大于或等于 | 
+
+更多的关于操作符的信息可以点击这里:[[http://www.tldp.org/LDP/abs/html/comparison-ops.html][链接]]  
+
+例如：  NUMBER=130
+[ “990”  –le  “995”  –a  “NUMBER”  -gt  “133” ]
+(其中-a表示前后结果相“与”)
+
+* expr测试
+expr命令一般用于整数值，但也可以用于字符串。
+** 格式
+#+begin_src bash
+ expr srgument operator  argument
+#+end_src
+
+例如：
+#+begin_src bash
+expr 10 + 10
+expr 10 ^ 2 (10的平方)
+expr $value + 10
+#+end_src
+
+** 增量计数――expr在循环中最基本的用法
+例如：
+#+begin_src bash
+LOOP=0
+LOOP=`expr $LOOP + 1`
+#+end_src
+ 
+** 模式匹配：通过指定的冒号选项计算字符串中的字符数
+例如：
+#+begin_src bash
+value=account.doc
+expr $value : `\(.*\).doc`
+#+end_src
+输出 account

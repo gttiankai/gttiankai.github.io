@@ -1,0 +1,22 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-07-06 Mon 13:49
+#+TITLE: IDA调试Android-so记录
+#+DESCRIPTION: Android IDA 逆向 so
+#+TAGS: Android
+#+CATEGORIES: 技术
+
+* ARM架构指令集的分类
+ARM架构中的指令集大致分为两大类: ARM指令集和Thumb指令集.其中Thumb指令集可以看做ARM指令集的子集.
+想了解具体的内容可以看下面的链接:[[http://blog.csdn.net/jamestaosh/article/details/4345548][Thumb、ARM指令 状态切换]]
+
+* ARM指令集和Thumb指令集的切换
+在ida进行逆向的过程中,经常会遇到ida的提醒,提醒说我们使用的指令集不对,然后程序就不能继续执行了.
+这个时候我们就需要对指令集进行转换.下面是ida的帮助文件中提及的内容:
+#+BEGIN_EXAMPLE
+Since architecture version v4 (introduced in ARM7 cores), ARM processors have a new 16-bit instruction set called Thumb (the original 32-bit set is referred to as "ARM"). Since these two sets have different instruction encodings and can be mixed in one segment, we need a way to specify how to disassemble instructions. For this purpose, IDA uses a virtual segment register named 'T'. If its value is 0, then ARM mode is used. Otherwise, Thumb mode is used. ARM is the default mode. Please note that if you change the value of T register for an area, IDA will destroy all instructions in that area because their disassembly is no longer correct. 
+#+END_EXAMPLE
+所以我们在调试的时候直接使用alt+g的快捷键,调出转换指令集的窗口,然后改变T的值,就可以进行转换了.

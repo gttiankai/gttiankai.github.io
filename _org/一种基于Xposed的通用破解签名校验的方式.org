@@ -1,0 +1,57 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-06-11 Thu 00:15
+#+TITLE: 基于xposed的通用破解签名的方法
+#+DESCRIPTION: 工具
+#+TAGS: Android
+#+CATEGORIES: 工具
+
+* 常见的android完整性检测方式
+1. 检测签名
+2. 检验classes.dex
+3. 校验整个apk文件(这种方式比较少见)
+判断使用的那种签名方式:
+1. 先直接对apk进行签名，然后安装运行，如果运行出错那么可以推测有签名检测；
+2. 如果第一步没有问题,那反编译再回编译APK,进行安装运行出问题，那么说明有校验classes.dex校验.
+3. 只有首先查找出apk使用的哪种签名校验的方式,才能再下一步的破解过程中进行相应的处理.
+通过调查发现,现在市场上90%以上的签名校验方式,都是直接对签名文件(*.RSA)进行校验,基于此,现在有下面这种很通用的破解签名校验方式,
+* 签名校验原理介绍
+** apk安装过程中的签名校验的原理
+apk在进行安装的过程中,Android系统会对系统的签名文件做一次校验,这次校验的目的是保证,APK中的每个文件,在APK签名后,没有被修改,
+在一定程度上保证了Apk的安全性.
+** 使用检测签名校验的方式的原理
+apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,会对自己发布的apk做完整性校验,其中一种非常有效的方式就是通过校验签名的方式,
+对apk进行完整性检测.做法就是解析签名之后的RSA文件,然后在本地(手机上)或者远程服务器中进行校验,如果检验不通过则停止该APK的运行.
+如果程序校验通过,则正常执行该APK的功能.
+该方案的核心就是解析RSA文件.
+* 破解原理
+因为该方案的核心就是解析RSA文件,所以我们可以通过偷梁换柱的方式,将重打包之后的apk中RSA文件替换成为,正常APK的RSA文件,但此时重打包的APK
+时无法安装的.因为通不过系统的校验.
+
+通过阅读Android源代码,我们发现进行签名校验的方法是java.security.Signature方法,我们可以利用Xposed提供的框架,Hook该方法的返回结果,
+使我们重打包,替换RSA文件的APK能够正常安装,以破解APK的签名校验过程.
+
+* 软件使用
+基于Xposed框架的Hook系统方法java.security.Signature的Xposed模块,在Xposed模块仓库中已经存在(名字叫做DisableVerifySignature),
+可以直接下载,我们也可以自己实现.
+
+代码如下所示:
+#+BEGIN_SRC java
+public void initZygote(StartupParam startupParam) throws Throwable {
+      
+               XposedHelpers.findAndHookMethod("java.security.Signature",null,"verify", byte[].class,new XC_MethodHook(){
+             protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+               XposedBridge.log("disabled verifysignature......");
+               param.setResult(Boolean.TRUE);
+          }   
+               });
+#+END_SRC
+至于怎么使用上面的代码,就要学习一下xposed的模块开发了,网上有很多内容,这里不再展开了.
+
+* 参考的blog
++ [[http://bbs.pediy.com/showthread.php?t%3D190876][调试小技巧：绕过apk安装时的签名验证]]
++ [[http://blog.csdn.net/wxyyxc1992/article/details/17320911][Android Hook框架Xposed原理与源代码分析]]
++ [[http://www.sjsjw.com/kf_mobile/article/1_19087_30637.asp][Android Hook框架Xposed详解：从源代码分析到开发指南]]

@@ -23,9 +23,9 @@ gavatar: /public/img/mypicture.png
 #favicon: 
 
 # google analytics 设置
-ga:
-  id: UA-54767140-1
-  url: gttiankai.github.io
+# ga:
+#   id: UA-54767140-1
+#   url: gttiankai.github.io
 
 # disqus 设置
 disqus:

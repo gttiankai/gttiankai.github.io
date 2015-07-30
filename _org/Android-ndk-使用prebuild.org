@@ -1,0 +1,11 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-06-25 Thu 00:05
+#+TITLE: Android ndk-build 使用prebuild进行编译
+#+DESCRIPTION: android prebuild
+#+CATEGORIES: 技术
+
+* 使用prebuild进行编译

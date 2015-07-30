@@ -1,0 +1,16 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-07-10 Fri 10:16
+#+TITLE: Xposed官方手册记录
+#+DESCRIPTION: Xposed
+#+CATEGORIES: 技术
+
+* Xposed基本信息
+- 官方主页:http://repo.xposed.info/
+- xposed在githu主页:https://github.com/rovo89/Xposed
+- 官方tutorial:https://github.com/rovo89/XposedBridge/wiki/Development-tutorial
+- Xposed Installer:http://repo.xposed.info/module/de.robv.android.xposed.installer
+* Xposed开发手册中的记录
