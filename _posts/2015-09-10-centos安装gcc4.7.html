@@ -1,0 +1,57 @@
+---
+layout: post
+title: CentOS6.7安装gcc4.7
+date: 2015-09-10
+categories: 
+- Linux
+tags: 
+- Linux
+author: tiankai
+excerpt: centos6.7 gcc4.7
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">背景介绍</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+昨天需要在一台centos6.7上安装gcc4.7,因为centos的上的软件版本都太低了,造成安装过程中出现了很多问题,
+最后找到了一种非常好的方式安装,在这里记录一下,以帮助其他需要的人.
+</p>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">安装步骤</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+安装步骤如下所示:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">cd /etc/yum.repos.d
+wget http://people.centos.org/tru/devtools-1.1/devtools-1.1.repo 
+yum --enablerepo=testing-1.1-devtools-6 install devtoolset-1.1-gcc devtoolset-1.1-gcc-c++
+</pre>
+</div>
+<p>
+通过上面的命令可以将gcc4.7安装到 <i>opt/centos/devtoolset-1.1/root/usr/bin</i>
+</p>
+
+<p>
+这个时候还不能直接使用gcc4.7来进行编译,还需要下面的命令
+</p>
+<div class="org-src-container">
+
+<pre class="src src-bash">export CC=/opt/centos/devtoolset-1.1/root/usr/bin/gcc 
+export CPP=/opt/centos/devtoolset-1.1/root/usr/bin/cpp 
+export CXX=/opt/centos/devtoolset-1.1/root/usr/bin/c++
+</pre>
+</div>
+<p>
+这个时候就可以使用gcc4.7进行编译了.
+</p>
+
+<p>
+但是这个时候,需要注意的是因为没有配置系统的环境变量,所以gcc4.7只在当前启动的shell中才可以使用.如果重新启动了shell,可能需要重新的进行export了.</p>
+</div>
+</div>
