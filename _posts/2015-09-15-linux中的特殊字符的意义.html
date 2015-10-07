@@ -9,63 +9,170 @@ tags:
 author: tiankai
 excerpt: linux 特殊字符
 ---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">1. &gt; 重定向输出符号</h2>
+<div class="outline-text-2" id="text-1">
 <p>
-1，&gt; 重定向输出符号
-     用法：命令 &gt;文件名
-     特性：覆盖（当输入文件和输出文件是同一文件，文
-           件内容被清空；不适合连续重定向）
-     典型应用：合并文件（cat a b &gt;c）;清空文件（cat
-             /dev/null);文件打印
-2，&gt;&gt; 重定向输出符号
-      用法：命令 &gt;&gt;文件名
-      特性：追加
-3，2&gt; 错误重定向输出符号
-      用法：命令 2&gt;文件名
-      特性：覆盖
-4，2&gt;&gt; 错误重定向输出符号
-      用法：命令 2&gt;&gt;文件名
-      特性：错误信息的追加
-   典型应用：命令 &gt;文件名 命令 2&gt;文件名
-            命令 &gt;/dev/null 2&gt;/dev/null==命令 &gt;
-             /dev/null
-5，|  管道符号
-      用法：命令1 | 命令2
-      机制：上一个的命令输出作为下一个命令的输入
-6, *  匹配任意字符
-7，？ 匹配任意一个字符
-8，&amp;  后台进程符
-      用法：命令（程序） &amp;
-9，&amp;&amp; 逻辑与
-      用法：命令1 &amp;&amp; 命令2
-      机制：如果命令1执行成功，继续执行命令2；否则，
-           不执行命令2
-10，|| 逻辑或
-       用法：命令1 || 命令2
-       机制：如果命令1执行成功，不执行命令2；否则，
-           才执行命令2
-11，！ 逻辑非
-       机制：排除指定范围
-12，[x-y]  指定范围
-13，#  注释
-14,""  双引号
-       机制：把它所包含的内容作为普通字符，但‘’\
-            $ `` 除外
-15‘’ 单引号
-       机制：把它所包含的内容作为普通字符，无例外
-16,``  倒引号
-       机制：执行它所包含的内容
-17，\  转义字符
-       用法; \符号
-       机制：把符号的特定含义去掉，使其变成普通标点
-             符号
-18，$  变量调用符号
-       用法： $变量
-       机制：调用变量，从而得到‘变量的值’
-19，； 命令分隔符
-       用法：命令1 ； 命令2
-       机制;一行语句中，顺次执行各命令
-20（） 整体执行
-21，{ } 变量分离
-22，&lt;  重定向输入符号
-       用法：命令 &lt;文件名
+用法：命令 &gt;文件名
+特性：覆盖（当输入文件和输出文件是同一文件，文
+      件内容被清空；不适合连续重定向）
+典型应用：合并文件（cat a b &gt;c）;清空文件（cat
+        /dev/null);文件打印
 </p>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">2. &gt;&gt; 重定向输出符号</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+用法：命令 &gt;&gt;文件名
+特性：追加
+</p>
+</div>
+</div>
+<div id="outline-container-sec-3" class="outline-2">
+<h2 id="sec-3">3. 2&gt; 错误重定向输出符号</h2>
+<div class="outline-text-2" id="text-3">
+<p>
+用法：命令 2&gt;文件名
+特性：覆盖
+</p>
+</div>
+</div>
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4">4. 2&gt;&gt; 错误重定向输出符号</h2>
+<div class="outline-text-2" id="text-4">
+<p>
+   用法：命令 2&gt;&gt;文件名
+   特性：错误信息的追加
+典型应用：命令 &gt;文件名 命令 2&gt;文件名
+         命令 &gt;/dev/null 2&gt;/dev/null==命令 &gt;
+          /dev/null
+</p>
+</div>
+</div>
+<div id="outline-container-sec-5" class="outline-2">
+<h2 id="sec-5">5. |  管道符号</h2>
+<div class="outline-text-2" id="text-5">
+<p>
+用法：命令1 | 命令2
+机制：上一个的命令输出作为下一个命令的输入
+</p>
+</div>
+</div>
+<div id="outline-container-sec-6" class="outline-2">
+<h2 id="sec-6">6. *  匹配任意字符</h2>
+</div>
+<div id="outline-container-sec-7" class="outline-2">
+<h2 id="sec-7">7. ? 匹配任意一个字符</h2>
+</div>
+<div id="outline-container-sec-8" class="outline-2">
+<h2 id="sec-8">8. &amp;  后台进程符</h2>
+<div class="outline-text-2" id="text-8">
+<p>
+用法：命令（程序） &amp;
+</p>
+</div>
+</div>
+<div id="outline-container-sec-9" class="outline-2">
+<h2 id="sec-9">9. &amp;&amp; 逻辑与</h2>
+<div class="outline-text-2" id="text-9">
+<p>
+用法：命令1 &amp;&amp; 命令2
+机制：如果命令1执行成功，继续执行命令2；否则，
+     不执行命令2
+</p>
+</div>
+</div>
+<div id="outline-container-sec-10" class="outline-2">
+<h2 id="sec-10">10. || 逻辑或</h2>
+<div class="outline-text-2" id="text-10">
+<p>
+用法：命令1 || 命令2
+机制：如果命令1执行成功，不执行命令2；否则，
+    才执行命令2
+</p>
+</div>
+</div>
+<div id="outline-container-sec-11" class="outline-2">
+<h2 id="sec-11">11. ！ 逻辑非</h2>
+<div class="outline-text-2" id="text-11">
+<p>
+机制：排除指定范围
+</p>
+</div>
+</div>
+<div id="outline-container-sec-12" class="outline-2">
+<h2 id="sec-12">12. [x-y]  指定范围</h2>
+</div>
+<div id="outline-container-sec-13" class="outline-2">
+<h2 id="sec-13">13.  #  注释</h2>
+</div>
+<div id="outline-container-sec-14" class="outline-2">
+<h2 id="sec-14">14. ""  双引号</h2>
+<div class="outline-text-2" id="text-14">
+<p>
+机制：把它所包含的内容作为普通字符，但‘’\
+     $ `` 除外
+</p>
+</div>
+</div>
+<div id="outline-container-sec-15" class="outline-2">
+<h2 id="sec-15">15. ‘’ 单引号</h2>
+<div class="outline-text-2" id="text-15">
+<p>
+机制：把它所包含的内容作为普通字符，无例外
+</p>
+</div>
+</div>
+<div id="outline-container-sec-16" class="outline-2">
+<h2 id="sec-16">16. ``  倒引号</h2>
+<div class="outline-text-2" id="text-16">
+<p>
+机制：执行它所包含的内容
+</p>
+</div>
+</div>
+<div id="outline-container-sec-17" class="outline-2">
+<h2 id="sec-17">17. \  转义字符</h2>
+<div class="outline-text-2" id="text-17">
+<p>
+用法; \符号
+机制：把符号的特定含义去掉，使其变成普通标点
+      符号
+</p>
+</div>
+</div>
+<div id="outline-container-sec-18" class="outline-2">
+<h2 id="sec-18">18. $  变量调用符号</h2>
+<div class="outline-text-2" id="text-18">
+<p>
+用法： $变量
+机制：调用变量，从而得到‘变量的值’
+</p>
+</div>
+</div>
+<div id="outline-container-sec-19" class="outline-2">
+<h2 id="sec-19">19. ； 命令分隔符</h2>
+<div class="outline-text-2" id="text-19">
+<p>
+用法：命令1 ； 命令2
+机制;一行语句中，顺次执行各命令
+</p>
+</div>
+</div>
+<div id="outline-container-sec-20" class="outline-2">
+<h2 id="sec-20">20. （） 整体执行</h2>
+</div>
+<div id="outline-container-sec-21" class="outline-2">
+<h2 id="sec-21">21. { } 变量分离</h2>
+</div>
+<div id="outline-container-sec-22" class="outline-2">
+<h2 id="sec-22">22. &lt;  重定向输入符号</h2>
+<div class="outline-text-2" id="text-22">
+<p>
+用法：命令 &lt;文件名
+</p>
+</div>
+</div>
