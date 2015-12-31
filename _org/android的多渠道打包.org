@@ -1,0 +1,19 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-12-30 Wed 16:17
+#+TITLE: Android的多渠道打包
+#+DESCRIPTION: Android 多渠道打包
+#+TAGS: Android packer
+#+CATEGORIES: Android
+
+* Android 多渠道打包的方式1
+使用maven或者gradle提供的插件,进行自动化的多渠道打包.这种方式的主要思路就是在APK的
+构架过程中,将AndroidManifest.xml中meta-data,对应的value值
+
+* 参考文献
+1. [[http://tech.meituan.com/mt-apk-packaging.html][美团Android自动化之旅—生成渠道包]]
+2. [[http://www.jianshu.com/p/8b8fdd37bf26][Gradle多渠道打包{umeng}]]
+3. [[https://github.com/mcxiaoke/gradle-packer-plugin][Android多渠道打包工具Gradle插件]]

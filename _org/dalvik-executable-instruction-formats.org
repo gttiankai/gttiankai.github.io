@@ -1,0 +1,22 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-08-07 Fri 15:23
+#+TITLE: Dalvik Executable instruction formats
+#+DESCRIPTION: Dalvik 指令集格式
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* 前言
+本篇文章主要介绍一下本人在阅读dalvike可执行指令集格式的过程中做个记录.
+建议去阅读原文,官方网址: [[http://source.android.com/devices/tech/dalvik/instruction-formats.html#format-ids][google的dalvik executable instruction formate]]
+
+* 按位描述
+
+* 格式化IDs
+
+* 语法
+
+* 

@@ -1,0 +1,12 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-12-31 Thu 10:54
+#+TITLE: git的各种操作(持续更新)
+#+DESCRIPTION: git note
+#+TAGS: Git
+#+CATEGORIES: Git
+
+* 

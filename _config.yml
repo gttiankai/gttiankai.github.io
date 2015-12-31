@@ -1,5 +1,5 @@
 permalink: /:year/:month/:day/:title.html # 博文的固定链接
-paginate: 10 #每页的博文数量
+paginate: 100 #每页的博文数量
 markdown: kramdown
 
 kramdown:

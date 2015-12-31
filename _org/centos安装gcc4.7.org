@@ -1,0 +1,33 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2015-09-10 Thu 14:18
+#+TITLE: CentOS6.7安装gcc4.7
+#+DESCRIPTION: centos6.7 gcc4.7
+#+TAGS: Linux
+#+CATEGORIES: 技术
+
+* 背景介绍
+昨天需要在一台centos6.7上安装gcc4.7,因为centos的上的软件版本都太低了,造成安装过程中出现了很多问题,
+最后找到了一种非常好的方式安装,在这里记录一下,以帮助其他需要的人.
+
+* 安装步骤
+安装步骤如下所示:
+#+begin_src bash
+cd /etc/yum.repos.d
+wget http://people.centos.org/tru/devtools-1.1/devtools-1.1.repo 
+yum --enablerepo=testing-1.1-devtools-6 install devtoolset-1.1-gcc devtoolset-1.1-gcc-c++
+#+end_src
+通过上面的命令可以将gcc4.7安装到 /opt/centos/devtoolset-1.1/root/usr/bin/
+
+这个时候还不能直接使用gcc4.7来进行编译,还需要下面的命令
+#+begin_src bash
+export CC=/opt/centos/devtoolset-1.1/root/usr/bin/gcc 
+export CPP=/opt/centos/devtoolset-1.1/root/usr/bin/cpp 
+export CXX=/opt/centos/devtoolset-1.1/root/usr/bin/c++
+#+end_src
+这个时候就可以使用gcc4.7进行编译了.
+
+但是这个时候,需要注意的是因为没有配置系统的环境变量,所以gcc4.7只在当前启动的shell中才可以使用.如果重新启动了shell,可能需要重新的进行export了.
