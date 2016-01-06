@@ -9,11 +9,94 @@
 #+TAGS: Android packer
 #+CATEGORIES: Android
 
-* Android 多渠道打包的方式1
-使用maven或者gradle提供的插件,进行自动化的多渠道打包.这种方式的主要思路就是在APK的
-构架过程中,将AndroidManifest.xml中meta-data,对应的value值
+* 文章的目的
+主要研究了现在比较流行的多渠道打包的方式,并且实现了通过Apktool反编译APK,实现多渠道打包的
+方式.
+* Android多渠道打包的方式之一:maven,gradle插件
+使用maven或者gradle提供的插件,进行自动化的多渠道打包.这种方式的主要思路就是在APK的构架过
+程中,将AndroidManifest.xml中meta-data,对应的value值设为变量,在打包的时候,通过自动化构
+建脚本,将相应的value值设为对应的值.
+关于maven的自动化构建方式的细节,请看下面参考博客:美团Android自动化之旅—生成渠道包.
+关于gradle的自动化构建方式,请查看下面参考的博客:Gradle多渠道打包和Android多渠道打包工具
+Gradle插件.
 
-* 参考文献
+* Android多渠道打包方式之二:使用apktool反编译实现
+这种办法的思路是生成一个apk后,使用反编译工具Apktool,将APK中的AndroidManifest.xml文件进
+行反编译,然后通过找到meta-data中对应的value值,修改其中的值为对应的分发渠道的名称,然后使用
+Apktool进行重打包,就可以生成多渠道的方式.具体的做法,我会在下面进行说明.也可以参考博客美团
+Android自动化之旅—生成渠道包.
+#+begin_src python
+import re
+def replace_channel(channel, manifest):
+    pattern = r'(<meta-data\s+android:name="TD_CHANNEL_ID"\s+android:value=")(\S+)("\s*/>)'
+    replacement = r"\g<1>{channel}\g<3>".format(channel=channel)
+    return re.sub(pattern, replacement, manifest)
+#+end_src
+
+上面代码channel是写死的,下面这个是可以进行接受channel作为参数的
+#+begin_src python
+def replace_market(channel, market, manifest):
+    pattern_str = '(<meta-data\\s+android:name="' + channel + '"\\s+android:value=")(\\S+)("\\s*/>)'
+    replacement = r"\g<1>{channel}\g<3>".format(channel=market)
+    return re.sub(pattern_str, replacement, manifest)
+#+end_src
+
+* Android多渠道打包方式之三:META-INF(借鉴自美团的blog,链接在下面)
+这种方式本人是感觉最好的,同样也是效率最高的.
+这种办法的解决的问题就是使用apktool这种方式,需要重新打包,浪费很多时间.APK包的签名有一个特
+性,就是在签名之后的META-INF文件夹中添加文件,不会影响APK在安装过程中的签名校验,这是由Android
+系统的签名原理决定的.
+利用以上的特点,就可以直接在META-INFO中添加标识不同渠道名称的空文件,然后通过在Java层进行
+动态读取文件名称的方式,就可以识别不同的渠道,从而实现多渠道打包.
+在APK中添加不同空文件的python代码如下:
+#+begin_src python
+import zipfile
+zipped = zipfile.ZipFile(your_apk, 'a', zipfile.ZIP_DEFLATED)
+empty_channel_file = "META-INF/mtchannel_{channel}".format(channel=your_channel)
+zipped.write(your_empty_file, empty_channel_file)
+#+end_src
+
+其中关键的java代码如下:
+#+begin_src java
+public static String getChannel(Context context) {
+        ApplicationInfo appinfo = context.getApplicationInfo();
+        String sourceDir = appinfo.sourceDir;
+        String ret = "";
+        ZipFile zipfile = null;
+        try {
+            zipfile = new ZipFile(sourceDir);
+            Enumeration<?> entries = zipfile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = ((ZipEntry) entries.nextElement());
+                String entryName = entry.getName();
+                if (entryName.startsWith("mtchannel")) {
+                    ret = entryName;
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (zipfile != null) {
+                try {
+                    zipfile.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        String[] split = ret.split("_");
+        if (split != null && split.length >= 2) {
+            return ret.substring(split[0].length() + 1);
+
+        } else {
+            return "";
+        }
+    }
+#+end_src
+
+* 参考博客
 1. [[http://tech.meituan.com/mt-apk-packaging.html][美团Android自动化之旅—生成渠道包]]
 2. [[http://www.jianshu.com/p/8b8fdd37bf26][Gradle多渠道打包{umeng}]]
 3. [[https://github.com/mcxiaoke/gradle-packer-plugin][Android多渠道打包工具Gradle插件]]
