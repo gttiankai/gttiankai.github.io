@@ -4,9 +4,30 @@
 #+LAYOUT: post
 #+AUTHOR: tiankai
 #+DATE: 2015-12-31 Thu 10:54
-#+TITLE: git的各种操作(持续更新)
+#+TITLE: git的操作（持续更新）
 #+DESCRIPTION: git note
 #+TAGS: Git
 #+CATEGORIES: Git
 
-* 
+* git取消未暂存的修改
+在我们使用git的时候在很多情况下，都需要取消本地对某个文件的未暂存的修改，这个时候就需要如下
+的命令
+#+begin_src bash
+git checkout -- filename
+#+end_src
+
+* 关于协作开发的远程分支合并问题
+在使用git的过程中，不可避免的会将自己的代码和远程分支进行合并，为了使git的历史更加清楚，更
+加容易查找到错误，我们应该尽量使我们的git的提交历史成为线性的提交历史，所以建议使用fetch和
+rebase的组合操作，而避免使用pull操作。
+#+begin_src bash
+git fetch   
+git rebase
+#+end_src
+其中git fetch会从服务器上下载origin/master分支的内容，到本地的仓库中但是不会和本地的修改
+进行合并。
+git rebase操作也叫做衍合操作，会将服务器上的提交和本地的提交做一次衍合，然后生成一个新的提
+交，关于衍合的详细内容，建议参考下面的链接2：3.6 Git 分支 - 分支的衍合
+* 参考链接
+1. [[http://lishicongli.blog.163.com/blog/static/1468259020132125247302/][Git 的origin和master分析]]
+2. [[https://git-scm.com/book/zh/v1/Git-%25E5%2588%2586%25E6%2594%25AF-%25E5%2588%2586%25E6%2594%25AF%25E7%259A%2584%25E8%25A1%258D%25E5%2590%2588][3.6 Git 分支 - 分支的衍合]]
