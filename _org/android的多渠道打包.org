@@ -57,7 +57,7 @@ zipped.write(your_empty_file, empty_channel_file)
 #+end_src
 
 其中关键的java代码如下:
-#+begin_src java
+#+begin_src Java
 public static String getChannel(Context context) {
         ApplicationInfo appinfo = context.getApplicationInfo();
         String sourceDir = appinfo.sourceDir;
@@ -85,7 +85,6 @@ public static String getChannel(Context context) {
                 }
             }
         }
-
         String[] split = ret.split("_");
         if (split != null && split.length >= 2) {
             return ret.substring(split[0].length() + 1);
