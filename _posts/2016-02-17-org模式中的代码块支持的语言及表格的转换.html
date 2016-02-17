@@ -1,0 +1,383 @@
+---
+layout: post
+title: org模式中的代码块支持的语言及表格的转换
+date: 2016-02-17
+categories: 
+- emacs
+tags: 
+- emacs
+author: tiankai
+excerpt: emacs org sourcecode 
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">org模式中的代码块中支持的语言</h2>
+<div class="outline-text-2" id="text-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">Language</th>
+<th scope="col" class="left">Identifier</th>
+<th scope="col" class="left">Language</th>
+<th scope="col" class="left">Identifier</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">Asymptote</td>
+<td class="left">asymptote</td>
+<td class="left">Awk</td>
+<td class="left">awk</td>
+</tr>
+
+<tr>
+<td class="left">C</td>
+<td class="left">C</td>
+<td class="left">C++</td>
+<td class="left">C++</td>
+</tr>
+
+<tr>
+<td class="left">Clojure</td>
+<td class="left">clojure</td>
+<td class="left">CSS</td>
+<td class="left">css</td>
+</tr>
+
+<tr>
+<td class="left">D</td>
+<td class="left">d</td>
+<td class="left">ditaa</td>
+<td class="left">ditaa</td>
+</tr>
+
+<tr>
+<td class="left">Graphviz</td>
+<td class="left">dot</td>
+<td class="left">Emacs Calc</td>
+<td class="left">calc</td>
+</tr>
+
+<tr>
+<td class="left">Emacs Lisp</td>
+<td class="left">emacs-lisp</td>
+<td class="left">Fortran</td>
+<td class="left">fortran</td>
+</tr>
+
+<tr>
+<td class="left">gnuplot</td>
+<td class="left">gnuplot</td>
+<td class="left">Haskell</td>
+<td class="left">haskell</td>
+</tr>
+
+<tr>
+<td class="left">Java</td>
+<td class="left">java</td>
+<td class="left">Javascript</td>
+<td class="left">js</td>
+</tr>
+
+<tr>
+<td class="left">LaTeX</td>
+<td class="left">latex</td>
+<td class="left">Ledger</td>
+<td class="left">ledger</td>
+</tr>
+
+<tr>
+<td class="left">Lisp</td>
+<td class="left">lisp</td>
+<td class="left">Lilypond</td>
+<td class="left">lilypond</td>
+</tr>
+
+<tr>
+<td class="left">MATLAB</td>
+<td class="left">matlab</td>
+<td class="left">Mscgen</td>
+<td class="left">mscgen</td>
+</tr>
+
+<tr>
+<td class="left">Objective Caml</td>
+<td class="left">ocaml</td>
+<td class="left">Octave</td>
+<td class="left">octave</td>
+</tr>
+
+<tr>
+<td class="left">Org mode</td>
+<td class="left">org</td>
+<td class="left">Oz</td>
+<td class="left">oz</td>
+</tr>
+
+<tr>
+<td class="left">Perl</td>
+<td class="left">perl</td>
+<td class="left">Plantuml</td>
+<td class="left">plantuml</td>
+</tr>
+
+<tr>
+<td class="left">Processing.js</td>
+<td class="left">processing</td>
+<td class="left">Python</td>
+<td class="left">python</td>
+</tr>
+
+<tr>
+<td class="left">R</td>
+<td class="left">R</td>
+<td class="left">Ruby</td>
+<td class="left">ruby</td>
+</tr>
+
+<tr>
+<td class="left">Sass</td>
+<td class="left">sass</td>
+<td class="left">Scheme</td>
+<td class="left">scheme</td>
+</tr>
+
+<tr>
+<td class="left">GNU Screen</td>
+<td class="left">screen</td>
+<td class="left">Sed</td>
+<td class="left">sed</td>
+</tr>
+
+<tr>
+<td class="left">shell</td>
+<td class="left">sh</td>
+<td class="left">SQL</td>
+<td class="left">sql</td>
+</tr>
+
+<tr>
+<td class="left">SQLite</td>
+<td class="left">sqlite</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">org模式中的表格</h2>
+<div class="outline-text-2" id="text-2">
+<p>
+在日常生活中,常遇到将一些数据转换为表格的情况,我们最常用的方法就是手动的一项项的书写,
+现在有了org模式之后,可以将很方便将一些数据直接转换为表格.如下所示的数据:
+</p>
+<pre class="example">
+Language	Identifier	Language	Identifier 
+Asymptote	asymptote	Awk	awk 
+C	C	C++	C++ 
+Clojure	clojure	CSS	css 
+D	d	ditaa	ditaa 
+Graphviz	dot	Emacs Calc	calc 
+Emacs Lisp	emacs-lisp	Fortran	fortran 
+gnuplot	gnuplot	Haskell	haskell 
+Java	java	Javascript	js 
+LaTeX	latex	Ledger	ledger 
+Lisp	lisp	Lilypond	lilypond 
+MATLAB	matlab	Mscgen	mscgen 
+Objective Caml	ocaml	Octave	octave 
+Org mode	org	Oz	oz 
+Perl	perl	Plantuml	plantuml 
+Processing.js	processing	Python	python 
+R	R	Ruby	ruby 
+Sass	sass	Scheme	scheme 
+GNU Screen	screen	Sed	sed 
+shell	sh	SQL	sql 
+SQLite	sqlite
+</pre>
+<p>
+上面的数据其实就是上一个模块中的表格的原始数据,在emacs中的org模式下先选中需要转换
+的数据,然后可以通过下面的快捷键将一些数据很方便的转换为表格.
+</p>
+<pre class="example">
+C-c | ( function: (org-table-create-or-convert-from-region ARG) )
+</pre>
+
+<p>
+转换后的结果如下:
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<tbody>
+<tr>
+<td class="left">Language</td>
+<td class="left">Identifier</td>
+<td class="left">Language</td>
+<td class="left">Identifier</td>
+</tr>
+
+<tr>
+<td class="left">Asymptote</td>
+<td class="left">asymptote</td>
+<td class="left">Awk</td>
+<td class="left">awk</td>
+</tr>
+
+<tr>
+<td class="left">C</td>
+<td class="left">C</td>
+<td class="left">C++</td>
+<td class="left">C++</td>
+</tr>
+
+<tr>
+<td class="left">Clojure</td>
+<td class="left">clojure</td>
+<td class="left">CSS</td>
+<td class="left">css</td>
+</tr>
+
+<tr>
+<td class="left">D</td>
+<td class="left">d</td>
+<td class="left">ditaa</td>
+<td class="left">ditaa</td>
+</tr>
+
+<tr>
+<td class="left">Graphviz</td>
+<td class="left">dot</td>
+<td class="left">Emacs Calc</td>
+<td class="left">calc</td>
+</tr>
+
+<tr>
+<td class="left">Emacs Lisp</td>
+<td class="left">emacs-lisp</td>
+<td class="left">Fortran</td>
+<td class="left">fortran</td>
+</tr>
+
+<tr>
+<td class="left">gnuplot</td>
+<td class="left">gnuplot</td>
+<td class="left">Haskell</td>
+<td class="left">haskell</td>
+</tr>
+
+<tr>
+<td class="left">Java</td>
+<td class="left">java</td>
+<td class="left">Javascript</td>
+<td class="left">js</td>
+</tr>
+
+<tr>
+<td class="left">LaTeX</td>
+<td class="left">latex</td>
+<td class="left">Ledger</td>
+<td class="left">ledger</td>
+</tr>
+
+<tr>
+<td class="left">Lisp</td>
+<td class="left">lisp</td>
+<td class="left">Lilypond</td>
+<td class="left">lilypond</td>
+</tr>
+
+<tr>
+<td class="left">MATLAB</td>
+<td class="left">matlab</td>
+<td class="left">Mscgen</td>
+<td class="left">mscgen</td>
+</tr>
+
+<tr>
+<td class="left">Objective Caml</td>
+<td class="left">ocaml</td>
+<td class="left">Octave</td>
+<td class="left">octave</td>
+</tr>
+
+<tr>
+<td class="left">Org mode</td>
+<td class="left">org</td>
+<td class="left">Oz</td>
+<td class="left">oz</td>
+</tr>
+
+<tr>
+<td class="left">Perl</td>
+<td class="left">perl</td>
+<td class="left">Plantuml</td>
+<td class="left">plantuml</td>
+</tr>
+
+<tr>
+<td class="left">Processing.js</td>
+<td class="left">processing</td>
+<td class="left">Python</td>
+<td class="left">python</td>
+</tr>
+
+<tr>
+<td class="left">R</td>
+<td class="left">R</td>
+<td class="left">Ruby</td>
+<td class="left">ruby</td>
+</tr>
+
+<tr>
+<td class="left">Sass</td>
+<td class="left">sass</td>
+<td class="left">Scheme</td>
+<td class="left">scheme</td>
+</tr>
+
+<tr>
+<td class="left">GNU Screen</td>
+<td class="left">screen</td>
+<td class="left">Sed</td>
+<td class="left">sed</td>
+</tr>
+
+<tr>
+<td class="left">shell</td>
+<td class="left">sh</td>
+<td class="left">SQL</td>
+<td class="left">sql</td>
+</tr>
+
+<tr>
+<td class="left">SQLite</td>
+<td class="left">sqlite</td>
+<td class="left">&#xa0;</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
