@@ -1,0 +1,23 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2016-05-30 Mon 22:19
+#+TITLE: 在Android Studio中使用自己的Android.mk
+#+DESCRIPTION: Android.mk gradle Android Studio
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* build.gradle脚本的编写
+因为我一开始接触Android的NDK开发时就是使用的Android.mkk作为配置文件,但是后来Android Studio开始流行之后,google就使用gradle作为默认的打包工具,虽然gradle对Java的支持很好,但是感觉对C/C++语言的支持一直不是很好,最近在使用Android Studio进行开发,需要使用到C/C++,但是在build.gradle文件中进行配置感觉不是很熟悉,并且gradle一直在更新,有些gradle配置文件的写法,还存在兼容性问题,所以索性不用gradle对C/C++代码进行编译,直接使用原来的Andoroid.mk的方式进行编译.
+
+* 在build.gradle文件中进行配置
+
+* 系统版本
+因为gradle版本在不停的更新中,并且版本之间存在不兼容的情况,本文章所描述的放在实在一下测试环境下实现的.如果按照本文的方法不能执行,很可能就是因为gradle的版本问题.
+#+begin_example
+gradle verison: 2.1
+os : Ubuntu 14.04
+ndk: r10e
+#+end_example
