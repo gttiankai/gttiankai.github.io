@@ -9,4 +9,4 @@
 #+TAGS: Git
 #+CATEGORIES: Git
 
-* 
+* 深入的理解origin,remote/
