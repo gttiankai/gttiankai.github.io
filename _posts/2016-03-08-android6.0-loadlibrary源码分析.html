@@ -1,0 +1,485 @@
+---
+layout: post
+title: Android6.0 loadlibrary源码分析
+date: 2016-03-08
+categories: 
+- Android
+tags: 
+- Android
+author: tiankai
+excerpt: Android 源码 loadlibrary
+---
+
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1">Android中的加载so文件两种方式</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+Android系统中使用ndk进行编程，有很多的好处，具体有什么好处，这里就不多说了。要使用ndk进行编程，在Java层就必须要对so进行加载。Java层加载so的函数有两个
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java">System.load(<span style="color: #66D9EF;">String</span> <span style="color: #F92672;">pathName</span>)
+System.loadLibraray(<span style="color: #66D9EF;">String</span> <span style="color: #F92672;">libName</span>)
+</pre>
+</div>
+<p>
+两个函数的区别就是load函数的参数是so文件的绝对地址。loadLibrary的参数是so的名称，这个so文件必须放在apk的lib目录下，而且so的名称必须去掉前面的lib和后边的“.so”。如下所示：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java">System.load(<span style="color: #E6DB74;">"/data/local/tmp/libhello.so"</span>);
+System.loadLibrary(<span style="color: #E6DB74;">"hello"</span>);
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-2" class="outline-2">
+<h2 id="sec-2">Syste.Load源码分析</h2>
+<div class="outline-text-2" id="text-2">
+<ol class="org-ol">
+<li>首先来看System.load的实现：
+</li>
+</ol>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #66D9EF;">public</span> <span style="color: #66D9EF;">static</span> <span style="color: #66D9EF;">void</span> <span style="color: #F92672; font-style: italic;">load</span>(<span style="color: #66D9EF;">String</span> <span style="color: #F92672;">pathName</span>) {
+    Runtime.getRuntime().load(pathName, VMStack.getCallingClassLoader());
+}
+</pre>
+</div>
+<p>
+然后继续追踪：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #465457; font-style: italic;">/*</span>
+<span style="color: #465457; font-style: italic;">   * Loads the given shared library using the given ClassLoader.</span>
+<span style="color: #465457; font-style: italic;">   */</span>
+  <span style="color: #66D9EF;">void</span> <span style="color: #F92672; font-style: italic;">load</span>(<span style="color: #66D9EF;">String</span> <span style="color: #F92672;">absolutePath</span>, <span style="color: #66D9EF;">ClassLoader</span> <span style="color: #F92672;">loader</span>) {
+      <span style="color: #66D9EF;">if</span> (absolutePath == <span style="color: #AE81FF;">null</span>) {
+          <span style="color: #66D9EF;">throw</span> <span style="color: #66D9EF;">new</span> <span style="color: #66D9EF;">NullPointerException</span>(<span style="color: #E6DB74;">"absolutePath == null"</span>);
+      }
+      <span style="color: #66D9EF;">String</span> <span style="color: #F92672;">error</span> = doLoad(absolutePath, loader);
+      <span style="color: #66D9EF;">if</span> (error != <span style="color: #AE81FF;">null</span>) {
+          <span style="color: #66D9EF;">throw</span> <span style="color: #66D9EF;">new</span> <span style="color: #66D9EF;">UnsatisfiedLinkError</span>(error);
+      }
+  }
+</pre>
+</div>
+<p>
+从这里可以看到doLoad这个函数我们需要继续关注的函数。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-java"><span style="color: #66D9EF;">private</span> <span style="color: #66D9EF;">String</span> <span style="color: #F92672; font-style: italic;">doLoad</span>(<span style="color: #66D9EF;">String</span> <span style="color: #F92672;">name</span>, <span style="color: #66D9EF;">ClassLoader</span> <span style="color: #F92672;">loader</span>) {
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Android apps are forked from the zygote, so they can't have a custom LD_LIBRARY_PATH,</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">which means that by default an app's shared library directory isn't on LD_LIBRARY_PATH.</span>
+
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">The PathClassLoader set up by frameworks/base knows the appropriate path, so we can load</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">libraries with no dependencies just fine, but an app that has multiple libraries that</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">depend on each other needed to load them in most-dependent-first order.</span>
+
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">We added API to Android's dynamic linker so we can update the library path used for</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">the currently-running process. We pull the desired path out of the ClassLoader here</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">and pass it to nativeLoad so that it can call the private dynamic linker API.</span>
+
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">We didn't just change frameworks/base to update the LD_LIBRARY_PATH once at the</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">beginning because multiple apks can run in the same process and third party code can</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">use its own BaseDexClassLoader.</span>
+
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">We didn't just add a dlopen_with_custom_LD_LIBRARY_PATH call because we wanted any</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">dlopen(3) calls made from a .so's JNI_OnLoad to work too.</span>
+
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">So, find out what the native library search path is for the ClassLoader in question...</span>
+    <span style="color: #66D9EF;">String</span> <span style="color: #F92672;">ldLibraryPath</span> = <span style="color: #AE81FF;">null</span>;
+    <span style="color: #66D9EF;">if</span> (loader != <span style="color: #AE81FF;">null</span> &amp;&amp; loader <span style="color: #66D9EF;">instanceof</span> BaseDexClassLoader) {
+        <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">&#33719;&#24471;so&#30340;&#36335;&#24452;</span>
+        ldLibraryPath = ((<span style="color: #66D9EF;">BaseDexClassLoader</span>) loader).getLdLibraryPath();
+    }
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">nativeLoad should be synchronized so there's only one LD_LIBRARY_PATH in use regardless</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">of how many ClassLoaders are in the system, but dalvik doesn't support synchronized</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">internal natives.</span>
+    <span style="color: #66D9EF;">synchronized</span> (<span style="color: #66D9EF;">this</span>) {
+        <span style="color: #66D9EF;">return</span> nativeLoad(name, loader, ldLibraryPath);
+    }
+}
+</pre>
+</div>
+<p>
+接下来分析nativeLoad这个函数，通过分析源码，发现这个这个函数是一个native函数，在/art/runtime/native/java<sub>lang</sub><sub>Runtime</sub>.cc中找到了这个函数的实现方式：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++"><span style="color: #66D9EF;">static</span> <span style="color: #66D9EF;">jstring</span> <span style="color: #F92672; font-style: italic;">Runtime_nativeLoad</span>(<span style="color: #66D9EF;">JNIEnv</span>* <span style="color: #F92672;">env</span>, jclass, <span style="color: #66D9EF;">jstring</span> <span style="color: #F92672;">javaFilename</span>, <span style="color: #66D9EF;">jobject</span> <span style="color: #F92672;">javaLoader</span>,
+                                  <span style="color: #66D9EF;">jstring</span> <span style="color: #F92672;">javaLdLibraryPathJstr</span>) {
+  <span style="color: #66D9EF;">ScopedUtfChars</span> <span style="color: #F92672;">filename</span>(env, javaFilename);
+  <span style="color: #66D9EF;">if</span> (filename.c_str() == nullptr) {
+    <span style="color: #66D9EF;">return</span> nullptr;
+  }
+
+  SetLdLibraryPath(env, javaLdLibraryPathJstr);
+
+  <span style="color: #AE81FF;">std</span>::<span style="color: #66D9EF;">string</span> <span style="color: #F92672;">error_msg</span>;
+  {
+    <span style="color: #66D9EF;">JavaVMExt</span>* <span style="color: #F92672;">vm</span> = <span style="color: #AE81FF;">Runtime</span>::Current()-&gt;GetJavaVM();
+    <span style="color: #66D9EF;">bool</span> <span style="color: #F92672;">success</span> = vm-&gt;LoadNativeLibrary(env, filename.c_str(), javaLoader, &amp;error_msg);
+    <span style="color: #66D9EF;">if</span> (success) {
+      <span style="color: #66D9EF;">return</span> nullptr;
+    }
+  }
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Don't let a pending exception from JNI_OnLoad cause a CheckJNI issue with NewStringUTF.</span>
+  env-&gt;ExceptionClear();
+  <span style="color: #66D9EF;">return</span> env-&gt;NewStringUTF(error_msg.c_str());
+ }
+</pre>
+</div>
+<p>
+通过上面的代码，我们可以发现关键函数是vm-LoaaNativeLibrary
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++"><span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">&#35813;&#20195;&#30721;&#30340;&#20301;&#32622;&#65306;art/runtime/java_vm_ext.cc#596</span>
+<span style="color: #66D9EF;">bool</span> <span style="color: #AE81FF;">JavaVMExt</span>::<span style="color: #F92672; font-style: italic;">LoadNativeLibrary</span>(<span style="color: #66D9EF;">JNIEnv</span>* <span style="color: #F92672;">env</span>, <span style="color: #66D9EF;">const</span> <span style="color: #AE81FF;">std</span>::<span style="color: #66D9EF;">string</span>&amp; <span style="color: #F92672;">path</span>, <span style="color: #F92672;">jobject</span> class_loader,
+                                  <span style="color: #AE81FF;">std</span>::<span style="color: #F92672;">string</span>* error_msg) {
+  error_msg-&gt;clear();
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">See if we've already loaded this library.  If we have, and the class loader</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">matches, return successfully without doing anything.</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">TODO: for better results we should Canonicalize the pathname (or even compare</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">inodes). This implementation is fine if everybody is using System.loadLibrary.</span>
+  <span style="color: #66D9EF;">SharedLibrary</span>* <span style="color: #F92672;">library</span>;
+  <span style="color: #66D9EF;">Thread</span>* <span style="color: #F92672;">self</span> = <span style="color: #AE81FF;">Thread</span>::Current();
+  {
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">TODO: move the locking (and more of this logic) into Libraries.</span>
+    <span style="color: #66D9EF;">MutexLock</span> <span style="color: #F92672;">mu</span>(self, *<span style="color: #AE81FF;">Locks</span>::jni_libraries_lock_);
+    library = libraries_-&gt;Get(path);
+  }
+  <span style="color: #66D9EF;">if</span> (library != nullptr) {
+    <span style="color: #66D9EF;">if</span> (env-&gt;IsSameObject(library-&gt;GetClassLoader(), class_loader) == JNI_FALSE) {
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">The library will be associated with class_loader. The JNI</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">spec says we can't load the same library into more than one</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">class loader.</span>
+      StringAppendF(error_msg, <span style="color: #E6DB74;">"Shared library \"%s\" already opened by "</span>
+          <span style="color: #E6DB74;">"ClassLoader %p; can't open in ClassLoader %p"</span>,
+          path.c_str(), library-&gt;GetClassLoader(), class_loader);
+      LOG(WARNING) &lt;&lt; error_msg;
+      <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">false</span>;
+    }
+    VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"[Shared library \""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\" already loaded in "</span>
+              &lt;&lt; <span style="color: #E6DB74;">" ClassLoader "</span> &lt;&lt; class_loader &lt;&lt; <span style="color: #E6DB74;">"]"</span>;
+    <span style="color: #66D9EF;">if</span> (<span style="font-weight: bold;">!</span>library-&gt;CheckOnLoadResult()) {
+      StringAppendF(error_msg, <span style="color: #E6DB74;">"JNI_OnLoad failed on a previous attempt "</span>
+          <span style="color: #E6DB74;">"to load \"%s\""</span>, path.c_str());
+      <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">false</span>;
+    }
+    <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">true</span>;
+  }
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Open the shared library.  Because we're using a full path, the system</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">doesn't have to search through LD_LIBRARY_PATH.  (It may do so to</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">resolve this library's dependencies though.)</span>
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Failures here are expected when java.library.path has several entries</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">and we have to hunt for the lib.</span>
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Below we dlopen but there is no paired dlclose, this would be necessary if we supported</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">class unloading. Libraries will only be unloaded when the reference count (incremented by</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">dlopen) becomes zero from dlclose.</span>
+
+  <span style="color: #AE81FF;">Locks</span>::mutator_lock_-&gt;AssertNotHeld(self);
+  <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #F92672;">path_str</span> = path.empty() ? nullptr : path.c_str();
+   <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">&#20174;&#36825;&#20010;&#22320;&#26041;&#21487;&#20197;&#30475;&#21040;&#65292;&#35843;&#29992;&#30340;&#36824;&#26159;dlopen</span>
+  <span style="color: #66D9EF;">void</span>* <span style="color: #F92672;">handle</span> = dlopen(path_str, RTLD_NOW);
+  <span style="color: #66D9EF;">bool</span> <span style="color: #F92672;">needs_native_bridge</span> = <span style="color: #AE81FF;">false</span>;
+  <span style="color: #66D9EF;">if</span> (handle == nullptr) {
+    <span style="color: #66D9EF;">if</span> (<span style="color: #AE81FF;">android</span>::NativeBridgeIsSupported(path_str)) {
+      handle = <span style="color: #AE81FF;">android</span>::NativeBridgeLoadLibrary(path_str, RTLD_NOW);
+      needs_native_bridge = <span style="color: #AE81FF;">true</span>;
+    }
+  }
+
+  VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"[Call to dlopen(\""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\", RTLD_NOW) returned "</span> &lt;&lt; handle &lt;&lt; <span style="color: #E6DB74;">"]"</span>;
+
+  <span style="color: #66D9EF;">if</span> (handle == nullptr) {
+    *error_msg = dlerror();
+    VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"dlopen(\""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\", RTLD_NOW) failed: "</span> &lt;&lt; *error_msg;
+    <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">false</span>;
+  }
+
+  <span style="color: #66D9EF;">if</span> (env-&gt;ExceptionCheck() == JNI_TRUE) {
+    LOG(ERROR) &lt;&lt; <span style="color: #E6DB74;">"Unexpected exception:"</span>;
+    env-&gt;ExceptionDescribe();
+    env-&gt;ExceptionClear();
+  }
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Create a new entry.</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">TODO: move the locking (and more of this logic) into Libraries.</span>
+  <span style="color: #66D9EF;">bool</span> <span style="color: #F92672;">created_library</span> = <span style="color: #AE81FF;">false</span>;
+  {
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Create SharedLibrary ahead of taking the libraries lock to maintain lock ordering.</span>
+    <span style="color: #AE81FF;">std</span>::<span style="color: #66D9EF;">unique_ptr</span>&lt;<span style="color: #66D9EF;">SharedLibrary</span>&gt; <span style="color: #F92672;">new_library</span>(
+        <span style="color: #66D9EF;">new</span> <span style="color: #66D9EF;">SharedLibrary</span>(env, self, path, handle, class_loader));
+    <span style="color: #66D9EF;">MutexLock</span> <span style="color: #F92672;">mu</span>(self, *<span style="color: #AE81FF;">Locks</span>::jni_libraries_lock_);
+    library = libraries_-&gt;Get(path);
+    <span style="color: #66D9EF;">if</span> (library == nullptr) {  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">We won race to get libraries_lock.</span>
+      library = new_library.release();
+      libraries_-&gt;Put(path, library);
+      created_library = <span style="color: #AE81FF;">true</span>;
+    }
+  }
+  <span style="color: #66D9EF;">if</span> (<span style="font-weight: bold;">!</span>created_library) {
+    LOG(INFO) &lt;&lt; <span style="color: #E6DB74;">"WOW: we lost a race to add shared library: "</span>
+        &lt;&lt; <span style="color: #E6DB74;">"\""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\" ClassLoader="</span> &lt;&lt; class_loader;
+    <span style="color: #66D9EF;">return</span> library-&gt;CheckOnLoadResult();
+  }
+  VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"[Added shared library \""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\" for ClassLoader "</span> &lt;&lt; class_loader &lt;&lt; <span style="color: #E6DB74;">"]"</span>;
+
+  <span style="color: #66D9EF;">bool</span> <span style="color: #F92672;">was_successful</span> = <span style="color: #AE81FF;">false</span>;
+  <span style="color: #66D9EF;">void</span>* <span style="color: #F92672;">sym</span>;
+  <span style="color: #66D9EF;">if</span> (needs_native_bridge) {
+    library-&gt;SetNeedsNativeBridge();
+    sym = library-&gt;FindSymbolWithNativeBridge(<span style="color: #E6DB74;">"JNI_OnLoad"</span>, nullptr);
+  } <span style="color: #66D9EF;">else</span> {
+    sym = dlsym(handle, <span style="color: #E6DB74;">"JNI_OnLoad"</span>);
+  }
+  <span style="color: #66D9EF;">if</span> (sym == nullptr) {
+    VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"[No JNI_OnLoad found in \""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\"]"</span>;
+    was_successful = <span style="color: #AE81FF;">true</span>;
+  } <span style="color: #66D9EF;">else</span> {
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Call JNI_OnLoad.  We have to override the current class</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">loader, which will always be "null" since the stuff at the</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">top of the stack is around Runtime.loadLibrary().  (See</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">the comments in the JNI FindClass function.)</span>
+    <span style="color: #66D9EF;">ScopedLocalRef</span>&lt;jobject&gt; <span style="color: #F92672;">old_class_loader</span>(env, env-&gt;NewLocalRef(self-&gt;GetClassLoaderOverride()));
+    self-&gt;SetClassLoaderOverride(class_loader);
+
+    VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"[Calling JNI_OnLoad in \""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\"]"</span>;
+    <span style="color: #66D9EF;">typedef</span> <span style="color: #66D9EF;">int</span> (*<span style="color: #66D9EF;">JNI_OnLoadFn</span>)(<span style="color: #66D9EF;">JavaVM</span>*, <span style="color: #66D9EF;">void</span>*);
+    <span style="color: #66D9EF;">JNI_OnLoadFn</span> <span style="color: #F92672;">jni_on_load</span> = <span style="color: #66D9EF;">reinterpret_cast</span>&lt;JNI_OnLoadFn&gt;(sym);
+    <span style="color: #66D9EF;">int</span> <span style="color: #F92672;">version</span> = (*jni_on_load)(<span style="color: #66D9EF;">this</span>, nullptr);
+
+    <span style="color: #66D9EF;">if</span> (runtime_-&gt;GetTargetSdkVersion() != 0 &amp;&amp; runtime_-&gt;GetTargetSdkVersion() &lt;= 21) {
+      fault_manager.EnsureArtActionInFrontOfSignalChain();
+    }
+
+    self-&gt;SetClassLoaderOverride(old_class_loader.get());
+
+    <span style="color: #66D9EF;">if</span> (version == JNI_ERR) {
+      StringAppendF(error_msg, <span style="color: #E6DB74;">"JNI_ERR returned from JNI_OnLoad in \"%s\""</span>, path.c_str());
+    } <span style="color: #66D9EF;">else</span> <span style="color: #66D9EF;">if</span> (IsBadJniVersion(version)) {
+      StringAppendF(error_msg, <span style="color: #E6DB74;">"Bad JNI version returned from JNI_OnLoad in \"%s\": %d"</span>,
+                    path.c_str(), version);
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">It's unwise to call dlclose() here, but we can mark it</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">as bad and ensure that future load attempts will fail.</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">We don't know how far JNI_OnLoad got, so there could</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">be some partially-initialized stuff accessible through</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">newly-registered native method calls.  We could try to</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">unregister them, but that doesn't seem worthwhile.</span>
+    } <span style="color: #66D9EF;">else</span> {
+      was_successful = <span style="color: #AE81FF;">true</span>;
+    }
+    VLOG(jni) &lt;&lt; <span style="color: #E6DB74;">"[Returned "</span> &lt;&lt; (was_successful ? <span style="color: #E6DB74;">"successfully"</span> : <span style="color: #E6DB74;">"failure"</span>)
+              &lt;&lt; <span style="color: #E6DB74;">" from JNI_OnLoad in \""</span> &lt;&lt; path &lt;&lt; <span style="color: #E6DB74;">"\"]"</span>;
+  }
+
+  library-&gt;SetResult(was_successful);
+  <span style="color: #66D9EF;">return</span> was_successful;
+}
+</pre>
+</div>
+<p>
+从上面的代码可以看到，其实java层的System.loda()函数底层也调用的是dlopen函数。
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++">source@/bionic/linker/dlfcn.cpp
+<span style="color: #66D9EF;">void</span>* dlopen(<span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #F92672;">filename</span>, <span style="color: #66D9EF;">int</span> <span style="color: #F92672;">flags</span>) {
+  <span style="color: #66D9EF;">return</span> dlopen_ext(filename, flags, nullptr);
+}
+</pre>
+</div>
+<p>
+dlopen函数直接调用dlopen<sub>ext</sub>(),dlopen<sub>ext</sub>()的实现如下所示：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++"><span style="color: #66D9EF;">static</span> <span style="color: #66D9EF;">void</span>* <span style="color: #F92672; font-style: italic;">dlopen_ext</span>(<span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #F92672;">filename</span>, <span style="color: #66D9EF;">int</span> <span style="color: #F92672;">flags</span>, <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">android_dlextinfo</span>* <span style="color: #F92672;">extinfo</span>) {
+  ScopedPthreadMutexLocker <span style="color: #66D9EF;">locker</span>(&amp;<span style="color: #F92672;">g_dl_mutex</span>);
+  <span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">result</span> = do_dlopen(filename, flags, extinfo);
+  <span style="color: #66D9EF;">if</span> (result == nullptr) {
+    __bionic_format_dlerror(<span style="color: #E6DB74;">"dlopen failed"</span>, linker_get_error_buffer());
+    <span style="color: #66D9EF;">return</span> nullptr;
+  }
+  <span style="color: #66D9EF;">return</span> result;
+}
+</pre>
+</div>
+<p>
+继续查看do<sub>dlopen的代码</sub>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++">source @ bionic/linker/linker.cpp#1667
+soinfo* do_dlopen(<span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #F92672;">name</span>, <span style="color: #66D9EF;">int</span> <span style="color: #F92672;">flags</span>, <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">android_dlextinfo</span>* <span style="color: #F92672;">extinfo</span>) {
+  <span style="color: #66D9EF;">if</span> ((<span style="color: #66D9EF;">flags</span> &amp; ~(RTLD_NOW|RTLD_LAZY|RTLD_LOCAL|RTLD_GLOBAL|RTLD_NODELETE|RTLD_NOLOAD)) != 0) {
+    DL_ERR(<span style="color: #E6DB74;">"invalid flags to dlopen: %x"</span>, flags);
+    <span style="color: #66D9EF;">return</span> nullptr;
+  }
+  <span style="color: #66D9EF;">if</span> (extinfo != nullptr) {
+    <span style="color: #66D9EF;">if</span> ((extinfo-&gt;flags &amp; ~(ANDROID_DLEXT_VALID_FLAG_BITS)) != 0) {
+      DL_ERR(<span style="color: #E6DB74;">"invalid extended flags to android_dlopen_ext: 0x%"</span> PRIx64, extinfo-&gt;flags);
+      <span style="color: #66D9EF;">return</span> nullptr;
+    }
+    <span style="color: #66D9EF;">if</span> ((extinfo-&gt;flags &amp; ANDROID_DLEXT_USE_LIBRARY_FD) == 0 &amp;&amp;
+        (extinfo-&gt;flags &amp; ANDROID_DLEXT_USE_LIBRARY_FD_OFFSET) != 0) {
+      DL_ERR(<span style="color: #E6DB74;">"invalid extended flag combination (ANDROID_DLEXT_USE_LIBRARY_FD_OFFSET without "</span>
+          <span style="color: #E6DB74;">"ANDROID_DLEXT_USE_LIBRARY_FD): 0x%"</span> PRIx64, extinfo-&gt;flags);
+      <span style="color: #66D9EF;">return</span> nullptr;
+    }
+  }
+
+  <span style="color: #66D9EF;">ProtectedDataGuard</span> <span style="color: #F92672;">guard</span>;
+  <span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">si</span> = find_library(name, flags, extinfo);
+  <span style="color: #66D9EF;">if</span> (si != nullptr) {
+    si-&gt;call_constructors();
+  }
+  <span style="color: #66D9EF;">return</span> si;
+}
+</pre>
+</div>
+<p>
+find<sub>library</sub>()函数继续的进行跟踪：
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++">source @: /bionic/linker/linker.cpp
+<span style="color: #66D9EF;">static</span> soinfo* find_library(<span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #F92672;">name</span>, <span style="color: #66D9EF;">int</span> <span style="color: #F92672;">rtld_flags</span>, <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">android_dlextinfo</span>* <span style="color: #F92672;">extinfo</span>) {
+  <span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">si</span>;
+
+  <span style="color: #66D9EF;">if</span> (name == nullptr) {
+    si = somain;
+  } <span style="color: #66D9EF;">else</span> <span style="color: #66D9EF;">if</span> (<span style="font-weight: bold;">!</span>find_libraries(nullptr, &amp;name, 1, &amp;si, nullptr, 0, rtld_flags, extinfo)) {
+    <span style="color: #66D9EF;">return</span> nullptr;
+  }
+
+  <span style="color: #66D9EF;">return</span> si;
+}
+</pre>
+</div>
+<p>
+find<sub>libraries的函数实现如下所示：</sub>
+</p>
+<div class="org-src-container">
+
+<pre class="src src-C++"><span style="color: #66D9EF;">static</span> <span style="color: #66D9EF;">bool</span> <span style="color: #F92672; font-style: italic;">find_libraries</span>(<span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">start_with</span>, <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #66D9EF;">const</span> <span style="color: #F92672;">library_names</span>[],
+      <span style="color: #66D9EF;">size_t</span> <span style="color: #F92672;">library_names_count</span>, <span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">soinfos</span>[], <span style="color: #AE81FF;">std</span>::<span style="color: #66D9EF;">vector</span>&lt;<span style="color: #66D9EF;">soinfo</span>*&gt;* <span style="color: #F92672;">ld_preloads</span>,
+      <span style="color: #F92672;">size_t</span> ld_preloads_count, <span style="color: #66D9EF;">int</span> <span style="color: #F92672;">rtld_flags</span>, <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">android_dlextinfo</span>* <span style="color: #F92672;">extinfo</span>) {
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Step 0: prepare.</span>
+  <span style="color: #66D9EF;">LoadTaskList</span> <span style="color: #F92672;">load_tasks</span>;
+  <span style="color: #66D9EF;">for</span> (<span style="color: #66D9EF;">size_t</span> <span style="color: #F92672;">i</span> = 0; i &lt; library_names_count; ++i) {
+    <span style="color: #66D9EF;">const</span> <span style="color: #66D9EF;">char</span>* <span style="color: #F92672;">name</span> = library_names[i];
+    load_tasks.push_back(<span style="color: #AE81FF;">LoadTask</span>::create(name, start_with));
+  }
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Construct global_group.</span>
+  <span style="color: #AE81FF;">soinfo</span>::<span style="color: #66D9EF;">soinfo_list_t</span> <span style="color: #F92672;">global_group</span> = make_global_group();
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">If soinfos array is null allocate one on stack.</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">The array is needed in case of failure; for example</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">when library_names[] = {libone.so, libtwo.so} and libone.so</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">is loaded correctly but libtwo.so failed for some reason.</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">In this case libone.so should be unloaded on return.</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">See also implementation of failure_guard below.</span>
+
+  <span style="color: #66D9EF;">if</span> (soinfos == nullptr) {
+    <span style="color: #66D9EF;">size_t</span> <span style="color: #F92672;">soinfos_size</span> = <span style="color: #66D9EF;">sizeof</span>(<span style="color: #66D9EF;">soinfo</span>*)*library_names_count;
+    soinfos = <span style="color: #66D9EF;">reinterpret_cast</span>&lt;soinfo**&gt;(alloca(soinfos_size));
+    memset(soinfos, 0, soinfos_size);
+  }
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">list of libraries to link - see step 2.</span>
+  <span style="color: #66D9EF;">size_t</span> <span style="color: #F92672;">soinfos_count</span> = 0;
+
+  <span style="color: #66D9EF;">auto</span> <span style="color: #66D9EF;">failure_guard</span> = make_scope_guard([&amp;]() {
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Housekeeping</span>
+    load_tasks.for_each([] (LoadTask* t) {
+      <span style="color: #AE81FF;">LoadTask</span>::deleter(t);
+    });
+
+    <span style="color: #66D9EF;">for</span> (<span style="color: #66D9EF;">size_t</span> <span style="color: #F92672;">i</span> = 0; i&lt;soinfos_count; ++i) {
+      soinfo_unload(soinfos[i]);
+    }
+  });
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Step 1: load and pre-link all DT_NEEDED libraries in breadth first order.</span>
+  <span style="color: #66D9EF;">for</span> (<span style="color: #AE81FF;">LoadTask</span>::<span style="color: #66D9EF;">unique_ptr</span> <span style="color: #F92672;">task</span>(load_tasks.pop_front());
+      task.get() != nullptr; task.reset(load_tasks.pop_front())) {
+    <span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">si</span> = find_library_internal(load_tasks, task-&gt;get_name(), rtld_flags, extinfo);
+    <span style="color: #66D9EF;">if</span> (si == nullptr) {
+      <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">false</span>;
+    }
+
+    <span style="color: #66D9EF;">soinfo</span>* <span style="color: #F92672;">needed_by</span> = task-&gt;get_needed_by();
+
+    <span style="color: #66D9EF;">if</span> (needed_by != nullptr) {
+      needed_by-&gt;add_child(si);
+    }
+
+    <span style="color: #66D9EF;">if</span> (si-&gt;is_linked()) {
+      si-&gt;increment_ref_count();
+    }
+
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">When ld_preloads is not null, the first</span>
+    <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">ld_preloads_count libs are in fact ld_preloads.</span>
+    <span style="color: #66D9EF;">if</span> (ld_preloads != nullptr &amp;&amp; soinfos_count &lt; ld_preloads_count) {
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Add LD_PRELOADed libraries to the global group for future runs.</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">There is no need to explicitly add them to the global group</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">for this run because they are going to appear in the local</span>
+      <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">group in the correct order.</span>
+      si-&gt;set_dt_flags_1(si-&gt;get_dt_flags_1() | DF_1_GLOBAL);
+      ld_preloads-&gt;push_back(si);
+    }
+
+    <span style="color: #66D9EF;">if</span> (soinfos_count &lt; library_names_count) {
+      soinfos[soinfos_count++] = si;
+    }
+  }
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">Step 2: link libraries.</span>
+  <span style="color: #AE81FF;">soinfo</span>::<span style="color: #66D9EF;">soinfo_list_t</span> <span style="color: #F92672;">local_group</span>;
+  walk_dependencies_tree(
+      start_with == nullptr ? soinfos : &amp;start_with,
+      start_with == nullptr ? soinfos_count : 1,
+      [&amp;] (soinfo* si) {
+    local_group.push_back(si);
+    <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">true</span>;
+  });
+
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">We need to increment ref_count in case</span>
+  <span style="color: #465457; font-style: italic;">// </span><span style="color: #465457; font-style: italic;">the root of the local group was not linked.</span>
+  <span style="color: #66D9EF;">bool</span> <span style="color: #F92672;">was_local_group_root_linked</span> = local_group.front()-&gt;is_linked();
+
+  <span style="color: #66D9EF;">bool</span> <span style="color: #F92672;">linked</span> = local_group.visit([&amp;](soinfo* si) {
+    <span style="color: #66D9EF;">if</span> (<span style="font-weight: bold;">!</span>si-&gt;is_linked()) {
+      <span style="color: #66D9EF;">if</span> (<span style="font-weight: bold;">!</span>si-&gt;link_image(global_group, local_group, extinfo)) {
+        <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">false</span>;
+      }
+      si-&gt;set_linked();
+    }
+
+    <span style="color: #66D9EF;">return</span> <span style="color: #AE81FF;">true</span>;
+  });
+
+  <span style="color: #66D9EF;">if</span> (linked) {
+    failure_guard.disable();
+  }
+
+  <span style="color: #66D9EF;">if</span> (<span style="font-weight: bold;">!</span>was_local_group_root_linked) {
+    local_group.front()-&gt;increment_ref_count();
+  }
+
+  <span style="color: #66D9EF;">return</span> linked;
+}
+</pre>
+</div>
+</div>
+</div>
