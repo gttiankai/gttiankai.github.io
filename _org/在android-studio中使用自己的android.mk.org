@@ -13,6 +13,24 @@
 因为我一开始接触Android的NDK开发时就是使用的Android.mkk作为配置文件,但是后来Android Studio开始流行之后,google就使用gradle作为默认的打包工具,虽然gradle对Java的支持很好,但是感觉对C/C++语言的支持一直不是很好,最近在使用Android Studio进行开发,需要使用到C/C++,但是在build.gradle文件中进行配置感觉不是很熟悉,并且gradle一直在更新,有些gradle配置文件的写法,还存在兼容性问题,所以索性不用gradle对C/C++代码进行编译,直接使用原来的Andoroid.mk的方式进行编译.
 
 * 在build.gradle文件中进行配置
+#+begin_example
+sourceSets {
+    main {
+                jni.srcDirs = []   //屏蔽gradle的jni生成过程
+                jniLibs.srcDir 'src/main/libs'
+            }
+        }
+#+end_example
+
+#+begin_example
+task ndkBuild(type: Exec) {
+    commandLine '/home/tiankai/tools/ADT/android-ndk-r10e/ndk-build', '-C', file('src/main').absolutePath
+}
+
+tasks.withType(JavaCompile) {
+    compileTask -> compileTask.dependsOn ndkBuild
+}
+#+end_example
 
 * 系统版本
 因为gradle版本在不停的更新中,并且版本之间存在不兼容的情况,本文章所描述的放在实在一下测试环境下实现的.如果按照本文的方法不能执行,很可能就是因为gradle的版本问题.
