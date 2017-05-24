@@ -1,0 +1,73 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-05-24 三 15:11
+#+TITLE: Python重构logging系统
+#+DESCRIPTION: Python logging
+#+TAGS: Python
+#+CATEGORIES: Python
+
+* 问题背景
+问题的需求是这样子的:在工程中需求对日志进行处理.在正常执行时将日志直接卸载日志
+文件中(xxx.log).当日常开发是需要将日志打印到控制台中(也就是shell中).大家都知道
+Python中提供了非常成熟的logging库可以使用.一种简单的办法就是在打印日志的时候
+进行判断.但是这种方式一点都不优雅,需要添加太多的判断.
+
+由于本人也是刚刚接触Python,对Python的不是很懂.以上的问题困扰我一段时间,后来经过
+和同事的讨论,总结了以下的办法.如果有大牛有更好的方式,请批评指正.
+
+* 问题解决
+我想到的办法就是重构python提供的logging库.通过在初始化logging库时,传入的一个
+参数决定是打印到控制台,还是输出到日志中.而且不需要再每个使用logging方法的函数
+中传递logging对象.只需要在用的时候引入一下logging库,然后直接使用就可以.
+
+#+begin_src python
+class LoggingRefactor:
+
+    def __init__(self, log_path, file_name, verbose):
+        logger_name = LOG_NAME
+        random_num = str(random.randint(1, 100))
+        now = time.strftime("%Y.%m.%d-%H.%M.%S", time.localtime(time.time()))
+        log_file_name = now.replace(".", "-") + file_name + "-" + random_num + ".log"
+        if not os.path.exists(log_path):
+            try:
+                os.mkdir(log_path)
+            except Exception as e:
+                sys.stderr.write("Can not create " + log_path + ", please check your access right," + str(e))
+                sys.exit(0)
+        else:
+            pass
+        log_file = os.path.join(log_path, log_file_name)
+        # get logging object
+        self.logObject = logging.getLogger()
+        self.__set_level("debug")
+        formatter = logging.Formatter(fmt=LOG_FORMAT, datefmt=DATA_LOG_FORMAT)
+        if verbose:
+            # print information to console
+            console = logging.StreamHandler()
+            console.setFormatter(formatter)
+            self.logObject.addHandler(console) # add special handler
+        else:
+            # print informate to log file
+            file_handler = logging.handlers.TimedRotatingFileHandler(log_file, 'midnight', 1)
+            file_handler.suffix = "%Y%m%d.log"
+            file_handler.setFormatter(formatter)
+            self.logObject.addHandler(file_handler) # add special handler
+
+    # set the level       
+    def __set_level(self, log_level):
+        if log_level == "warning":
+            self.logObject.setLevel(logging.WARNING)
+        elif log_level == "debug":
+            self.logObject.setLevel(logging.DEBUG)
+        elif log_level == "error":
+            self.logObject.setLevel(logging.ERROR)
+        elif log_level == "critical":
+            self.logObject.setLevel(logging.CRITICAL)
+        elif log_level == "info":
+            self.logObject.setLevel(logging.INFO)
+        else:
+            self.logObject.setLevel(logging.INFO)
+#+end_src

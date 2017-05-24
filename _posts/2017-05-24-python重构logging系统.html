@@ -1,0 +1,89 @@
+---
+date: 2017-05-24
+tags: 
+- Python
+author: tiankai
+layout: post
+title: Python重构logging系统
+excerpt: Python logging
+categories: 
+- Python
+---
+
+<div id="outline-container-org50412c2" class="outline-2">
+<h2 id="org50412c2">问题背景</h2>
+<div class="outline-text-2" id="text-org50412c2">
+<p>
+问题的需求是这样子的:在工程中需求对日志进行处理.在正常执行时将日志直接卸载日志
+文件中(xxx.log).当日常开发是需要将日志打印到控制台中(也就是shell中).大家都知道
+Python中提供了非常成熟的logging库可以使用.一种简单的办法就是在打印日志的时候
+进行判断.但是这种方式一点都不优雅,需要添加太多的判断.
+</p>
+
+<p>
+由于本人也是刚刚接触Python,对Python的不是很懂.以上的问题困扰我一段时间,后来经过
+和同事的讨论,总结了以下的办法.如果有大牛有更好的方式,请批评指正.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgdff4ff8" class="outline-2">
+<h2 id="orgdff4ff8">问题解决</h2>
+<div class="outline-text-2" id="text-orgdff4ff8">
+<p>
+我想到的办法就是重构python提供的logging库.通过在初始化logging库时,传入的一个
+参数决定是打印到控制台,还是输出到日志中.而且不需要再每个使用logging方法的函数
+中传递logging对象.只需要在用的时候引入一下logging库,然后直接使用就可以.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #268bd2; font-weight: bold;">class</span> <span style="color: #df005f; font-weight: bold;">LoggingRefactor</span>:
+
+    <span style="color: #268bd2; font-weight: bold;">def</span> <span style="color: #d75fd7; font-weight: bold;">__init__</span><span style="color: #268bd2;">(</span><span style="color: #268bd2; font-weight: bold;">self</span>, log_path, file_name, verbose<span style="color: #268bd2;">)</span>:
+        <span style="color: #8787d7;">logger_name</span> = LOG_NAME
+        <span style="color: #8787d7;">random_num</span> = <span style="color: #268bd2;">str</span><span style="color: #268bd2;">(</span>random.randint<span style="color: #d75fd7;">(</span><span style="color: #d75fd7;">1</span>, <span style="color: #d75fd7;">100</span><span style="color: #d75fd7;">)</span><span style="color: #268bd2;">)</span>
+        <span style="color: #8787d7;">now</span> = time.strftime<span style="color: #268bd2;">(</span><span style="color: #2aa198;">"%Y.%m.%d-%H.%M.%S"</span>, time.localtime<span style="color: #d75fd7;">(</span>time.time<span style="color: #2aa198;">()</span><span style="color: #d75fd7;">)</span><span style="color: #268bd2;">)</span>
+        <span style="color: #8787d7;">log_file_name</span> = now.replace<span style="color: #268bd2;">(</span><span style="color: #2aa198;">"."</span>, <span style="color: #2aa198;">"-"</span><span style="color: #268bd2;">)</span> + file_name + <span style="color: #2aa198;">"-"</span> + random_num + <span style="color: #2aa198;">".log"</span>
+        <span style="color: #268bd2; font-weight: bold;">if</span> <span style="color: #268bd2; font-weight: bold;">not</span> os.path.exists<span style="color: #268bd2;">(</span>log_path<span style="color: #268bd2;">)</span>:
+            <span style="color: #268bd2; font-weight: bold;">try</span>:
+                os.mkdir<span style="color: #268bd2;">(</span>log_path<span style="color: #268bd2;">)</span>
+            <span style="color: #268bd2; font-weight: bold;">except</span> <span style="color: #df005f; font-weight: bold;">Exception</span> <span style="color: #268bd2; font-weight: bold;">as</span> e:
+                sys.stderr.write<span style="color: #268bd2;">(</span><span style="color: #2aa198;">"Can not create "</span> + log_path + <span style="color: #2aa198;">", please check your access right,"</span> + <span style="color: #268bd2;">str</span><span style="color: #d75fd7;">(</span>e<span style="color: #d75fd7;">)</span><span style="color: #268bd2;">)</span>
+                sys.<span style="color: #d75fd7;">exit</span><span style="color: #268bd2;">(</span><span style="color: #d75fd7;">0</span><span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">else</span>:
+            <span style="color: #268bd2; font-weight: bold;">pass</span>
+        <span style="color: #8787d7;">log_file</span> = os.path.join<span style="color: #268bd2;">(</span>log_path, log_file_name<span style="color: #268bd2;">)</span>
+        <span style="color: #008787; background-color: #262626;"># </span><span style="color: #008787; background-color: #262626;">get logging object</span>
+        <span style="color: #268bd2; font-weight: bold;">self</span>.logObject = logging.getLogger<span style="color: #268bd2;">()</span>
+        <span style="color: #268bd2; font-weight: bold;">self</span>.__set_level<span style="color: #268bd2;">(</span><span style="color: #2aa198;">"debug"</span><span style="color: #268bd2;">)</span>
+        <span style="color: #8787d7;">formatter</span> = logging.Formatter<span style="color: #268bd2;">(</span>fmt=LOG_FORMAT, datefmt=DATA_LOG_FORMAT<span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">if</span> verbose:
+            <span style="color: #008787; background-color: #262626;"># </span><span style="color: #008787; background-color: #262626;">print information to console</span>
+            <span style="color: #8787d7;">console</span> = logging.StreamHandler<span style="color: #268bd2;">()</span>
+            console.setFormatter<span style="color: #268bd2;">(</span>formatter<span style="color: #268bd2;">)</span>
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.addHandler<span style="color: #268bd2;">(</span>console<span style="color: #268bd2;">)</span> <span style="color: #008787; background-color: #262626;"># </span><span style="color: #008787; background-color: #262626;">add special handler</span>
+        <span style="color: #268bd2; font-weight: bold;">else</span>:
+            <span style="color: #008787; background-color: #262626;"># </span><span style="color: #008787; background-color: #262626;">print informate to log file</span>
+            <span style="color: #8787d7;">file_handler</span> = logging.handlers.TimedRotatingFileHandler<span style="color: #268bd2;">(</span>log_file, <span style="color: #2aa198;">'midnight'</span>, <span style="color: #d75fd7;">1</span><span style="color: #268bd2;">)</span>
+            <span style="color: #8787d7;">file_handler.suffix</span> = <span style="color: #2aa198;">"%Y%m%d.log"</span>
+            file_handler.setFormatter<span style="color: #268bd2;">(</span>formatter<span style="color: #268bd2;">)</span>
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.addHandler<span style="color: #268bd2;">(</span>file_handler<span style="color: #268bd2;">)</span> <span style="color: #008787; background-color: #262626;"># </span><span style="color: #008787; background-color: #262626;">add special handler</span>
+
+    <span style="color: #008787; background-color: #262626;"># </span><span style="color: #008787; background-color: #262626;">set the level       </span>
+    <span style="color: #268bd2; font-weight: bold;">def</span> <span style="color: #d75fd7; font-weight: bold;">__set_level</span><span style="color: #268bd2;">(</span><span style="color: #268bd2; font-weight: bold;">self</span>, log_level<span style="color: #268bd2;">)</span>:
+        <span style="color: #268bd2; font-weight: bold;">if</span> log_level == <span style="color: #2aa198;">"warning"</span>:
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.setLevel<span style="color: #268bd2;">(</span>logging.WARNING<span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">elif</span> log_level == <span style="color: #2aa198;">"debug"</span>:
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.setLevel<span style="color: #268bd2;">(</span>logging.DEBUG<span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">elif</span> log_level == <span style="color: #2aa198;">"error"</span>:
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.setLevel<span style="color: #268bd2;">(</span>logging.ERROR<span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">elif</span> log_level == <span style="color: #2aa198;">"critical"</span>:
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.setLevel<span style="color: #268bd2;">(</span>logging.CRITICAL<span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">elif</span> log_level == <span style="color: #2aa198;">"info"</span>:
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.setLevel<span style="color: #268bd2;">(</span>logging.INFO<span style="color: #268bd2;">)</span>
+        <span style="color: #268bd2; font-weight: bold;">else</span>:
+            <span style="color: #268bd2; font-weight: bold;">self</span>.logObject.setLevel<span style="color: #268bd2;">(</span>logging.INFO<span style="color: #268bd2;">)</span>
+</pre>
+</div>
+</div>
+</div>
