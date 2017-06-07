@@ -39,17 +39,21 @@ EvilAPK-300
 首先安装该应用,然后启动该应用.启动后的界面如下图所示,从启动界面来看,该题目的要求和题目的说明一致,需要找到一个URL.
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p1.jpg" alt="p1.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p1.jpg" alt="p1.jpg" />
 </p>
+</div>
 
 <p>
 使用JEB打开APK,结果如如下图所示,通过下图中的观察,一看就知道该APK是经过加壳保护的.下一步的重点就要进行脱壳了.而从图中可以看到关键的native方法attachBaseContext和Oncreate方法都是再libmobisec.so中.所以要想脱壳肯定需要分析该so.
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p2.jpg" alt="p2.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p2.jpg" alt="p2.jpg" />
 </p>
+</div>
 </div>
 </div>
 
@@ -60,25 +64,31 @@ EvilAPK-300
 使用IDA pro 代开ibmobisec.so.在IDA pro的导出表中找到JNI<sub>OnLoad方法,解析到的结果如下图所示</sub>:
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p3.jpg" alt="p3.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p3.jpg" alt="p3.jpg" />
 </p>
+</div>
 
 <p>
 上图中的逆向结果并不是很直观,这时需要对JNI<sub>OnLoad方法进行修复,具体的修复的方法可以参考</sub>:<a href="http://blog.csdn.net/u010382106/article/details/44960243">链接</a>. 修复之后的逆向结果如下图所示:
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p4.jpg" alt="p4.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p4.jpg" alt="p4.jpg" />
 </p>
+</div>
 
 <p>
 从上图可以看到,修复之后已经可以看到JNI的方法,但是这些函数都没有修复完整.例如RegisterNatives方法并不是无参的,该函数其实有参数的,但是IDA pro没有修复完整.这个地方我看了很多资料,也不知道怎么继续修复.所以只能看汇编语言.从汇编语言中可以找到要注册的函数attachBaseContext的实现了.
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p5.jpg" alt="p5.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p5.jpg" alt="p5.jpg" />
 </p>
+</div>
 
 <p>
 具体分析attachBaseContext的过程在这里不在赘述,因为我以前做过加壳,所以对这一块比较熟悉,不需要非常详细的分析.如果想要详细的了解atttachBaseContext的分析可以这个链接:<a href="http://biubiubiu.info/2016/12/11/aliCTF143/">传送门</a>. 
@@ -129,9 +139,11 @@ EvilAPK-300
 使用IDA调试该APK,在dvmDexFileOpenPartial处下断点,运行截图如下所示:
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p6.jpg" alt="p6.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p6.jpg" alt="p6.jpg" />
 </p>
+</div>
 
 <p>
 此时使用IDA的脚本将dex文件从内存中dump出来.使用的脚本如下所示:
@@ -162,17 +174,21 @@ for (dex_addr = r0; dex_addr &lt; end_addr; dex_addr++){
 使用jeb打开脱壳后的dex文件的截图如下所示:
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p7.jpg" alt="p7.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p7.jpg" alt="p7.jpg" />
 </p>
+</div>
 
 <p>
 从上面的图中的Java代码可以看到,当点击了按钮之后,会直接调用WebViewActivity.所以我们下一步需要分析的就是WebViewActivity中的内容.WebViewActivity中内容如下图所示:
 </p>
 
-<p>
-[<img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p8.jpg" alt="p8.jpg" />]
+
+<div class="figure">
+<p><img src="http://gttiankai.github.io/public/img/alictf-2014-game3/p8.jpg" alt="p8.jpg" />
 </p>
+</div>
 
 <p>
 从WebViewAcitivity中可以非常清楚的看到相应代码.根据题目中的提示我们需要构造一个网页,然后让该应用加载这个网页,这个网页会使该应用弹出一个Toast.分析代码可以找到弹出Toastd的代码.分析这段代码,我们可以发现,虽然在调用Toast之前代码中使用了decrypt<sub>native等加密算法,但是弹出Toast的方法并没有对这些内容进行处理.也就是说这个Toast方法弹出的是一个固定的字符串.这个固定的字符串就是</sub>"祥龙!".所以我们不需要自己构造网页,直接从代码中就可以获取到.当然你也可以自己构造网页.但是构造网页时就需要对代码进行分析,需要对decrypt<sub>natiave方法进行逆向分析.当然了也可以利用Xposed模块将解密后的内容直接吐出来.编写Xposed模块的相关的代码如下</sub>:
