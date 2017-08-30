@@ -1,0 +1,102 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-08-30 三 21:04
+#+TITLE: Linux如何避免僵尸进程
+#+DESCRIPTION: Linux zoombie
+#+TAGS: C语言
+#+CATEGORIES: C语言
+
+* 僵尸进程
+僵尸进程:在UNIX的世界中,一个已经终止,但是其父进程尚未对其进行善后处理的进程(获取终止子进程的有关信息,释放它仍占用的资源)的进程称之为僵尸进程.如果编写一个长期运行的程序,它调用fork产生了很多子进程,那么除非父进程等待去的子进程的终止状态,否则这些子进程终止后就会变成僵尸进程.
+
+孤儿进程:一个父进程退出,而它的一个或多个子进程还在运行,这些子进程将成为孤儿进程.孤儿进程将被init进程(pid为1)所收养,并由init进程完成对它进行善后处理.
+
+* 使用fork两次避免僵尸进程
+该方法的思想是通过将孙进程变成孤儿进程,让init进程对孙进程的状态进程处理.以保证孙进程不会变成僵尸进程.
+#+begin_src C
+#include <stdio.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+int main(int argc, char *argv[argc])
+{
+    pid_t pid;
+    pid = fork();
+    if (pid < 0) {
+        printf("fork failed!\n");
+    }
+    if (0 == pid) {
+        // child process
+        pid = fork();
+        if (pid < 0) {
+            printf("fork grandchild process failed!");
+        }
+        if (pid > 0) {
+            // child exit
+            exit(0);
+        }
+        if (pid == 0) {
+            // grandchild process
+            sleep(2);
+            printf("second child, parent pid = %d\n" ,getppid());
+        }
+    }
+    // main process
+    if (pid > 0) {
+        if (waitpid(pid, NULL, 0) != pid) {
+            printf("waitpid error\n");
+        }
+    }
+    exit(0);
+    return 0;
+}
+#+end_src
+
+* 通过信号机制处理僵尸进程
+该方法是在主进程中注册信号处理机制,处理子进程的SIGCHILD信号,当子进程退出时,会自动调用父进程的信号处理程序,对子进程进行处理.
+#+begin_src C
+#include <stdio.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <stdlib.h>
+
+static void sig_child();
+pid_t global_pid = 0;
+int main(int argc, char *argv[argc])
+{
+    pid_t pid;
+    signal(SIGCHLD, sig_child);
+    pid = fork();
+    if (pid < 0) {
+        printf("fork error");
+        exit(1);
+    } else if (pid == 0) {
+        printf("I am child process,pid id %d. I am exiting.\n", getpid());
+        exit(0);
+    }
+    global_pid = pid;
+    printf("I am father process. I will sleep two seconds\n");
+    sleep(2);
+    system("ps -o pid,ppid,stata,tty,command");
+    printf("father prcess is exiting.\n");
+    return 0;
+}
+
+static void sig_child(){
+    pid_t pid;
+    int stat;
+    pid = waitpid(global_pid, &stat, WNOHANG);
+    if (pid > 0) {
+        printf("child %d terminated.\n", pid);
+    }
+}
+
+#+end_src
+
+* 参考链接
+ 1. 孤儿进程与僵尸进程[总结]: [[http://www.cnblogs.com/Anker/p/3271773.html][链接]]
+ 2. << unix环境高级编程 >>

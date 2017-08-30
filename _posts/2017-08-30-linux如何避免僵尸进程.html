@@ -1,0 +1,131 @@
+---
+date: 2017-08-30
+tags: 
+- C语言
+author: tiankai
+layout: post
+title: Linux如何避免僵尸进程
+excerpt: Linux zoombie
+categories: 
+- C语言
+---
+
+<div id="outline-container-org5e26682" class="outline-2">
+<h2 id="org5e26682">僵尸进程</h2>
+<div class="outline-text-2" id="text-org5e26682">
+<p>
+僵尸进程:在UNIX的世界中,一个已经终止,但是其父进程尚未对其进行善后处理的进程(获取终止子进程的有关信息,释放它仍占用的资源)的进程称之为僵尸进程.如果编写一个长期运行的程序,它调用fork产生了很多子进程,那么除非父进程等待去的子进程的终止状态,否则这些子进程终止后就会变成僵尸进程.
+</p>
+
+<p>
+孤儿进程:一个父进程退出,而它的一个或多个子进程还在运行,这些子进程将成为孤儿进程.孤儿进程将被init进程(pid为1)所收养,并由init进程完成对它进行善后处理.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org0c389bd" class="outline-2">
+<h2 id="org0c389bd">使用fork两次避免僵尸进程</h2>
+<div class="outline-text-2" id="text-org0c389bd">
+<p>
+该方法的思想是通过将孙进程变成孤儿进程,让init进程对孙进程的状态进程处理.以保证孙进程不会变成僵尸进程.
+</p>
+<div class="org-src-container">
+<pre class="src src-C"><span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">stdio.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">sys/wait.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">unistd.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">stdlib.h</span><span style="color: #4f97d7;">&gt;</span>
+
+<span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">main</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">argc</span>, <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">argv</span><span style="color: #bc6ec5;">[</span>argc<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">pid_t</span> <span style="color: #7590db;">pid</span>;
+    pid = fork<span style="color: #bc6ec5;">()</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>pid &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        printf<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"fork failed!\n"</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span> == pid<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">child process</span>
+        pid = fork<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pid &lt; <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            printf<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"fork grandchild process failed!"</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pid &gt; <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">child exit</span>
+            exit<span style="color: #67b11d;">(</span><span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pid == <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">grandchild process</span>
+            sleep<span style="color: #67b11d;">(</span><span style="color: #a45bad;">2</span><span style="color: #67b11d;">)</span>;
+            printf<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"second child, parent pid = %d\n"</span> ,getppid<span style="color: #b1951d;">()</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">main process</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>pid &gt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>waitpid<span style="color: #67b11d;">(</span>pid, <span style="color: #a45bad;">NULL</span>, <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> != pid<span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            printf<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"waitpid error\n"</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span>
+    exit<span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7b9eec0" class="outline-2">
+<h2 id="org7b9eec0">通过信号机制处理僵尸进程</h2>
+<div class="outline-text-2" id="text-org7b9eec0">
+<p>
+该方法是在主进程中注册信号处理机制,处理子进程的SIGCHILD信号,当子进程退出时,会自动调用父进程的信号处理程序,对子进程进行处理.
+</p>
+<div class="org-src-container">
+<pre class="src src-C"><span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">stdio.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">sys/wait.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">unistd.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">stdlib.h</span><span style="color: #4f97d7;">&gt;</span>
+
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">sig_child</span><span style="color: #4f97d7;">()</span>;
+<span style="color: #ce537a; font-weight: bold;">pid_t</span> <span style="color: #7590db;">global_pid</span> = <span style="color: #a45bad;">0</span>;
+<span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">main</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">argc</span>, <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">argv</span><span style="color: #bc6ec5;">[</span>argc<span style="color: #bc6ec5;">]</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">pid_t</span> <span style="color: #7590db;">pid</span>;
+    signal<span style="color: #bc6ec5;">(</span>SIGCHLD, sig_child<span style="color: #bc6ec5;">)</span>;
+    pid = fork<span style="color: #bc6ec5;">()</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>pid &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        printf<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"fork error"</span><span style="color: #2d9574;">)</span>;
+        exit<span style="color: #2d9574;">(</span><span style="color: #a45bad;">1</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>pid == <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        printf<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"I am child process,pid id %d. I am exiting.\n"</span>, getpid<span style="color: #67b11d;">()</span><span style="color: #2d9574;">)</span>;
+        exit<span style="color: #2d9574;">(</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+    global_pid = pid;
+    printf<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"I am father process. I will sleep two seconds\n"</span><span style="color: #bc6ec5;">)</span>;
+    sleep<span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">2</span><span style="color: #bc6ec5;">)</span>;
+    system<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"ps -o pid,ppid,stata,tty,command"</span><span style="color: #bc6ec5;">)</span>;
+    printf<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"father prcess is exiting.\n"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+<span style="color: #4f97d7;">}</span>
+
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">sig_child</span><span style="color: #4f97d7;">(){</span>
+    <span style="color: #ce537a; font-weight: bold;">pid_t</span> <span style="color: #7590db;">pid</span>;
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">stat</span>;
+    pid = waitpid<span style="color: #bc6ec5;">(</span>global_pid, &amp;stat, WNOHANG<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>pid &gt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        printf<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"child %d terminated.\n"</span>, pid<span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org7dfa907" class="outline-2">
+<h2 id="org7dfa907">参考链接</h2>
+<div class="outline-text-2" id="text-org7dfa907">
+<ol class="org-ol">
+<li>孤儿进程与僵尸进程[总结]: <a href="http://www.cnblogs.com/Anker/p/3271773.html">链接</a></li>
+<li>&lt;&lt; unix环境高级编程 &gt;&gt;</li>
+</ol>
+</div>
+</div>
