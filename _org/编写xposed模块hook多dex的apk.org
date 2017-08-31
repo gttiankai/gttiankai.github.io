@@ -1,0 +1,85 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-08-31 四 22:55
+#+TITLE: 编写Xposed模块Hook多dex的APK
+#+DESCRIPTION: xposed hook multi dex
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* 编写Xposed模块Hook多Dex的apk
+最近在研究使用Xposed去Hook一个apk,但是在Hook的过程中发现,无论如何都不能hook成功.经过进一步对该APK进行研究发现,我需要的对象在第二个dex文件中. Xposed是默认没有办法处理多Dex的情况的. 所以hook多个dex文件的代码需要自己去实现.经过查找资料之后发现有办法可以解决多dex的hook的问题.关键部分的代码如下:
+
+#+begin_src java
+import android.app.Application;
+import android.content.Context;
+import android.content.pm.ApplicationInfo;
+
+import de.robv.android.xposed.IXposedHookLoadPackage;
+import de.robv.android.xposed.XC_MethodHook;
+import de.robv.android.xposed.XposedBridge;
+import de.robv.android.xposed.XposedHelpers;
+import de.robv.android.xposed.callbacks.XC_LoadPackage.LoadPackageParam;
+
+/**
+ * Created by tiankai on 17-8-23.
+ */
+
+public class HookVerifyCode implements IXposedHookLoadPackage {
+
+    private static final String class_name = "the class name ";
+    public static String phone_number = "";      // this argument is a global
+    private static final String PACKAGENAME = "com.payegis.hookmoule";
+    private static final String XPOSEDINSTALLER = "de.robv.android.xposed.installer";
+    private static final String SMSPACKAGENAME = "com.google.android.talk";
+    private static final String TARGETPACKAGENAME = "the target process name";
+
+
+    public void handleLoadPackage(LoadPackageParam lpparam) throws Throwable {
+
+        if (lpparam.appInfo != null && lpparam.isFirstApplication
+                && (SMSPACKAGENAME.equals(lpparam.packageName) || OFOPACKAGENAME.equals(lpparam.packageName))) {
+            // hook android.app.Application.attach method
+            XposedHelpers.findAndHookMethod(Application.class, "attach", Context.class, new XC_MethodHook() {
+                @Override
+                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                     // this will be called before the clock was updated by the original method
+                }
+
+                @Override
+                protected void afterHookedMethod(XC_MethodHook.MethodHookParam param) throws Throwable {
+                    ClassLoader cl = ((Context) param.args[0]).getClassLoader();
+                    Class<?> hookclass = null;
+                    try {
+                        hookclass = cl.loadClass(class_name);
+                    } catch (Exception e) {
+                        Logger.log("[Failed!]Can not find " + class_name);
+                        return;
+                    }
+                    Logger.log("[success!]Find class " + class_name);
+
+                    XposedHelpers.findAndHookMethod(hookclass,
+                            "getVerifyCode", new XC_MethodHook() {
+                                @Override
+                                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                                    // this will be called before the clock was updated by the original method
+                                }
+
+                                @Override
+                                protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                    // this will be called after the clock was updated by the original method
+                                    String verify_code = param.getResult().toString();
+                                    if (verify_code.length() == 4) {
+                                        Logger.log("the verify code:" + verify_code);
+                                        Logger.log("the final phone number: " + HookManager.phone_number);
+                                    }
+                                }
+                            });
+                }
+            });  // end of findAndHookMethod
+        } // end of if 
+    }  // end of handlePackage
+} // end of class
+#+end_src
