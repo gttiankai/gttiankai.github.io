@@ -1,0 +1,307 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2018-01-03 三 21:57
+#+TITLE: Android系统加载so的源码分析
+#+DESCRIPTION: Android 加载so
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* dlopen的源码分析
+在Android系统中,我们知道对so的加载是通过两个API调用实现的,这两个API是：
+1. System.loadLibrary(String libName)
+2. System.load(String pathName)
+以上两个API的底层实现都是基于dlopen实现的.要想弄明白dlopen的实现,必须研究dlopen的源码实现.
+
+首先dlopen的实现定义在源码(//bionic/linker/dlfcn.cpp/, 本文讨论的源码是基于Android5.0.0的版本)
+#+begin_src C++
+void* dlopen(const char* filename, int flags) {
+  return dlopen_ext(filename, flags, NULL);
+}
+#+end_src
+dlopen直接调用dlopen_ext函数.
+#+begin_src C++
+static void* dlopen_ext(const char* filename, int flags, const android_dlextinfo* extinfo) {
+  ScopedPthreadMutexLocker locker(&g_dl_mutex);
+  soinfo* result = do_dlopen(filename, flags, extinfo);
+  if (result == NULL) {
+    __bionic_format_dlerror("dlopen failed", linker_get_error_buffer());
+    return NULL;
+  }
+  return result;
+}
+#+end_src
+dlopen_ext函数主要用来调用do_dlopen函数.
+#+begin_src C++
+soinfo* do_dlopen(const char* name, int flags, const android_dlextinfo* extinfo) {
+  if ((flags & ~(RTLD_NOW|RTLD_LAZY|RTLD_LOCAL|RTLD_GLOBAL|RTLD_NOLOAD)) != 0) {
+    DL_ERR("invalid flags to dlopen: %x", flags);
+    return NULL;
+  }
+  if (extinfo != NULL && ((extinfo->flags & ~(ANDROID_DLEXT_VALID_FLAG_BITS)) != 0)) {
+    DL_ERR("invalid extended flags to android_dlopen_ext: %" PRIx64, extinfo->flags);
+    return NULL;
+  }
+  protect_data(PROT_READ | PROT_WRITE);
+  // 生成soinfo结构体
+  soinfo* si = find_library(name, flags, extinfo);
+  if (si != NULL) {
+    //调用so中的构造方法
+    si->CallConstructors();
+  }
+  protect_data(PROT_READ);
+  return si;
+}
+#+end_src
+以上的代码中关键的函数是find_library.该函数的定义如下:
+#+begin_src C++
+static soinfo* find_library(const char* name, int dlflags, const android_dlextinfo* extinfo) {
+  soinfo* si = find_library_internal(name, dlflags, extinfo);
+  if (si != NULL) {
+    si->ref_count++;
+  }
+  return si;
+}
+#+end_src
+关键的代码在 find_library_internal函数中.
+#+begin_src C++
+static soinfo* find_library_internal(const char* name, int dlflags, const android_dlextinfo* extinfo) {
+  if (name == NULL) {
+    return somain;
+  }
+  //WARNING: 从已经在加载的表中进行加载so
+  soinfo* si = find_loaded_library_by_name(name);
+
+  // Library might still be loaded, the accurate detection
+  // of this fact is done by load_library
+  if (si == NULL) {
+    TRACE("[ '%s' has not been found by name.  Trying harder...]", name);
+    // 如果这个so没有加载过,则重新对so进行加载.
+    si = load_library(name, dlflags, extinfo);
+  }
+
+  if (si != NULL && (si->flags & FLAG_LINKED) == 0) {
+    DL_ERR("recursive link to \"%s\"", si->name);
+    return NULL;
+  }
+
+  return si;
+}
+#+end_src
+我们先来看find_loaded_library_by_name函数的实现,等研究查找so的功能,然后在对load_library函数进行加载.
+#+begin_src C++
+static soinfo *find_loaded_library_by_name(const char* name) {
+  const char* search_name = SEARCH_NAME(name);
+  // solist 是一个全局的soinfo的链表
+  for (soinfo* si = solist; si != NULL; si = si->next) {
+    if (!strcmp(search_name, si->name)) {
+      return si;
+    }
+  }
+  return NULL;
+}
+#+end_src
+从上面的代码中可以看到,find_loaded_library_by_name通过比对so的名称在solist表中进行查找.这个so的名称是怎么来得到呢?
+#+begin_src C++
+#if defined(__LP64__)
+#define SEARCH_NAME(x) x
+#else
+// Nvidia drivers are relying on the bug:
+// http://code.google.com/p/android/issues/detail?id=6670
+// so we continue to use base-name lookup for lp32
+static const char* get_base_name(const char* name) {
+  const char* bname = strrchr(name, '/');
+  return bname ? bname + 1 : name;
+}
+#define SEARCH_NAME(x) get_base_name(x)
+#endif
+#+end_src
+在非64位机器的条件下,SEARCH_NAME宏定义的实现都是get_base_name函数.该函数主要获取的是so名称的basename,也就是之后so的名称,不包含so的路径.find_loaded_library_by_name的实现在不同的Android版本中是不同的.在Android6.0的版本中该函数就改了个名称,并且具体的实现也不同了.
+#+begin_src C++
+static bool find_loaded_library_by_soname(const char* name, soinfo** candidate) {
+  *candidate = nullptr;
+
+  // Ignore filename with path.
+  if (strchr(name, '/') != nullptr) {
+    return false;
+  }
+
+  uint32_t target_sdk_version = get_application_target_sdk_version();
+
+  for (soinfo* si = solist; si != nullptr; si = si->next) {
+    const char* soname = si->get_soname();
+    if (soname != nullptr && (strcmp(name, soname) == 0)) {
+      // If the library was opened under different target sdk version
+      // skip this step and try to reopen it. The exceptions are
+      // "libdl.so" and global group. There is no point in skipping
+      // them because relocation process is going to use them
+      // in any case.
+      bool is_libdl = si == solist;
+      if (is_libdl || (si->get_dt_flags_1() & DF_1_GLOBAL) != 0 ||
+          !si->is_linked() || si->get_target_sdk_version() == target_sdk_version) {
+        *candidate = si;
+        return true;
+      } else if (*candidate == nullptr) {
+        // for the different sdk version - remember the first library.
+        *candidate = si;
+      }
+    }
+  }
+
+  return false;
+}
+#+end_src
+从上面的代码中可以看出,在Android6.0的版本中,查找so的名称和以前的版本中是不同的,并不是仅仅查找so的名称,也要加上so的路径.总结一下:
+1. 在android6.0以下的版本中(32位系统),使用so的名称进行查找.
+2. 在android6.0及以上的版本中,使用so的路径进行查找.
+
+接下来继续看load_library
+#+begin_src C++
+static soinfo* load_library(const char* name, int dlflags, const android_dlextinfo* extinfo) {
+    int fd = -1;
+    ScopedFd file_guard(-1);
+
+    if (extinfo != NULL && (extinfo->flags & ANDROID_DLEXT_USE_LIBRARY_FD) != 0) {
+      fd = extinfo->library_fd;
+    } else {
+      // Open the file.
+      fd = open_library(name);
+      if (fd == -1) {
+        DL_ERR("library \"%s\" not found", name);
+        return NULL;
+      }
+
+      file_guard.reset(fd);
+    }
+
+    ElfReader elf_reader(name, fd);
+
+    struct stat file_stat;
+    if (TEMP_FAILURE_RETRY(fstat(fd, &file_stat)) != 0) {
+      DL_ERR("unable to stat file for the library %s: %s", name, strerror(errno));
+      return NULL;
+    }
+
+    // Check for symlink and other situations where
+    // file can have different names.
+    for (soinfo* si = solist; si != NULL; si = si->next) {
+      if (si->get_st_dev() != 0 &&
+          si->get_st_ino() != 0 &&
+          si->get_st_dev() == file_stat.st_dev &&
+          si->get_st_ino() == file_stat.st_ino) {
+        TRACE("library \"%s\" is already loaded under different name/path \"%s\" - will return existing soinfo", name, si->name);
+        return si;
+      }
+   }
+
+    if ((dlflags & RTLD_NOLOAD) != 0) {
+      return NULL;
+    }
+
+    // Read the ELF header and load the segments.
+    if (!elf_reader.Load(extinfo)) {
+        return NULL;
+    }
+
+    soinfo* si = soinfo_alloc(SEARCH_NAME(name), &file_stat);
+    if (si == NULL) {
+        return NULL;
+    }
+    si->base = elf_reader.load_start();
+    si->size = elf_reader.load_size();
+    si->load_bias = elf_reader.load_bias();
+    si->phnum = elf_reader.phdr_count();
+    si->phdr = elf_reader.loaded_phdr();
+
+    // At this point we know that whatever is loaded @ base is a valid ELF
+    // shared library whose segments are properly mapped in.
+    TRACE("[ load_library base=%p size=%zu name='%s' ]",
+          reinterpret_cast<void*>(si->base), si->size, si->name);
+
+    if (!soinfo_link_image(si, extinfo)) {
+      soinfo_free(si);
+      return NULL;
+    }
+
+    return si;
+}
+#+end_src
+从上面的代码中可以看到,load_library函数的实现比较简单,直接打开需要加载的so文件,然生成新的soinfo的结构体.至此系统已经完成了对soinfo结构体的构造.接下来继续看so的构造函数的调用.
+#+begin_src C++
+void soinfo::CallConstructors() {
+  if (constructors_called) {
+    return;
+  }
+
+  // We set constructors_called before actually calling the constructors, otherwise it doesn't
+  // protect against recursive constructor calls. One simple example of constructor recursion
+  // is the libc debug malloc, which is implemented in libc_malloc_debug_leak.so:
+  // 1. The program depends on libc, so libc's constructor is called here.
+  // 2. The libc constructor calls dlopen() to load libc_malloc_debug_leak.so.
+  // 3. dlopen() calls the constructors on the newly created
+  //    soinfo for libc_malloc_debug_leak.so.
+  // 4. The debug .so depends on libc, so CallConstructors is
+  //    called again with the libc soinfo. If it doesn't trigger the early-
+  //    out above, the libc constructor will be called again (recursively!).
+  constructors_called = true;
+
+  if ((flags & FLAG_EXE) == 0 && preinit_array != NULL) {
+    // The GNU dynamic linker silently ignores these, but we warn the developer.
+    PRINT("\"%s\": ignoring %zd-entry DT_PREINIT_ARRAY in shared library!",
+          name, preinit_array_count);
+  }
+
+  get_children().for_each([] (soinfo* si) {
+    si->CallConstructors();
+  });
+
+  TRACE("\"%s\": calling constructors", name);
+
+  // DT_INIT should be called before DT_INIT_ARRAY if both are present.
+  // 调用so中的init函数
+  CallFunction("DT_INIT", init_func);
+  // 调用so中的initarray中的函数
+  CallArray("DT_INIT_ARRAY", init_array, init_array_count, false);
+}
+#+end_src
+CallFunction的代码如下所示:
+#+begin_src C++
+void soinfo::CallFunction(const char* function_name __unused, linker_function_t function) {
+  // 
+  if (function == NULL || reinterpret_cast<uintptr_t>(function) == static_cast<uintptr_t>(-1)) {
+    return;
+  }
+
+  TRACE("[ Calling %s @ %p for '%s' ]", function_name, function, name);
+  function();
+  TRACE("[ Done calling %s @ %p for '%s' ]", function_name, function, name);
+
+  // The function may have called dlopen(3) or dlclose(3), so we need to ensure our data structures
+  // are still writable. This happens with our debug malloc (see http://b/7941716).
+  protect_data(PROT_READ | PROT_WRITE);
+}
+#+end_src
+在以上的代码中function是已经复制好的函数.具体的初始化过程在soinfo_link_image函数进行实现.CallArray的实现如下:
+#+begin_src C++
+void soinfo::CallArray(const char* array_name __unused, linker_function_t* functions, size_t count, bool reverse) {
+  if (functions == NULL) {
+    return;
+  }
+
+  TRACE("[ Calling %s (size %zd) @ %p for '%s' ]", array_name, count, functions, name);
+
+  int begin = reverse ? (count - 1) : 0;
+  int end = reverse ? -1 : count;
+  int step = reverse ? -1 : 1;
+
+  for (int i = begin; i != end; i += step) {
+    TRACE("[ %s[%d] == %p ]", array_name, i, functions[i]);
+    CallFunction("function", functions[i]);
+  }
+
+  TRACE("[ Done calling %s for '%s' ]", array_name, name);
+}
+#+end_src
+CallArray实际上就是对initarray中的函数逐个的进行调用.调用完成之后,就基本上完成了对so的加载(初始化工作).

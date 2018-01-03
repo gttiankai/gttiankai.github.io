@@ -1,0 +1,360 @@
+---
+date: 2018-01-03
+tags: 
+- Android
+author: tiankai
+layout: post
+title: Android系统加载so的源码分析
+excerpt: Android 加载so
+categories: 
+- Android
+---
+
+<div id="outline-container-org0269b23" class="outline-2">
+<h2 id="org0269b23">dlopen的源码分析</h2>
+<div class="outline-text-2" id="text-org0269b23">
+<p>
+在Android系统中,我们知道对so的加载是通过两个API调用实现的,这两个API是：
+</p>
+<ol class="org-ol">
+<li>System.loadLibrary(String libName)</li>
+<li>System.load(String pathName)</li>
+</ol>
+<p>
+以上两个API的底层实现都是基于dlopen实现的.要想弄明白dlopen的实现,必须研究dlopen的源码实现.
+</p>
+
+<p>
+首先dlopen的实现定义在源码(<i>/bionic/linker/dlfcn.cpp</i>, 本文讨论的源码是基于Android5.0.0的版本)
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #9ce22e;">void</span>* <span style="color: #9ce22e; font-weight: bold;">dlopen</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">filename</span>, <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">flags</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">return</span> dlopen_ext<span style="color: #9ce22e;">(</span>filename, flags, <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span>;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+dlopen直接调用dlopen<sub>ext函数</sub>.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #9ce22e;">void</span>* <span style="color: #9ce22e; font-weight: bold;">dlopen_ext</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">filename</span>, <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">flags</span>, <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">android_dlextinfo</span>* <span style="color: #f92672;">extinfo</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  ScopedPthreadMutexLocker <span style="color: #9ce22e;">locker</span><span style="color: #9ce22e;">(</span>&amp;<span style="color: #f92672;">g_dl_mutex</span><span style="color: #9ce22e;">)</span>;
+  <span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">result</span> = do_dlopen<span style="color: #9ce22e;">(</span>filename, flags, extinfo<span style="color: #9ce22e;">)</span>;
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>result == <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    __bionic_format_dlerror<span style="color: #f92672;">(</span><span style="color: #e6db74;">"dlopen failed"</span>, linker_get_error_buffer<span style="color: #a281ff;">()</span><span style="color: #f92672;">)</span>;
+    <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+  <span style="color: #9ce22e;">}</span>
+  <span style="color: #f92672; font-weight: bold;">return</span> result;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+dlopen<sub>ext函数主要用来调用do</sub><sub>dlopen函数</sub>.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #9ce22e;">soinfo</span>* <span style="color: #9ce22e; font-weight: bold;">do_dlopen</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span>, <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">flags</span>, <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">android_dlextinfo</span>* <span style="color: #f92672;">extinfo</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span><span style="color: #f92672;">(</span><span style="color: #9ce22e;">flags</span> &amp; ~<span style="color: #a281ff;">(</span>RTLD_NOW|RTLD_LAZY|RTLD_LOCAL|RTLD_GLOBAL|RTLD_NOLOAD<span style="color: #a281ff;">)</span><span style="color: #f92672;">)</span> != <span style="color: #a281ff;">0</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    DL_ERR<span style="color: #f92672;">(</span><span style="color: #e6db74;">"invalid flags to dlopen: %x"</span>, flags<span style="color: #f92672;">)</span>;
+    <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+  <span style="color: #9ce22e;">}</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>extinfo != <span style="color: #a281ff;">NULL</span> &amp;&amp; <span style="color: #f92672;">(</span><span style="color: #a281ff;">(</span>extinfo-&gt;flags &amp; ~<span style="color: #f92672;">(</span>ANDROID_DLEXT_VALID_FLAG_BITS<span style="color: #f92672;">)</span><span style="color: #a281ff;">)</span> != <span style="color: #a281ff;">0</span><span style="color: #f92672;">)</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    DL_ERR<span style="color: #f92672;">(</span><span style="color: #e6db74;">"invalid extended flags to android_dlopen_ext: %"</span> PRIx64, extinfo-&gt;flags<span style="color: #f92672;">)</span>;
+    <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+  <span style="color: #9ce22e;">}</span>
+  protect_data<span style="color: #9ce22e;">(</span>PROT_READ | PROT_WRITE<span style="color: #9ce22e;">)</span>;
+  <span style="color: #626262;">// </span><span style="color: #626262;">&#29983;&#25104;soinfo&#32467;&#26500;&#20307;</span>
+  <span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = find_library<span style="color: #9ce22e;">(</span>name, flags, extinfo<span style="color: #9ce22e;">)</span>;
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>si != <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #626262;">//</span><span style="color: #626262;">&#35843;&#29992;so&#20013;&#30340;&#26500;&#36896;&#26041;&#27861;</span>
+    si-&gt;CallConstructors<span style="color: #f92672;">()</span>;
+  <span style="color: #9ce22e;">}</span>
+  protect_data<span style="color: #9ce22e;">(</span>PROT_READ<span style="color: #9ce22e;">)</span>;
+  <span style="color: #f92672; font-weight: bold;">return</span> si;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+以上的代码中关键的函数是find<sub>library.该函数的定义如下</sub>:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #9ce22e;">soinfo</span>* <span style="color: #9ce22e; font-weight: bold;">find_library</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span>, <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">dlflags</span>, <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">android_dlextinfo</span>* <span style="color: #f92672;">extinfo</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = find_library_internal<span style="color: #9ce22e;">(</span>name, dlflags, extinfo<span style="color: #9ce22e;">)</span>;
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>si != <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    si-&gt;ref_count++;
+  <span style="color: #9ce22e;">}</span>
+  <span style="color: #f92672; font-weight: bold;">return</span> si;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+关键的代码在 find<sub>library</sub><sub>internal函数中</sub>.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #9ce22e;">soinfo</span>* <span style="color: #9ce22e; font-weight: bold;">find_library_internal</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span>, <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">dlflags</span>, <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">android_dlextinfo</span>* <span style="color: #f92672;">extinfo</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>name == <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">return</span> somain;
+  <span style="color: #9ce22e;">}</span>
+  <span style="color: #626262;">//</span><span style="color: #626262;">WARNING: &#20174;&#24050;&#32463;&#22312;&#21152;&#36733;&#30340;&#34920;&#20013;&#36827;&#34892;&#21152;&#36733;so</span>
+  <span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = find_loaded_library_by_name<span style="color: #9ce22e;">(</span>name<span style="color: #9ce22e;">)</span>;
+
+  <span style="color: #626262;">// </span><span style="color: #626262;">Library might still be loaded, the accurate detection</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">of this fact is done by load_library</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>si == <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    TRACE<span style="color: #f92672;">(</span><span style="color: #e6db74;">"[ '%s' has not been found by name.  Trying harder...]"</span>, name<span style="color: #f92672;">)</span>;
+    <span style="color: #626262;">// </span><span style="color: #626262;">&#22914;&#26524;&#36825;&#20010;so&#27809;&#26377;&#21152;&#36733;&#36807;,&#21017;&#37325;&#26032;&#23545;so&#36827;&#34892;&#21152;&#36733;.</span>
+    si = load_library<span style="color: #f92672;">(</span>name, dlflags, extinfo<span style="color: #f92672;">)</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>si != <span style="color: #a281ff;">NULL</span> &amp;&amp; <span style="color: #f92672;">(</span>si-&gt;flags &amp; FLAG_LINKED<span style="color: #f92672;">)</span> == <span style="color: #a281ff;">0</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    DL_ERR<span style="color: #f92672;">(</span><span style="color: #e6db74;">"recursive link to \"%s\""</span>, si-&gt;name<span style="color: #f92672;">)</span>;
+    <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  <span style="color: #f92672; font-weight: bold;">return</span> si;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+我们先来看find<sub>loaded</sub><sub>library</sub><sub>by</sub><sub>name函数的实现,等研究查找so的功能,然后在对load</sub><sub>library函数进行加载</sub>.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #9ce22e;">soinfo</span> *<span style="color: #9ce22e; font-weight: bold;">find_loaded_library_by_name</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">search_name</span> = SEARCH_NAME<span style="color: #9ce22e;">(</span>name<span style="color: #9ce22e;">)</span>;
+  <span style="color: #626262;">// </span><span style="color: #626262;">solist &#26159;&#19968;&#20010;&#20840;&#23616;&#30340;soinfo&#30340;&#38142;&#34920;</span>
+  <span style="color: #f92672; font-weight: bold;">for</span> <span style="color: #9ce22e;">(</span><span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = solist; si != <span style="color: #a281ff;">NULL</span>; si = si-&gt;next<span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #f92672;">(</span><span style="color: #a281ff;">!</span>strcmp<span style="color: #a281ff;">(</span>search_name, si-&gt;name<span style="color: #a281ff;">)</span><span style="color: #f92672;">)</span> <span style="color: #f92672;">{</span>
+      <span style="color: #f92672; font-weight: bold;">return</span> si;
+    <span style="color: #f92672;">}</span>
+  <span style="color: #9ce22e;">}</span>
+  <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+从上面的代码中可以看到,find<sub>loaded</sub><sub>library</sub><sub>by</sub><sub>name通过比对so的名称在solist表中进行查找.这个so的名称是怎么来得到呢</sub>?
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #66d9ef;">#if</span> <span style="color: #66d9ef;">defined</span><span style="color: #f8f8f2;">(</span>__LP64__<span style="color: #f8f8f2;">)</span>
+<span style="color: #66d9ef;">#define</span> <span style="color: #9ce22e; font-weight: bold;">SEARCH_NAME</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672;">x</span><span style="color: #f8f8f2;">)</span> x
+<span style="color: #66d9ef;">#else</span>
+<span style="color: #626262;">// </span><span style="color: #626262;">Nvidia drivers are relying on the bug:</span>
+<span style="color: #626262;">// </span><span style="color: #626262;">http://code.google.com/p/android/issues/detail?id=6670</span>
+<span style="color: #626262;">// </span><span style="color: #626262;">so we continue to use base-name lookup for lp32</span>
+<span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #9ce22e; font-weight: bold;">get_base_name</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">bname</span> = strrchr<span style="color: #9ce22e;">(</span>name, <span style="color: #e6db74;">'/'</span><span style="color: #9ce22e;">)</span>;
+  <span style="color: #f92672; font-weight: bold;">return</span> bname ? bname + <span style="color: #a281ff;">1</span> : name;
+<span style="color: #f8f8f2;">}</span>
+<span style="color: #66d9ef;">#define</span> <span style="color: #9ce22e; font-weight: bold;">SEARCH_NAME</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672;">x</span><span style="color: #f8f8f2;">)</span> get_base_name<span style="color: #f8f8f2;">(</span>x<span style="color: #f8f8f2;">)</span>
+<span style="color: #66d9ef;">#endif</span>
+</pre>
+</div>
+<p>
+在非64位机器的条件下,SEARCH<sub>NAME宏定义的实现都是get</sub><sub>base</sub><sub>name函数.该函数主要获取的是so名称的basename,也就是之后so的名称,不包含so的路径.find</sub><sub>loaded</sub><sub>library</sub><sub>by</sub><sub>name的实现在不同的Android版本中是不同的.在Android6.0的版本中该函数就改了个名称,并且具体的实现也不同了</sub>.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #9ce22e;">bool</span> <span style="color: #9ce22e; font-weight: bold;">find_loaded_library_by_soname</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span>, <span style="color: #9ce22e;">soinfo</span>** <span style="color: #f92672;">candidate</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  *candidate = <span style="color: #a281ff;">nullptr</span>;
+
+  <span style="color: #626262;">// </span><span style="color: #626262;">Ignore filename with path.</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>strchr<span style="color: #f92672;">(</span>name, <span style="color: #e6db74;">'/'</span><span style="color: #f92672;">)</span> != <span style="color: #a281ff;">nullptr</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">false</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  <span style="color: #9ce22e;">uint32_t</span> <span style="color: #f92672;">target_sdk_version</span> = get_application_target_sdk_version<span style="color: #9ce22e;">()</span>;
+
+  <span style="color: #f92672; font-weight: bold;">for</span> <span style="color: #9ce22e;">(</span><span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = solist; si != <span style="color: #a281ff;">nullptr</span>; si = si-&gt;next<span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">soname</span> = si-&gt;get_soname<span style="color: #f92672;">()</span>;
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #f92672;">(</span>soname != <span style="color: #a281ff;">nullptr</span> &amp;&amp; <span style="color: #a281ff;">(</span>strcmp<span style="color: #f92672;">(</span>name, soname<span style="color: #f92672;">)</span> == <span style="color: #a281ff;">0</span><span style="color: #a281ff;">)</span><span style="color: #f92672;">)</span> <span style="color: #f92672;">{</span>
+      <span style="color: #626262;">// </span><span style="color: #626262;">If the library was opened under different target sdk version</span>
+      <span style="color: #626262;">// </span><span style="color: #626262;">skip this step and try to reopen it. The exceptions are</span>
+      <span style="color: #626262;">// </span><span style="color: #626262;">"libdl.so" and global group. There is no point in skipping</span>
+      <span style="color: #626262;">// </span><span style="color: #626262;">them because relocation process is going to use them</span>
+      <span style="color: #626262;">// </span><span style="color: #626262;">in any case.</span>
+      <span style="color: #9ce22e;">bool</span> <span style="color: #f92672;">is_libdl</span> = si == solist;
+      <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #a281ff;">(</span>is_libdl || <span style="color: #f92672;">(</span>si-&gt;get_dt_flags_1<span style="color: #f8f8f2;">()</span> &amp; DF_1_GLOBAL<span style="color: #f92672;">)</span> != <span style="color: #a281ff;">0</span> ||
+          <span style="color: #a281ff;">!</span>si-&gt;is_linked<span style="color: #f92672;">()</span> || si-&gt;get_target_sdk_version<span style="color: #f92672;">()</span> == target_sdk_version<span style="color: #a281ff;">)</span> <span style="color: #a281ff;">{</span>
+        *candidate = si;
+        <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">true</span>;
+      <span style="color: #a281ff;">}</span> <span style="color: #f92672; font-weight: bold;">else</span> <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #a281ff;">(</span>*candidate == <span style="color: #a281ff;">nullptr</span><span style="color: #a281ff;">)</span> <span style="color: #a281ff;">{</span>
+        <span style="color: #626262;">// </span><span style="color: #626262;">for the different sdk version - remember the first library.</span>
+        *candidate = si;
+      <span style="color: #a281ff;">}</span>
+    <span style="color: #f92672;">}</span>
+  <span style="color: #9ce22e;">}</span>
+
+  <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">false</span>;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+从上面的代码中可以看出,在Android6.0的版本中,查找so的名称和以前的版本中是不同的,并不是仅仅查找so的名称,也要加上so的路径.总结一下:
+</p>
+<ol class="org-ol">
+<li>在android6.0以下的版本中(32位系统),使用so的名称进行查找.</li>
+<li>在android6.0及以上的版本中,使用so的路径进行查找.</li>
+</ol>
+
+<p>
+接下来继续看load<sub>library</sub>
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #f92672; font-weight: bold;">static</span> <span style="color: #9ce22e;">soinfo</span>* <span style="color: #9ce22e; font-weight: bold;">load_library</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">name</span>, <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">dlflags</span>, <span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">android_dlextinfo</span>* <span style="color: #f92672;">extinfo</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+    <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">fd</span> = -<span style="color: #a281ff;">1</span>;
+    <span style="color: #9ce22e;">ScopedFd</span> <span style="color: #f92672;">file_guard</span><span style="color: #9ce22e;">(</span>-<span style="color: #a281ff;">1</span><span style="color: #9ce22e;">)</span>;
+
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>extinfo != <span style="color: #a281ff;">NULL</span> &amp;&amp; <span style="color: #f92672;">(</span>extinfo-&gt;flags &amp; ANDROID_DLEXT_USE_LIBRARY_FD<span style="color: #f92672;">)</span> != <span style="color: #a281ff;">0</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+      fd = extinfo-&gt;library_fd;
+    <span style="color: #9ce22e;">}</span> <span style="color: #f92672; font-weight: bold;">else</span> <span style="color: #9ce22e;">{</span>
+      <span style="color: #626262;">// </span><span style="color: #626262;">Open the file.</span>
+      fd = open_library<span style="color: #f92672;">(</span>name<span style="color: #f92672;">)</span>;
+      <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #f92672;">(</span>fd == -<span style="color: #a281ff;">1</span><span style="color: #f92672;">)</span> <span style="color: #f92672;">{</span>
+        DL_ERR<span style="color: #a281ff;">(</span><span style="color: #e6db74;">"library \"%s\" not found"</span>, name<span style="color: #a281ff;">)</span>;
+        <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+      <span style="color: #f92672;">}</span>
+
+      file_guard.reset<span style="color: #f92672;">(</span>fd<span style="color: #f92672;">)</span>;
+    <span style="color: #9ce22e;">}</span>
+
+    <span style="color: #9ce22e;">ElfReader</span> <span style="color: #9ce22e; font-weight: bold;">elf_reader</span><span style="color: #9ce22e;">(</span>name, fd<span style="color: #9ce22e;">)</span>;
+
+    <span style="color: #f92672; font-weight: bold;">struct</span> <span style="color: #9ce22e;">stat</span> <span style="color: #f92672;">file_stat</span>;
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>TEMP_FAILURE_RETRY<span style="color: #f92672;">(</span>fstat<span style="color: #a281ff;">(</span>fd, &amp;file_stat<span style="color: #a281ff;">)</span><span style="color: #f92672;">)</span> != <span style="color: #a281ff;">0</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+      DL_ERR<span style="color: #f92672;">(</span><span style="color: #e6db74;">"unable to stat file for the library %s: %s"</span>, name, strerror<span style="color: #a281ff;">(</span>errno<span style="color: #a281ff;">)</span><span style="color: #f92672;">)</span>;
+      <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+    <span style="color: #9ce22e;">}</span>
+
+    <span style="color: #626262;">// </span><span style="color: #626262;">Check for symlink and other situations where</span>
+    <span style="color: #626262;">// </span><span style="color: #626262;">file can have different names.</span>
+    <span style="color: #f92672; font-weight: bold;">for</span> <span style="color: #9ce22e;">(</span><span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = solist; si != <span style="color: #a281ff;">NULL</span>; si = si-&gt;next<span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+      <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #f92672;">(</span>si-&gt;get_st_dev<span style="color: #a281ff;">()</span> != <span style="color: #a281ff;">0</span> &amp;&amp;
+          si-&gt;get_st_ino<span style="color: #a281ff;">()</span> != <span style="color: #a281ff;">0</span> &amp;&amp;
+          si-&gt;get_st_dev<span style="color: #a281ff;">()</span> == file_stat.st_dev &amp;&amp;
+          si-&gt;get_st_ino<span style="color: #a281ff;">()</span> == file_stat.st_ino<span style="color: #f92672;">)</span> <span style="color: #f92672;">{</span>
+        TRACE<span style="color: #a281ff;">(</span><span style="color: #e6db74;">"library \"%s\" is already loaded under different name/path \"%s\" - will return existing soinfo"</span>, name, si-&gt;name<span style="color: #a281ff;">)</span>;
+        <span style="color: #f92672; font-weight: bold;">return</span> si;
+      <span style="color: #f92672;">}</span>
+   <span style="color: #9ce22e;">}</span>
+
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span><span style="color: #f92672;">(</span>dlflags &amp; RTLD_NOLOAD<span style="color: #f92672;">)</span> != <span style="color: #a281ff;">0</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+      <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+    <span style="color: #9ce22e;">}</span>
+
+    <span style="color: #626262;">// </span><span style="color: #626262;">Read the ELF header and load the segments.</span>
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span><span style="color: #a281ff;">!</span>elf_reader.Load<span style="color: #f92672;">(</span>extinfo<span style="color: #f92672;">)</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+        <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+    <span style="color: #9ce22e;">}</span>
+
+    <span style="color: #9ce22e;">soinfo</span>* <span style="color: #f92672;">si</span> = soinfo_alloc<span style="color: #9ce22e;">(</span>SEARCH_NAME<span style="color: #f92672;">(</span>name<span style="color: #f92672;">)</span>, &amp;file_stat<span style="color: #9ce22e;">)</span>;
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>si == <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+        <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+    <span style="color: #9ce22e;">}</span>
+    si-&gt;base = elf_reader.load_start<span style="color: #9ce22e;">()</span>;
+    si-&gt;size = elf_reader.load_size<span style="color: #9ce22e;">()</span>;
+    si-&gt;load_bias = elf_reader.load_bias<span style="color: #9ce22e;">()</span>;
+    si-&gt;phnum = elf_reader.phdr_count<span style="color: #9ce22e;">()</span>;
+    si-&gt;phdr = elf_reader.loaded_phdr<span style="color: #9ce22e;">()</span>;
+
+    <span style="color: #626262;">// </span><span style="color: #626262;">At this point we know that whatever is loaded @ base is a valid ELF</span>
+    <span style="color: #626262;">// </span><span style="color: #626262;">shared library whose segments are properly mapped in.</span>
+    TRACE<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"[ load_library base=%p size=%zu name='%s' ]"</span>,
+          <span style="color: #f92672; font-weight: bold;">reinterpret_cast</span><span style="color: #f92672;">&lt;</span><span style="color: #9ce22e;">void</span>*<span style="color: #f92672;">&gt;(</span>si-&gt;base<span style="color: #f92672;">)</span>, si-&gt;size, si-&gt;name<span style="color: #9ce22e;">)</span>;
+
+    <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span><span style="color: #a281ff;">!</span>soinfo_link_image<span style="color: #f92672;">(</span>si, extinfo<span style="color: #f92672;">)</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+      soinfo_free<span style="color: #f92672;">(</span>si<span style="color: #f92672;">)</span>;
+      <span style="color: #f92672; font-weight: bold;">return</span> <span style="color: #a281ff;">NULL</span>;
+    <span style="color: #9ce22e;">}</span>
+
+    <span style="color: #f92672; font-weight: bold;">return</span> si;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+从上面的代码中可以看到,load<sub>library函数的实现比较简单,直接打开需要加载的so文件,然生成新的soinfo的结构体.至此系统已经完成了对soinfo结构体的构造.接下来继续看so的构造函数的调用</sub>.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #9ce22e;">void</span> <span style="color: #a281ff;">soinfo</span>::<span style="color: #9ce22e; font-weight: bold;">CallConstructors</span><span style="color: #f8f8f2;">()</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>constructors_called<span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">return</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  <span style="color: #626262;">// </span><span style="color: #626262;">We set constructors_called before actually calling the constructors, otherwise it doesn't</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">protect against recursive constructor calls. One simple example of constructor recursion</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">is the libc debug malloc, which is implemented in libc_malloc_debug_leak.so:</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">1. The program depends on libc, so libc's constructor is called here.</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">2. The libc constructor calls dlopen() to load libc_malloc_debug_leak.so.</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">3. dlopen() calls the constructors on the newly created</span>
+  <span style="color: #626262;">//    </span><span style="color: #626262;">soinfo for libc_malloc_debug_leak.so.</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">4. The debug .so depends on libc, so CallConstructors is</span>
+  <span style="color: #626262;">//    </span><span style="color: #626262;">called again with the libc soinfo. If it doesn't trigger the early-</span>
+  <span style="color: #626262;">//    </span><span style="color: #626262;">out above, the libc constructor will be called again (recursively!).</span>
+  constructors_called = <span style="color: #a281ff;">true</span>;
+
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span><span style="color: #f92672;">(</span>flags &amp; FLAG_EXE<span style="color: #f92672;">)</span> == <span style="color: #a281ff;">0</span> &amp;&amp; preinit_array != <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #626262;">// </span><span style="color: #626262;">The GNU dynamic linker silently ignores these, but we warn the developer.</span>
+    PRINT<span style="color: #f92672;">(</span><span style="color: #e6db74;">"\"%s\": ignoring %zd-entry DT_PREINIT_ARRAY in shared library!"</span>,
+          name, preinit_array_count<span style="color: #f92672;">)</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  get_children<span style="color: #9ce22e;">()</span>.for_each<span style="color: #9ce22e;">(</span><span style="color: #f92672;">[]</span> <span style="color: #f92672;">(</span>soinfo* si<span style="color: #f92672;">)</span> <span style="color: #f92672;">{</span>
+    si-&gt;CallConstructors<span style="color: #a281ff;">()</span>;
+  <span style="color: #f92672;">}</span><span style="color: #9ce22e;">)</span>;
+
+  TRACE<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"\"%s\": calling constructors"</span>, name<span style="color: #9ce22e;">)</span>;
+
+  <span style="color: #626262;">// </span><span style="color: #626262;">DT_INIT should be called before DT_INIT_ARRAY if both are present.</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">&#35843;&#29992;so&#20013;&#30340;init&#20989;&#25968;</span>
+  CallFunction<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"DT_INIT"</span>, init_func<span style="color: #9ce22e;">)</span>;
+  <span style="color: #626262;">// </span><span style="color: #626262;">&#35843;&#29992;so&#20013;&#30340;initarray&#20013;&#30340;&#20989;&#25968;</span>
+  CallArray<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"DT_INIT_ARRAY"</span>, init_array, init_array_count, <span style="color: #a281ff;">false</span><span style="color: #9ce22e;">)</span>;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+CallFunction的代码如下所示:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #9ce22e;">void</span> <span style="color: #a281ff;">soinfo</span>::<span style="color: #9ce22e; font-weight: bold;">CallFunction</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">function_name</span> __unused, <span style="color: #9ce22e;">linker_function_t</span> <span style="color: #f92672;">function</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #626262;">// </span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>function == <span style="color: #a281ff;">NULL</span> || <span style="color: #f92672; font-weight: bold;">reinterpret_cast</span><span style="color: #f92672;">&lt;</span><span style="color: #9ce22e;">uintptr_t</span><span style="color: #f92672;">&gt;(</span>function<span style="color: #f92672;">)</span> == <span style="color: #f92672; font-weight: bold;">static_cast</span><span style="color: #f92672;">&lt;</span><span style="color: #9ce22e;">uintptr_t</span><span style="color: #f92672;">&gt;(</span>-<span style="color: #a281ff;">1</span><span style="color: #f92672;">)</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">return</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  TRACE<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"[ Calling %s @ %p for '%s' ]"</span>, function_name, function, name<span style="color: #9ce22e;">)</span>;
+  function<span style="color: #9ce22e;">()</span>;
+  TRACE<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"[ Done calling %s @ %p for '%s' ]"</span>, function_name, function, name<span style="color: #9ce22e;">)</span>;
+
+  <span style="color: #626262;">// </span><span style="color: #626262;">The function may have called dlopen(3) or dlclose(3), so we need to ensure our data structures</span>
+  <span style="color: #626262;">// </span><span style="color: #626262;">are still writable. This happens with our debug malloc (see http://b/7941716).</span>
+  protect_data<span style="color: #9ce22e;">(</span>PROT_READ | PROT_WRITE<span style="color: #9ce22e;">)</span>;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+在以上的代码中function是已经复制好的函数.具体的初始化过程在soinfo<sub>link</sub><sub>image函数进行实现.CallArray的实现如下</sub>:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #9ce22e;">void</span> <span style="color: #a281ff;">soinfo</span>::<span style="color: #9ce22e; font-weight: bold;">CallArray</span><span style="color: #f8f8f2;">(</span><span style="color: #f92672; font-weight: bold;">const</span> <span style="color: #9ce22e;">char</span>* <span style="color: #f92672;">array_name</span> __unused, <span style="color: #9ce22e;">linker_function_t</span>* <span style="color: #f92672;">functions</span>, <span style="color: #9ce22e;">size_t</span> <span style="color: #f92672;">count</span>, <span style="color: #9ce22e;">bool</span> <span style="color: #f92672;">reverse</span><span style="color: #f8f8f2;">)</span> <span style="color: #f8f8f2;">{</span>
+  <span style="color: #f92672; font-weight: bold;">if</span> <span style="color: #9ce22e;">(</span>functions == <span style="color: #a281ff;">NULL</span><span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    <span style="color: #f92672; font-weight: bold;">return</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  TRACE<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"[ Calling %s (size %zd) @ %p for '%s' ]"</span>, array_name, count, functions, name<span style="color: #9ce22e;">)</span>;
+
+  <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">begin</span> = reverse ? <span style="color: #9ce22e;">(</span>count - <span style="color: #a281ff;">1</span><span style="color: #9ce22e;">)</span> : <span style="color: #a281ff;">0</span>;
+  <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">end</span> = reverse ? -<span style="color: #a281ff;">1</span> : count;
+  <span style="color: #9ce22e;">int</span> <span style="color: #f92672;">step</span> = reverse ? -<span style="color: #a281ff;">1</span> : <span style="color: #a281ff;">1</span>;
+
+  <span style="color: #f92672; font-weight: bold;">for</span> <span style="color: #9ce22e;">(</span><span style="color: #9ce22e;">int</span> <span style="color: #f92672;">i</span> = begin; i != end; i += step<span style="color: #9ce22e;">)</span> <span style="color: #9ce22e;">{</span>
+    TRACE<span style="color: #f92672;">(</span><span style="color: #e6db74;">"[ %s[%d] == %p ]"</span>, array_name, i, functions<span style="color: #a281ff;">[</span>i<span style="color: #a281ff;">]</span><span style="color: #f92672;">)</span>;
+    CallFunction<span style="color: #f92672;">(</span><span style="color: #e6db74;">"function"</span>, functions<span style="color: #a281ff;">[</span>i<span style="color: #a281ff;">]</span><span style="color: #f92672;">)</span>;
+  <span style="color: #9ce22e;">}</span>
+
+  TRACE<span style="color: #9ce22e;">(</span><span style="color: #e6db74;">"[ Done calling %s for '%s' ]"</span>, array_name, name<span style="color: #9ce22e;">)</span>;
+<span style="color: #f8f8f2;">}</span>
+</pre>
+</div>
+<p>
+CallArray实际上就是对initarray中的函数逐个的进行调用.调用完成之后,就基本上完成了对so的加载(初始化工作).
+</p>
+</div>
+</div>
