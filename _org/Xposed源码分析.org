@@ -1,0 +1,581 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-12-15 五 11:32
+#+TITLE: Xopsed框架源码分析
+#+DESCRIPTION: Xposed 源码
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* xposed框架源码的介绍
+关于Xposed框架能够完成的功能就不在本文中进行介绍,如果想了解Xposed框架的功能可以自行进行搜索,网上有很多的资料.本文是根据自己的理解对Xposed的源码进行简单分析,以期理解Xposed框架背后的实现的原理.
+
+首先从github中的Xposed主页中可以看到.Xposed,XposedBridge,XposedInstaller和XposedTools.
+1. Xposed: Xposed框架实现Hook功能的c++部分的源码
+2. XposedBridge: Xposed框架实现Hook功能的Java部分的源码
+3. XposedInstaller: Xposed框架中负责对Xposed的运行环境进行安装配置和对Xposed的Moudle进行管理的Android程序.
+4. XposedTools: 主要负责Xposed各个工程的编译.主要是由于Xoposed由很多部分构成,每一部分的编译还不一致,容易造成问题.
+
+以上的各个部分都是Xposed框架重要的组成部分,并且通过相互的合作,一起完成Xposed框架的各种重要的功能.所以在研究源码的过程中经常出现从一个工程中的代码跳转到另一个工程中的代码的情况.这给源码的分析造成了一定的困难.而且在研究Xposed各个工程中的源码时发现,发现最新版本的Xposed框架的代码比较大,而且阅读起来比较困难.可以选择一个早期版本进行研究.目前可以选择v65版本进行研究.这个版本中的源码比较简单,研究起来比较简单.
+
+* XposedInstaller源码分析
+XposedInstaller是开发人员能够直接接触到的Xposed框架的管理程序,在Android4.4及以下版本可以通过直接安装XposedInstaller的方式安装Xposed框架,但是到了Android5.0及以上的版本中就只能实现在recovery模式下刷入XposedInstaller了.我们可以直接研究低版本的XposedInstaller的源码来了解XposedInstaller的原理.
+这个工程中最重要的代码再InstallFragment.java文件中.其中核心的代码如下所示. 下面的代码比较简单,主要的工作有两个:
+1. 将XposedBridge.jar文件放在/system/framwork/文件夹中.
+2. 将Xposed重写的app_process可执行文件覆盖原系统中的/system/bin/app_process.
+#+begin_src java
+private boolean install() {
+		final int installMode = getInstallMode();
+
+		if (!startShell())
+			return false;
+
+		List<String> messages = new LinkedList<String>();
+		boolean showAlert = true;
+		try {
+			messages.add(getString(R.string.sdcard_location, XposedApp.getInstance().getExternalFilesDir(null)));
+			messages.add("");
+
+			messages.add(getString(R.string.file_copying, "Xposed-Disabler-Recovery.zip"));
+			if (AssetUtil.writeAssetToSdcardFile("Xposed-Disabler-Recovery.zip", 00644) == null) {
+				messages.add("");
+				messages.add(getString(R.string.file_extract_failed, "Xposed-Disabler-Recovery.zip"));
+				return false;
+			}
+
+			File appProcessFile = AssetUtil.writeAssetToFile(APP_PROCESS_NAME, new File(XposedApp.BASE_DIR + "bin/app_process"), 00700);
+			if (appProcessFile == null) {
+				showAlert(getString(R.string.file_extract_failed, "app_process"));
+				return false;
+			}
+
+			if (installMode == INSTALL_MODE_NORMAL) {
+				// Normal installation
+				messages.add(getString(R.string.file_mounting_writable, "/system"));
+				if (mRootUtil.executeWithBusybox("mount -o remount,rw /system", messages) != 0) {
+					messages.add(getString(R.string.file_mount_writable_failed, "/system"));
+					messages.add(getString(R.string.file_trying_to_continue));
+				}
+
+				if (new File("/system/bin/app_process.orig").exists()) {
+					messages.add(getString(R.string.file_backup_already_exists, "/system/bin/app_process.orig"));
+				} else {
+					if (mRootUtil.executeWithBusybox("cp -a /system/bin/app_process /system/bin/app_process.orig", messages) != 0) {
+						messages.add("");
+						messages.add(getString(R.string.file_backup_failed, "/system/bin/app_process"));
+						return false;
+					} else {
+						messages.add(getString(R.string.file_backup_successful, "/system/bin/app_process.orig"));
+					}
+
+					mRootUtil.executeWithBusybox("sync", messages);
+				}
+
+				messages.add(getString(R.string.file_copying, "app_process"));
+				if (mRootUtil.executeWithBusybox("cp -a " + appProcessFile.getAbsolutePath() + " /system/bin/app_process", messages) != 0) {
+					messages.add("");
+					messages.add(getString(R.string.file_copy_failed, "app_process", "/system/bin"));
+					return false;
+				}
+				if (mRootUtil.executeWithBusybox("chmod 755 /system/bin/app_process", messages) != 0) {
+					messages.add("");
+					messages.add(getString(R.string.file_set_perms_failed, "/system/bin/app_process"));
+					return false;
+				}
+				if (mRootUtil.executeWithBusybox("chown root:shell /system/bin/app_process", messages) != 0) {
+					messages.add("");
+					messages.add(getString(R.string.file_set_owner_failed, "/system/bin/app_process"));
+					return false;
+				}
+
+			} else if (installMode == INSTALL_MODE_RECOVERY_AUTO) {
+				if (!prepareAutoFlash(messages, "Xposed-Installer-Recovery.zip"))
+					return false;
+
+			} else if (installMode == INSTALL_MODE_RECOVERY_MANUAL) {
+				if (!prepareManualFlash(messages, "Xposed-Installer-Recovery.zip"))
+					return false;
+			}
+
+			File blocker = new File(XposedApp.BASE_DIR + "conf/disabled");
+			if (blocker.exists()) {
+				messages.add(getString(R.string.file_removing, blocker.getAbsolutePath()));
+				if (mRootUtil.executeWithBusybox("rm " + blocker.getAbsolutePath(), messages) != 0) {
+					messages.add("");
+					messages.add(getString(R.string.file_remove_failed, blocker.getAbsolutePath()));
+					return false;
+				}
+			}
+
+			messages.add(getString(R.string.file_copying, "XposedBridge.jar"));
+			File jarFile = AssetUtil.writeAssetToFile("XposedBridge.jar", new File(JAR_PATH_NEWVERSION), 00644);
+			if (jarFile == null) {
+				messages.add("");
+				messages.add(getString(R.string.file_extract_failed, "XposedBridge.jar"));
+				return false;
+			}
+
+			mRootUtil.executeWithBusybox("sync", messages);
+
+			showAlert = false;
+			messages.add("");
+			if (installMode == INSTALL_MODE_NORMAL)
+				offerReboot(messages);
+			else
+				offerRebootToRecovery(messages, "Xposed-Installer-Recovery.zip", installMode);
+
+			return true;
+
+		} finally {
+			AssetUtil.removeBusybox();
+
+			if (showAlert)
+				showAlert(TextUtils.join("\n", messages).trim());
+		}
+	}
+#+end_src
+
+
+XposedInstaller中的其他代码主要是进行模块(module)的管理等工作,对研究Xposed框架的核心功能影响不大,所以本文不详细进行研究.
+
+
+* Xposed(Native)源码的分析
+Xposed工程中的开始文件是app_main.cpp这个文件.这个文件的大部分的代码和Android源码中的/frameworks/base/cmds/app_process/app_main.cpp中的代码一致.
+
+#+begin_src C++
+int main(int argc, char* const argv[])
+{
+    if (xposed::handleOptions(argc, argv))
+        return 0;
+
+    //......
+    //......代码省略
+    //......
+
+    runtime.mParentDir = parentDir;
+    // WARNING-1: initialize的主要功能是将XposedBridge.jar包放在系统的环境变量CLASSPATH中.以便于后期的加载.
+    isXposedLoaded = xposed::initialize(zygote, startSystemServer, className, argc, argv);
+    if (zygote) {
+        // WARNING-2: 调用de.robv.android.xposed.XposedBridge类中的main方法.
+        runtime.start(isXposedLoaded ? XPOSED_CLASS_DOTS_ZYGOTE : "com.android.internal.os.ZygoteInit",
+                startSystemServer ? "start-system-server" : "");
+    } else if (className) {
+        runtime.mClassName = className;
+        runtime.mArgC = argc - i;
+        runtime.mArgV = argv + i;
+        // WARNGING-3: 调用de.robv.android.xposed.XposedBridge$ToolEntryPoint中的main方法.
+        runtime.start(isXposedLoaded ? XPOSED_CLASS_DOTS_TOOLS : "com.android.internal.os.RuntimeInit",
+                application ? "application" : "tool");
+    } else {
+        fprintf(stderr, "Error: no class name or --zygote supplied.\n");
+        app_usage();
+        LOG_ALWAYS_FATAL("app_process: no class name or --zygote supplied.");
+        return 10;
+    }
+}
+#+end_src
+
+Xposed中还有一部分的代码非常重要那就是onVmcreated(JNIEnv* env). 从上面的代码中可以看到函数调用的是runtime.start方法,而runtime是AppRuntime类型的对象.在Android源码中AppRuntime是集成自AndroidRuntime的类,并且AppRuntime本身没有重写start方法.所以rutime.start方法调用的实际上是Android.start中的方法.
+
+#+begin_src C++
+void AndroidRuntime::start(const char* className, const char* options)
+{
+    // ...
+    // ...
+    // ...
+    // WARNING-1:调用子类的onVMCreate方法
+    onVmCreated(env);
+
+    /*
+     ,* Register android functions.
+     ,*/
+    if (startReg(env) < 0) {
+        LOGE("Unable to register all android natives\n");
+        return;
+    }
+
+    /*
+     ,* We want to call main() with a String array with arguments in it.
+     ,* At present we have two arguments, the class name and an option string.
+     ,* Create an array to hold them.
+     ,*/
+    jclass stringClass;
+    jobjectArray strArray;
+    jstring classNameStr;
+    jstring optionsStr;
+
+    stringClass = env->FindClass("java/lang/String");
+    assert(stringClass != NULL);
+    strArray = env->NewObjectArray(2, stringClass, NULL);
+    assert(strArray != NULL);
+    classNameStr = env->NewStringUTF(className);
+    assert(classNameStr != NULL);
+    env->SetObjectArrayElement(strArray, 0, classNameStr);
+    optionsStr = env->NewStringUTF(options);
+    env->SetObjectArrayElement(strArray, 1, optionsStr);
+
+    /*
+     ,* Start VM.  This thread becomes the main thread of the VM, and will
+     ,* not return until the VM exits.
+     ,*/
+    char* slashClassName = toSlashClassName(className);
+    jclass startClass = env->FindClass(slashClassName);
+    if (startClass == NULL) {
+        LOGE("JavaVM unable to locate class '%s'\n", slashClassName);
+        /* keep going */
+    } else {
+        jmethodID startMeth = env->GetStaticMethodID(startClass, "main",
+            "([Ljava/lang/String;)V");
+        if (startMeth == NULL) {
+            LOGE("JavaVM unable to find main() in '%s'\n", className);
+            /* keep going */
+        } else {
+            env->CallStaticVoidMethod(startClass, startMeth, strArray);
+
+#if 0
+            if (env->ExceptionCheck())
+                threadExitUncaughtException(env);
+#endif
+        }
+    }
+    free(slashClassName);
+
+    LOGD("Shutting down VM\n");
+    if (mJavaVM->DetachCurrentThread() != JNI_OK)
+        LOGW("Warning: unable to detach main thread\n");
+    if (mJavaVM->DestroyJavaVM() != 0)
+        LOGW("Warning: VM did not shut down cleanly\n");
+}
+
+#+end_src
+
+由于Xposed中重写了AppRuntime中的onVmCreate方法,实际上是调用的就是AppRuntime中的方法,具体的代码如下所示:
+
+#+begin_src C++
+
+virtual void onVmCreated(JNIEnv* env)
+{
+    // 调用的是Xposed类中的onVmCreated方法
+    if (isXposedLoaded)
+        xposed::onVmCreated(env);
+
+    if (mClassName == NULL) {
+        return; // Zygote. Nothing to do here.
+    }
+
+    /*
+     ,* This is a little awkward because the JNI FindClass call uses the
+     ,* class loader associated with the native method we're executing in.
+     ,* If called in onStarted (from RuntimeInit.finishInit because we're
+     ,* launching "am", for example), FindClass would see that we're calling
+     ,* from a boot class' native method, and so wouldn't look for the class
+     ,* we're trying to look up in CLASSPATH. Unfortunately it needs to,
+     ,* because the "am" classes are not boot classes.
+     ,*
+     ,* The easiest fix is to call FindClass here, early on before we start
+     ,* executing boot class Java code and thereby deny ourselves access to
+     ,* non-boot classes.
+     ,*/
+    char* slashClassName = toSlashClassName(mClassName);
+    mClass = env->FindClass(slashClassName);
+    if (mClass == NULL) {
+        ALOGE("ERROR: could not find class '%s'\n", mClassName);
+    }
+    free(slashClassName);
+
+    mClass = reinterpret_cast<jclass>(env->NewGlobalRef(mClass));
+}
+#+end_src
+
+Xposed中的onVmCreate方法定义在xposed.cpp中,该方法的代码如下所示.
+#+begin_src C++
+void onVmCreated(JNIEnv* env) {
+    if (!initMemberOffsets(env))
+        return;
+
+    jclass classMiuiResources = env->FindClass(CLASS_MIUI_RESOURCES);
+    if (classMiuiResources != NULL) {
+        ClassObject* clazz = (ClassObject*)dvmDecodeIndirectRef(dvmThreadSelf(), classMiuiResources);
+        if (dvmIsFinalClass(clazz)) {
+            ALOGD("Removing final flag for class '%s'", CLASS_MIUI_RESOURCES);
+            clazz->accessFlags &= ~ACC_FINAL;
+        }
+    }
+    env->ExceptionClear();
+
+    jclass classXTypedArray = env->FindClass(CLASS_XTYPED_ARRAY);
+    if (classXTypedArray == NULL) {
+        ALOGE("Error while loading XTypedArray class '%s':", CLASS_XTYPED_ARRAY);
+        dvmLogExceptionStackTrace();
+        env->ExceptionClear();
+        return;
+    }
+    prepareSubclassReplacement(classXTypedArray);
+
+    // WARNING: 注册Xposed的native方法.
+    classXposedBridge = env->FindClass(CLASS_XPOSED_BRIDGE);
+    classXposedBridge = reinterpret_cast<jclass>(env->NewGlobalRef(classXposedBridge));
+
+    if (classXposedBridge == NULL) {
+        ALOGE("Error while loading Xposed class '%s':", CLASS_XPOSED_BRIDGE);
+        dvmLogExceptionStackTrace();
+        env->ExceptionClear();
+        return;
+    }
+
+    ALOGI("Found Xposed class '%s', now initializing", CLASS_XPOSED_BRIDGE);
+    if (register_natives_XposedBridge(env, classXposedBridge) != JNI_OK) {
+        ALOGE("Could not register natives for '%s'", CLASS_XPOSED_BRIDGE);
+        dvmLogExceptionStackTrace();
+        env->ExceptionClear();
+        return;
+    }
+
+    xposedLoadedSuccessfully = true;
+}
+#+end_src
+该方法主要进行的xposed常用native方法的注册,注册的方法如下所示:
+#+begin_src C++
+        NATIVE_METHOD(XposedBridge, getStartClassName, "()Ljava/lang/String;"),
+        NATIVE_METHOD(XposedBridge, getRuntime, "()I"),
+        NATIVE_METHOD(XposedBridge, startsSystemServer, "()Z"),
+        NATIVE_METHOD(XposedBridge, getXposedVersion, "()I"),
+        NATIVE_METHOD(XposedBridge, initNative, "()Z"),
+        NATIVE_METHOD(XposedBridge, hookMethodNative, "(Ljava/lang/reflect/Member;Ljava/lang/Class;ILjava/lang/Object;)V"),
+#ifdef ART_TARGET
+        NATIVE_METHOD(XposedBridge, invokeOriginalMethodNative,
+            "(Ljava/lang/reflect/Member;I[Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"),
+#endif
+        NATIVE_METHOD(XposedBridge, setObjectClassNative, "(Ljava/lang/Object;Ljava/lang/Class;)V"),
+        NATIVE_METHOD(XposedBridge, dumpObjectNative, "(Ljava/lang/Object;)V"),
+        NATIVE_METHOD(XposedBridge, cloneToSubclassNative, "(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;"),
+
+#+end_src
+
+* XposedBridge源码分析
+通过上一部分的分析,可以发现Xposed(native)的代码需要调用XposedBrige中的代码,所以本部分会对XposedBridge中的代码进行分析,而且分析过程中XposedBridge中的代码还会调用Xposed中的代码.首先来看de.robv.android.xposed.XposedBridge中的main方法.
+
+#+begin_src java
+protected static void main(String[] args) {
+		// Initialize the Xposed framework and modules
+		try {
+			SELinuxHelper.initOnce();
+			SELinuxHelper.initForProcess(null);
+
+			runtime = getRuntime();
+      // WARNING-1:调用initNative的方法
+			if (initNative()) {
+				XPOSED_BRIDGE_VERSION = getXposedVersion();
+				if (isZygote) {
+					startsSystemServer = startsSystemServer();
+          // WARNING-2:调用initForZygote方法
+					initForZygote();
+				}
+        // Warning-3: 调用LoadModules模块,加载XposedInstaller中的模块
+				loadModules();
+			} else {
+				log("Errors during native Xposed initialization");
+			}
+		} catch (Throwable t) {
+			log("Errors during Xposed initialization");
+			log(t);
+			disableHooks = true;
+		}
+
+		// Call the original startup code
+    // 调用com.android.internal.os.ZygoteInit.main的代码, 回到原始的逻辑进行执行
+		if (isZygote)
+			ZygoteInit.main(args);
+		else
+			RuntimeInit.main(args);
+	}
+#+end_src
+先来看initNative的源码,通过研究发现initNative的函数定义如下:
+#+begin_src C++
+	private native static boolean initNative();
+#+end_src
+从该函数的声明中可以发现,该方法是native方法.所以通过对Xposed(native)的代码的查找.找到了该函数的具体的实现.
+#+begin_src C++
+jboolean XposedBridge_initNative(JNIEnv* env, jclass clazz) {
+    if (!xposedLoadedSuccessfully) {
+        ALOGE("Not initializing Xposed because of previous errors");
+        return false;
+    }
+    // WARNING: 关键的代码
+    if (!callback_XposedBridge_initNative(env))
+        return false;
+    //.....
+}
+    #+end_src
+继续往下追踪:
+#+begin_src C++
+jboolean callback_XposedBridge_initNative(JNIEnv* env) {
+    // WARNING: 获取XposedBridge.jar中的handleHookedMethod方法,并将该方法赋值给xposedHandleHookedMethod
+    xposedHandleHookedMethod = (Method*) env->GetStaticMethodID(classXposedBridge, "handleHookedMethod",
+        "(Ljava/lang/reflect/Member;ILjava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+    if (xposedHandleHookedMethod == NULL) {
+        ALOGE("ERROR: could not find method %s.handleHookedMethod(Member, int, Object, Object, Object[])", CLASS_XPOSED_BRIDGE);
+        dvmLogExceptionStackTrace();
+        env->ExceptionClear();
+        return false;
+    }
+    // 获取到invokeOriginalMethodNative方法,并将该方法赋值给invokeOrignalMethodNative方法
+    Method* xposedInvokeOriginalMethodNative = (Method*) env->GetStaticMethodID(classXposedBridge, "invokeOriginalMethodNative",
+        "(Ljava/lang/reflect/Member;I[Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;");
+    if (xposedInvokeOriginalMethodNative == NULL) {
+        ALOGE("ERROR: could not find method %s.invokeOriginalMethodNative(Member, int, Class[], Class, Object, Object[])", CLASS_XPOSED_BRIDGE);
+        dvmLogExceptionStackTrace();
+        env->ExceptionClear();
+        return false;
+    }
+    dvmSetNativeFunc(xposedInvokeOriginalMethodNative, XposedBridge_invokeOriginalMethodNative, NULL);
+
+    objectArrayClass = dvmFindArrayClass("[Ljava/lang/Object;", NULL);
+    if (objectArrayClass == NULL) {
+        ALOGE("Error while loading Object[] class");
+        dvmLogExceptionStackTrace();
+        env->ExceptionClear();
+        return false;
+    }
+
+    return true;
+}
+#+end_src
+ 上面的方法总结起来只有一个功能,从XposedBrige.jar包中获取关键的两个方法,然后将这两个方法赋值给native代码的两个全局变量,以便于后期使用.
+
+
+接下来继续研究XposedBrige.jar中的第一个main方法.该方法后续调用了initForZygote()方法.该方法的实现如下所示:
+#+begin_src C++
+/**
+	 * Hook some methods which we want to create an easier interface for developers.
+	 */
+	private static void initForZygote() throws Throwable {
+		final HashSet<String> loadedPackagesInProcess = new HashSet<String>(1);
+
+		// normal process initialization (for new Activity, Service, BroadcastReceiver etc.)
+    // Hook Android系统的HandleBindApplication方法
+		findAndHookMethod(ActivityThread.class, "handleBindApplication", "android.app.ActivityThread.AppBindData", new XC_MethodHook() {
+			protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+				ActivityThread activityThread = (ActivityThread) param.thisObject;
+				ApplicationInfo appInfo = (ApplicationInfo) getObjectField(param.args[0], "appInfo");
+				String reportedPackageName = appInfo.packageName.equals("android") ? "system" : appInfo.packageName;
+				SELinuxHelper.initForProcess(reportedPackageName);
+				ComponentName instrumentationName = (ComponentName) getObjectField(param.args[0], "instrumentationName");
+				if (instrumentationName != null) {
+					XposedBridge.log("Instrumentation detected, disabling framework for " + reportedPackageName);
+					disableHooks = true;
+					return;
+				}
+				CompatibilityInfo compatInfo = (CompatibilityInfo) getObjectField(param.args[0], "compatInfo");
+				if (appInfo.sourceDir == null)
+					return;
+
+				setObjectField(activityThread, "mBoundApplication", param.args[0]);
+				loadedPackagesInProcess.add(reportedPackageName);
+				LoadedApk loadedApk = activityThread.getPackageInfoNoCheck(appInfo, compatInfo);
+				XResources.setPackageNameForResDir(appInfo.packageName, loadedApk.getResDir());
+
+				LoadPackageParam lpparam = new LoadPackageParam(sLoadedPackageCallbacks);
+				lpparam.packageName = reportedPackageName;
+				lpparam.processName = (String) getObjectField(param.args[0], "processName");
+				lpparam.classLoader = loadedApk.getClassLoader();
+				lpparam.appInfo = appInfo;
+				lpparam.isFirstApplication = true;
+				XC_LoadPackage.callAll(lpparam);
+
+				if (reportedPackageName.equals(INSTALLER_PACKAGE_NAME))
+					hookXposedInstaller(lpparam.classLoader);
+			}
+		});
+
+		// system_server initialization
+		if (Build.VERSION.SDK_INT < 21) {
+    // 如果系统< 21,就hook系统的com.android.server.ServerThread方法
+			findAndHookMethod("com.android.server.ServerThread", null,
+					Build.VERSION.SDK_INT < 19 ? "run" : "initAndLoop", new XC_MethodHook() {
+				@Override
+				protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+					SELinuxHelper.initForProcess("android");
+					loadedPackagesInProcess.add("android");
+
+					LoadPackageParam lpparam = new LoadPackageParam(sLoadedPackageCallbacks);
+					lpparam.packageName = "android";
+					lpparam.processName = "android"; // it's actually system_server, but other functions return this as well
+					lpparam.classLoader = BOOTCLASSLOADER;
+					lpparam.appInfo = null;
+					lpparam.isFirstApplication = true;
+					XC_LoadPackage.callAll(lpparam);
+				}
+			});
+		} else if (startsSystemServer) {
+      // 如果系统版本大于 21.则hook系统的system方法
+			findAndHookMethod(ActivityThread.class, "systemMain", new XC_MethodHook() {
+				@Override
+				protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+					final ClassLoader cl = Thread.currentThread().getContextClassLoader();
+					findAndHookMethod("com.android.server.SystemServer", cl, "startBootstrapServices", new XC_MethodHook() {
+						@Override
+						protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+							SELinuxHelper.initForProcess("android");
+							loadedPackagesInProcess.add("android");
+
+							LoadPackageParam lpparam = new LoadPackageParam(sLoadedPackageCallbacks);
+							lpparam.packageName = "android";
+							lpparam.processName = "android"; // it's actually system_server, but other functions return this as well
+							lpparam.classLoader = cl;
+							lpparam.appInfo = null;
+							lpparam.isFirstApplication = true;
+							XC_LoadPackage.callAll(lpparam);
+						}
+					});
+				}
+			});
+		}
+
+		// when a package is loaded for an existing process, trigger the callbacks as well
+    // Hook一个进程中所有方法的构造方法 
+		hookAllConstructors(LoadedApk.class, new XC_MethodHook() {
+			@Override
+			protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+				LoadedApk loadedApk = (LoadedApk) param.thisObject;
+
+				String packageName = loadedApk.getPackageName();
+				XResources.setPackageNameForResDir(packageName, loadedApk.getResDir());
+				if (packageName.equals("android") || !loadedPackagesInProcess.add(packageName))
+					return;
+
+				if ((Boolean) getBooleanField(loadedApk, "mIncludeCode") == false)
+					return;
+
+				LoadPackageParam lpparam = new LoadPackageParam(sLoadedPackageCallbacks);
+				lpparam.packageName = packageName;
+				lpparam.processName = AndroidAppHelper.currentProcessName();
+				lpparam.classLoader = loadedApk.getClassLoader();
+				lpparam.appInfo = loadedApk.getApplicationInfo();
+				lpparam.isFirstApplication = false;
+				XC_LoadPackage.callAll(lpparam);
+			}
+		});
+    // Hook系统的ApplicationPackageManager方法
+		findAndHookMethod("android.app.ApplicationPackageManager", null, "getResourcesForApplication",
+				ApplicationInfo.class, new XC_MethodHook() {
+			@Override
+			protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+				ApplicationInfo app = (ApplicationInfo) param.args[0];
+				XResources.setPackageNameForResDir(app.packageName,
+					app.uid == Process.myUid() ? app.sourceDir : app.publicSourceDir);
+			}
+		});
+
+		if (!SELinuxHelper.getAppDataFileService().checkFileExists(BASE_DIR + "conf/disable_resources")) {
+			hookResources();
+		} else {
+			disableResources = true;
+		}
+	}
+#+end_src
+以上的代码中最重要的就是hook了系统的方法handleBindApplication方法.该方法是每个应用打开时必须调用的方法.所以当一个新的应用打开时,在调用handleBindApplication方法之前都会首先执行XposedBridge中的代码.
+* 参考资料
+1. [[https://bbs.pediy.com/thread-223713.htm][Xposed注入实现分析及免重启定制]] 
