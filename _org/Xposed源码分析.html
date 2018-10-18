@@ -1,0 +1,884 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2018-01-29 一 13:52 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Xopsed框架源码分析</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="tiankai" />
+<meta name="description" content="Xposed 源码"
+ />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-hledger:before { content: 'hledger'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2017 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">Xopsed框架源码分析</h1>
+
+<div id="outline-container-orgda83f84" class="outline-2">
+<h2 id="orgda83f84">xposed框架源码的介绍</h2>
+<div class="outline-text-2" id="text-orgda83f84">
+<p>
+关于Xposed框架能够完成的功能就不在本文中进行介绍,如果想了解Xposed框架的功能可以自行进行搜索,网上有很多的资料.本文是根据自己的理解对Xposed的源码进行简单分析,以期理解Xposed框架背后的实现的原理.
+</p>
+
+<p>
+首先从github中的Xposed主页中可以看到.Xposed,XposedBridge,XposedInstaller和XposedTools.
+</p>
+<ol class="org-ol">
+<li>Xposed: Xposed框架实现Hook功能的c++部分的源码</li>
+<li>XposedBridge: Xposed框架实现Hook功能的Java部分的源码</li>
+<li>XposedInstaller: Xposed框架中负责对Xposed的运行环境进行安装配置和对Xposed的Moudle进行管理的Android程序.</li>
+<li>XposedTools: 主要负责Xposed各个工程的编译.主要是由于Xoposed由很多部分构成,每一部分的编译还不一致,容易造成问题.</li>
+</ol>
+
+<p>
+以上的各个部分都是Xposed框架重要的组成部分,并且通过相互的合作,一起完成Xposed框架的各种重要的功能.所以在研究源码的过程中经常出现从一个工程中的代码跳转到另一个工程中的代码的情况.这给源码的分析造成了一定的困难.而且在研究Xposed各个工程中的源码时发现,发现最新版本的Xposed框架的代码比较大,而且阅读起来比较困难.可以选择一个早期版本进行研究.目前可以选择v65版本进行研究.这个版本中的源码比较简单,研究起来比较简单.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org5fe74e6" class="outline-2">
+<h2 id="org5fe74e6">XposedInstaller源码分析</h2>
+<div class="outline-text-2" id="text-org5fe74e6">
+<p>
+XposedInstaller是开发人员能够直接接触到的Xposed框架的管理程序,在Android4.4及以下版本可以通过直接安装XposedInstaller的方式安装Xposed框架,但是到了Android5.0及以上的版本中就只能实现在recovery模式下刷入XposedInstaller了.我们可以直接研究低版本的XposedInstaller的源码来了解XposedInstaller的原理.
+这个工程中最重要的代码再InstallFragment.java文件中.其中核心的代码如下所示. 下面的代码比较简单,主要的工作有两个:
+</p>
+<ol class="org-ol">
+<li>将XposedBridge.jar文件放在/system/framwork/文件夹中.</li>
+<li>将Xposed重写的app<sub>process可执行文件覆盖原系统中的</sub>/system/bin/app<sub>process</sub>.</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold;">private</span> <span style="color: #ce537a; font-weight: bold;">boolean</span> <span style="color: #bc6ec5; font-weight: bold;">install</span><span style="color: #4f97d7;">()</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">installMode</span> = getInstallMode<span style="color: #bc6ec5;">()</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>startShell<span style="color: #2d9574;">()</span><span style="color: #bc6ec5;">)</span>
+      <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">List</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">String</span><span style="color: #bc6ec5;">&gt;</span> <span style="color: #7590db;">messages</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">LinkedList</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">String</span><span style="color: #bc6ec5;">&gt;()</span>;
+    <span style="color: #ce537a; font-weight: bold;">boolean</span> <span style="color: #7590db;">showAlert</span> = <span style="color: #a45bad;">true</span>;
+    <span style="color: #4f97d7; font-weight: bold;">try</span> <span style="color: #bc6ec5;">{</span>
+      messages.add<span style="color: #2d9574;">(</span>getString<span style="color: #67b11d;">(</span>R.string.sdcard_location, XposedApp.getInstance<span style="color: #b1951d;">()</span>.getExternalFilesDir<span style="color: #b1951d;">(</span><span style="color: #a45bad;">null</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>;
+      messages.add<span style="color: #2d9574;">(</span><span style="color: #2d9574;">""</span><span style="color: #2d9574;">)</span>;
+
+      messages.add<span style="color: #2d9574;">(</span>getString<span style="color: #67b11d;">(</span>R.string.file_copying, <span style="color: #2d9574;">"Xposed-Disabler-Recovery.zip"</span><span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>AssetUtil.writeAssetToSdcardFile<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"Xposed-Disabler-Recovery.zip"</span>, <span style="color: #a45bad;">00644</span><span style="color: #67b11d;">)</span> == <span style="color: #a45bad;">null</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        messages.add<span style="color: #67b11d;">(</span><span style="color: #2d9574;">""</span><span style="color: #67b11d;">)</span>;
+        messages.add<span style="color: #67b11d;">(</span>getString<span style="color: #b1951d;">(</span>R.string.file_extract_failed, <span style="color: #2d9574;">"Xposed-Disabler-Recovery.zip"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+      <span style="color: #2d9574;">}</span>
+
+      <span style="color: #ce537a; font-weight: bold;">File</span> <span style="color: #7590db;">appProcessFile</span> = AssetUtil.writeAssetToFile<span style="color: #2d9574;">(</span>APP_PROCESS_NAME, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">File</span><span style="color: #67b11d;">(</span><span style="color: #a45bad;">XposedApp</span>.BASE_DIR + <span style="color: #2d9574;">"bin/app_process"</span><span style="color: #67b11d;">)</span>, <span style="color: #a45bad;">00700</span><span style="color: #2d9574;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>appProcessFile == <span style="color: #a45bad;">null</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        showAlert<span style="color: #67b11d;">(</span>getString<span style="color: #b1951d;">(</span>R.string.file_extract_failed, <span style="color: #2d9574;">"app_process"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+      <span style="color: #2d9574;">}</span>
+
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>installMode == INSTALL_MODE_NORMAL<span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Normal installation</span>
+        messages.add<span style="color: #67b11d;">(</span>getString<span style="color: #b1951d;">(</span>R.string.file_mounting_writable, <span style="color: #2d9574;">"/system"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>mRootUtil.executeWithBusybox<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"mount -o remount,rw /system"</span>, messages<span style="color: #b1951d;">)</span> != <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_mount_writable_failed, <span style="color: #2d9574;">"/system"</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_trying_to_continue<span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+        <span style="color: #67b11d;">}</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span><span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">File</span><span style="color: #b1951d;">(</span><span style="color: #2d9574;">"/system/bin/app_process.orig"</span><span style="color: #b1951d;">)</span>.exists<span style="color: #b1951d;">()</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_backup_already_exists, <span style="color: #2d9574;">"/system/bin/app_process.orig"</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+        <span style="color: #67b11d;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #67b11d;">{</span>
+          <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>mRootUtil.executeWithBusybox<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"cp -a /system/bin/app_process /system/bin/app_process.orig"</span>, messages<span style="color: #4f97d7;">)</span> != <span style="color: #a45bad;">0</span><span style="color: #b1951d;">)</span> <span style="color: #b1951d;">{</span>
+            messages.add<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">""</span><span style="color: #4f97d7;">)</span>;
+            messages.add<span style="color: #4f97d7;">(</span>getString<span style="color: #bc6ec5;">(</span>R.string.file_backup_failed, <span style="color: #2d9574;">"/system/bin/app_process"</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+          <span style="color: #b1951d;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #b1951d;">{</span>
+            messages.add<span style="color: #4f97d7;">(</span>getString<span style="color: #bc6ec5;">(</span>R.string.file_backup_successful, <span style="color: #2d9574;">"/system/bin/app_process.orig"</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>;
+          <span style="color: #b1951d;">}</span>
+
+          mRootUtil.executeWithBusybox<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"sync"</span>, messages<span style="color: #b1951d;">)</span>;
+        <span style="color: #67b11d;">}</span>
+
+        messages.add<span style="color: #67b11d;">(</span>getString<span style="color: #b1951d;">(</span>R.string.file_copying, <span style="color: #2d9574;">"app_process"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>mRootUtil.executeWithBusybox<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"cp -a "</span> + appProcessFile.getAbsolutePath<span style="color: #4f97d7;">()</span> + <span style="color: #2d9574;">" /system/bin/app_process"</span>, messages<span style="color: #b1951d;">)</span> != <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          messages.add<span style="color: #b1951d;">(</span><span style="color: #2d9574;">""</span><span style="color: #b1951d;">)</span>;
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_copy_failed, <span style="color: #2d9574;">"app_process"</span>, <span style="color: #2d9574;">"/system/bin"</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+          <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+        <span style="color: #67b11d;">}</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>mRootUtil.executeWithBusybox<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"chmod 755 /system/bin/app_process"</span>, messages<span style="color: #b1951d;">)</span> != <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          messages.add<span style="color: #b1951d;">(</span><span style="color: #2d9574;">""</span><span style="color: #b1951d;">)</span>;
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_set_perms_failed, <span style="color: #2d9574;">"/system/bin/app_process"</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+          <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+        <span style="color: #67b11d;">}</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>mRootUtil.executeWithBusybox<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"chown root:shell /system/bin/app_process"</span>, messages<span style="color: #b1951d;">)</span> != <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          messages.add<span style="color: #b1951d;">(</span><span style="color: #2d9574;">""</span><span style="color: #b1951d;">)</span>;
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_set_owner_failed, <span style="color: #2d9574;">"/system/bin/app_process"</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+          <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+        <span style="color: #67b11d;">}</span>
+
+      <span style="color: #2d9574;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>installMode == INSTALL_MODE_RECOVERY_AUTO<span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span><span style="color: #a45bad;">!</span>prepareAutoFlash<span style="color: #b1951d;">(</span>messages, <span style="color: #2d9574;">"Xposed-Installer-Recovery.zip"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>
+          <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+
+      <span style="color: #2d9574;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>installMode == INSTALL_MODE_RECOVERY_MANUAL<span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span><span style="color: #a45bad;">!</span>prepareManualFlash<span style="color: #b1951d;">(</span>messages, <span style="color: #2d9574;">"Xposed-Installer-Recovery.zip"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>
+          <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+      <span style="color: #2d9574;">}</span>
+
+      <span style="color: #ce537a; font-weight: bold;">File</span> <span style="color: #7590db;">blocker</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">File</span><span style="color: #2d9574;">(</span><span style="color: #a45bad;">XposedApp</span>.BASE_DIR + <span style="color: #2d9574;">"conf/disabled"</span><span style="color: #2d9574;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>blocker.exists<span style="color: #67b11d;">()</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        messages.add<span style="color: #67b11d;">(</span>getString<span style="color: #b1951d;">(</span>R.string.file_removing, blocker.getAbsolutePath<span style="color: #4f97d7;">()</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>mRootUtil.executeWithBusybox<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"rm "</span> + blocker.getAbsolutePath<span style="color: #4f97d7;">()</span>, messages<span style="color: #b1951d;">)</span> != <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          messages.add<span style="color: #b1951d;">(</span><span style="color: #2d9574;">""</span><span style="color: #b1951d;">)</span>;
+          messages.add<span style="color: #b1951d;">(</span>getString<span style="color: #4f97d7;">(</span>R.string.file_remove_failed, blocker.getAbsolutePath<span style="color: #bc6ec5;">()</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>;
+          <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+        <span style="color: #67b11d;">}</span>
+      <span style="color: #2d9574;">}</span>
+
+      messages.add<span style="color: #2d9574;">(</span>getString<span style="color: #67b11d;">(</span>R.string.file_copying, <span style="color: #2d9574;">"XposedBridge.jar"</span><span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>;
+      <span style="color: #ce537a; font-weight: bold;">File</span> <span style="color: #7590db;">jarFile</span> = AssetUtil.writeAssetToFile<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"XposedBridge.jar"</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">File</span><span style="color: #67b11d;">(</span>JAR_PATH_NEWVERSION<span style="color: #67b11d;">)</span>, <span style="color: #a45bad;">00644</span><span style="color: #2d9574;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>jarFile == <span style="color: #a45bad;">null</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        messages.add<span style="color: #67b11d;">(</span><span style="color: #2d9574;">""</span><span style="color: #67b11d;">)</span>;
+        messages.add<span style="color: #67b11d;">(</span>getString<span style="color: #b1951d;">(</span>R.string.file_extract_failed, <span style="color: #2d9574;">"XposedBridge.jar"</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+      <span style="color: #2d9574;">}</span>
+
+      mRootUtil.executeWithBusybox<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"sync"</span>, messages<span style="color: #2d9574;">)</span>;
+
+      showAlert = <span style="color: #a45bad;">false</span>;
+      messages.add<span style="color: #2d9574;">(</span><span style="color: #2d9574;">""</span><span style="color: #2d9574;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>installMode == INSTALL_MODE_NORMAL<span style="color: #2d9574;">)</span>
+        offerReboot<span style="color: #2d9574;">(</span>messages<span style="color: #2d9574;">)</span>;
+      <span style="color: #4f97d7; font-weight: bold;">else</span>
+        offerRebootToRecovery<span style="color: #2d9574;">(</span>messages, <span style="color: #2d9574;">"Xposed-Installer-Recovery.zip"</span>, installMode<span style="color: #2d9574;">)</span>;
+
+      <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">true</span>;
+
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">finally</span> <span style="color: #bc6ec5;">{</span>
+      AssetUtil.removeBusybox<span style="color: #2d9574;">()</span>;
+
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>showAlert<span style="color: #2d9574;">)</span>
+        showAlert<span style="color: #2d9574;">(</span>TextUtils.join<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"\n"</span>, messages<span style="color: #67b11d;">)</span>.trim<span style="color: #67b11d;">()</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+  <span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+
+<p>
+XposedInstaller中的其他代码主要是进行模块(module)的管理等工作,对研究Xposed框架的核心功能影响不大,所以本文不详细进行研究.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-org514e618" class="outline-2">
+<h2 id="org514e618">Xposed(Native)源码的分析</h2>
+<div class="outline-text-2" id="text-org514e618">
+<p>
+Xposed工程中的开始文件是app<sub>main.cpp这个文件.这个文件的大部分的代码和Android源码中的</sub>/frameworks/base/cmds/app<sub>process</sub>/app<sub>main.cpp中的代码一致</sub>.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">main</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">argc</span>, <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #7590db;">argv</span><span style="color: #bc6ec5;">[]</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">xposed</span>::handleOptions<span style="color: #2d9574;">(</span>argc, argv<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">......</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">......&#20195;&#30721;&#30465;&#30053;</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">......</span>
+
+    runtime.mParentDir = parentDir;
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING-1: initialize&#30340;&#20027;&#35201;&#21151;&#33021;&#26159;&#23558;XposedBridge.jar&#21253;&#25918;&#22312;&#31995;&#32479;&#30340;&#29615;&#22659;&#21464;&#37327;CLASSPATH&#20013;.&#20197;&#20415;&#20110;&#21518;&#26399;&#30340;&#21152;&#36733;.</span>
+    isXposedLoaded = <span style="color: #a45bad;">xposed</span>::initialize<span style="color: #bc6ec5;">(</span>zygote, startSystemServer, className, argc, argv<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>zygote<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING-2: &#35843;&#29992;de.robv.android.xposed.XposedBridge&#31867;&#20013;&#30340;main&#26041;&#27861;.</span>
+        runtime.start<span style="color: #2d9574;">(</span>isXposedLoaded ? XPOSED_CLASS_DOTS_ZYGOTE : <span style="color: #2d9574;">"com.android.internal.os.ZygoteInit"</span>,
+                startSystemServer ? <span style="color: #2d9574;">"start-system-server"</span> : <span style="color: #2d9574;">""</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>className<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        runtime.mClassName = className;
+        runtime.mArgC = argc - i;
+        runtime.mArgV = argv + i;
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNGING-3: &#35843;&#29992;de.robv.android.xposed.XposedBridge$ToolEntryPoint&#20013;&#30340;main&#26041;&#27861;.</span>
+        runtime.start<span style="color: #2d9574;">(</span>isXposedLoaded ? XPOSED_CLASS_DOTS_TOOLS : <span style="color: #2d9574;">"com.android.internal.os.RuntimeInit"</span>,
+                application ? <span style="color: #2d9574;">"application"</span> : <span style="color: #2d9574;">"tool"</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+        fprintf<span style="color: #2d9574;">(</span>stderr, <span style="color: #2d9574;">"Error: no class name or --zygote supplied.\n"</span><span style="color: #2d9574;">)</span>;
+        app_usage<span style="color: #2d9574;">()</span>;
+        LOG_ALWAYS_FATAL<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"app_process: no class name or --zygote supplied."</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">10</span>;
+    <span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+<p>
+Xposed中还有一部分的代码非常重要那就是onVmcreated(JNIEnv* env). 从上面的代码中可以看到函数调用的是runtime.start方法,而runtime是AppRuntime类型的对象.在Android源码中AppRuntime是集成自AndroidRuntime的类,并且AppRuntime本身没有重写start方法.所以rutime.start方法调用的实际上是Android.start中的方法.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #a45bad;">AndroidRuntime</span>::<span style="color: #bc6ec5; font-weight: bold;">start</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">className</span>, <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">options</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">...</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">...</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">...</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING-1:&#35843;&#29992;&#23376;&#31867;&#30340;onVMCreate&#26041;&#27861;</span>
+    onVmCreated<span style="color: #bc6ec5;">(</span>env<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * Register android functions.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>startReg<span style="color: #2d9574;">(</span>env<span style="color: #2d9574;">)</span> &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        LOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Unable to register all android natives\n"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * We want to call main() with a String array with arguments in it.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * At present we have two arguments, the class name and an option string.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * Create an array to hold them.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+    <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">stringClass</span>;
+    <span style="color: #ce537a; font-weight: bold;">jobjectArray</span> <span style="color: #7590db;">strArray</span>;
+    <span style="color: #ce537a; font-weight: bold;">jstring</span> <span style="color: #7590db;">classNameStr</span>;
+    <span style="color: #ce537a; font-weight: bold;">jstring</span> <span style="color: #7590db;">optionsStr</span>;
+
+    stringClass = env-&gt;FindClass<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"java/lang/String"</span><span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>stringClass != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    strArray = env-&gt;NewObjectArray<span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">2</span>, stringClass, <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>strArray != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    classNameStr = env-&gt;NewStringUTF<span style="color: #bc6ec5;">(</span>className<span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>classNameStr != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    env-&gt;SetObjectArrayElement<span style="color: #bc6ec5;">(</span>strArray, <span style="color: #a45bad;">0</span>, classNameStr<span style="color: #bc6ec5;">)</span>;
+    optionsStr = env-&gt;NewStringUTF<span style="color: #bc6ec5;">(</span>options<span style="color: #bc6ec5;">)</span>;
+    env-&gt;SetObjectArrayElement<span style="color: #bc6ec5;">(</span>strArray, <span style="color: #a45bad;">1</span>, optionsStr<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * Start VM.  This thread becomes the main thread of the VM, and will</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * not return until the VM exits.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+    <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">slashClassName</span> = toSlashClassName<span style="color: #bc6ec5;">(</span>className<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">startClass</span> = env-&gt;FindClass<span style="color: #bc6ec5;">(</span>slashClassName<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>startClass == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        LOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"JavaVM unable to locate class '%s'\n"</span>, slashClassName<span style="color: #2d9574;">)</span>;
+        <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">keep going */</span>
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">jmethodID</span> <span style="color: #7590db;">startMeth</span> = env-&gt;GetStaticMethodID<span style="color: #2d9574;">(</span>startClass, <span style="color: #2d9574;">"main"</span>,
+            <span style="color: #2d9574;">"([Ljava/lang/String;)V"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>startMeth == <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            LOGE<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"JavaVM unable to find main() in '%s'\n"</span>, className<span style="color: #67b11d;">)</span>;
+            <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">keep going */</span>
+        <span style="color: #2d9574;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #2d9574;">{</span>
+            env-&gt;CallStaticVoidMethod<span style="color: #67b11d;">(</span>startClass, startMeth, strArray<span style="color: #67b11d;">)</span>;
+
+<span style="color: #bc6ec5;">#if</span> <span style="color: #a45bad;">0</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>env-&gt;ExceptionCheck<span style="color: #b1951d;">()</span><span style="color: #67b11d;">)</span>
+                threadExitUncaughtException<span style="color: #67b11d;">(</span>env<span style="color: #67b11d;">)</span>;
+<span style="color: #bc6ec5;">#endif</span>
+        <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span>
+    free<span style="color: #bc6ec5;">(</span>slashClassName<span style="color: #bc6ec5;">)</span>;
+
+    LOGD<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"Shutting down VM\n"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mJavaVM-&gt;DetachCurrentThread<span style="color: #2d9574;">()</span> != JNI_OK<span style="color: #bc6ec5;">)</span>
+        LOGW<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"Warning: unable to detach main thread\n"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mJavaVM-&gt;DestroyJavaVM<span style="color: #2d9574;">()</span> != <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>
+        LOGW<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"Warning: VM did not shut down cleanly\n"</span><span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+
+<p>
+由于Xposed中重写了AppRuntime中的onVmCreate方法,实际上是调用的就是AppRuntime中的方法,具体的代码如下所示:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #4f97d7; font-weight: bold;">virtual</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">onVmCreated</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#35843;&#29992;&#30340;&#26159;Xposed&#31867;&#20013;&#30340;onVmCreated&#26041;&#27861;</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>isXposedLoaded<span style="color: #bc6ec5;">)</span>
+        <span style="color: #a45bad;">xposed</span>::onVmCreated<span style="color: #bc6ec5;">(</span>env<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mClassName == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Zygote. Nothing to do here.</span>
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * This is a little awkward because the JNI FindClass call uses the</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * class loader associated with the native method we're executing in.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * If called in onStarted (from RuntimeInit.finishInit because we're</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * launching "am", for example), FindClass would see that we're calling</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * from a boot class' native method, and so wouldn't look for the class</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * we're trying to look up in CLASSPATH. Unfortunately it needs to,</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * because the "am" classes are not boot classes.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     *</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * The easiest fix is to call FindClass here, early on before we start</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * executing boot class Java code and thereby deny ourselves access to</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * non-boot classes.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+    <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">slashClassName</span> = toSlashClassName<span style="color: #bc6ec5;">(</span>mClassName<span style="color: #bc6ec5;">)</span>;
+    mClass = env-&gt;FindClass<span style="color: #bc6ec5;">(</span>slashClassName<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mClass == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"ERROR: could not find class '%s'\n"</span>, mClassName<span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+    free<span style="color: #bc6ec5;">(</span>slashClassName<span style="color: #bc6ec5;">)</span>;
+
+    mClass = <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span><span style="color: #bc6ec5;">&lt;</span>jclass<span style="color: #bc6ec5;">&gt;(</span>env-&gt;NewGlobalRef<span style="color: #2d9574;">(</span>mClass<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+<p>
+Xposed中的onVmCreate方法定义在xposed.cpp中,该方法的代码如下所示.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">onVmCreated</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>initMemberOffsets<span style="color: #2d9574;">(</span>env<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">classMiuiResources</span> = env-&gt;FindClass<span style="color: #bc6ec5;">(</span>CLASS_MIUI_RESOURCES<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>classMiuiResources != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">ClassObject</span>* <span style="color: #7590db;">clazz</span> = <span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">ClassObject</span>*<span style="color: #2d9574;">)</span>dvmDecodeIndirectRef<span style="color: #2d9574;">(</span>dvmThreadSelf<span style="color: #67b11d;">()</span>, classMiuiResources<span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>dvmIsFinalClass<span style="color: #67b11d;">(</span>clazz<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            ALOGD<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"Removing final flag for class '%s'"</span>, CLASS_MIUI_RESOURCES<span style="color: #67b11d;">)</span>;
+            clazz-&gt;accessFlags &amp;= ~ACC_FINAL;
+        <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span>
+    env-&gt;ExceptionClear<span style="color: #bc6ec5;">()</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">classXTypedArray</span> = env-&gt;FindClass<span style="color: #bc6ec5;">(</span>CLASS_XTYPED_ARRAY<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>classXTypedArray == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Error while loading XTypedArray class '%s':"</span>, CLASS_XTYPED_ARRAY<span style="color: #2d9574;">)</span>;
+        dvmLogExceptionStackTrace<span style="color: #2d9574;">()</span>;
+        env-&gt;ExceptionClear<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+    <span style="color: #bc6ec5;">}</span>
+    prepareSubclassReplacement<span style="color: #bc6ec5;">(</span>classXTypedArray<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING: &#27880;&#20876;Xposed&#30340;native&#26041;&#27861;.</span>
+    classXposedBridge = env-&gt;FindClass<span style="color: #bc6ec5;">(</span>CLASS_XPOSED_BRIDGE<span style="color: #bc6ec5;">)</span>;
+    classXposedBridge = <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">jclass</span><span style="color: #bc6ec5;">&gt;(</span>env-&gt;NewGlobalRef<span style="color: #2d9574;">(</span>classXposedBridge<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>classXposedBridge == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Error while loading Xposed class '%s':"</span>, CLASS_XPOSED_BRIDGE<span style="color: #2d9574;">)</span>;
+        dvmLogExceptionStackTrace<span style="color: #2d9574;">()</span>;
+        env-&gt;ExceptionClear<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    ALOGI<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"Found Xposed class '%s', now initializing"</span>, CLASS_XPOSED_BRIDGE<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>register_natives_XposedBridge<span style="color: #2d9574;">(</span>env, classXposedBridge<span style="color: #2d9574;">)</span> != JNI_OK<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Could not register natives for '%s'"</span>, CLASS_XPOSED_BRIDGE<span style="color: #2d9574;">)</span>;
+        dvmLogExceptionStackTrace<span style="color: #2d9574;">()</span>;
+        env-&gt;ExceptionClear<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    xposedLoadedSuccessfully = <span style="color: #a45bad;">true</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+该方法主要进行的xposed常用native方法的注册,注册的方法如下所示:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++">        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, getStartClassName, <span style="color: #2d9574;">"()Ljava/lang/String;"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, getRuntime, <span style="color: #2d9574;">"()I"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, startsSystemServer, <span style="color: #2d9574;">"()Z"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, getXposedVersion, <span style="color: #2d9574;">"()I"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, initNative, <span style="color: #2d9574;">"()Z"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, hookMethodNative, <span style="color: #2d9574;">"(Ljava/lang/reflect/Member;Ljava/lang/Class;ILjava/lang/Object;)V"</span><span style="color: #4f97d7;">)</span>,
+<span style="color: #bc6ec5;">#ifdef</span> ART_TARGET
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, invokeOriginalMethodNative,
+            <span style="color: #2d9574;">"(Ljava/lang/reflect/Member;I[Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"</span><span style="color: #4f97d7;">)</span>,
+<span style="color: #bc6ec5;">#endif</span>
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, setObjectClassNative, <span style="color: #2d9574;">"(Ljava/lang/Object;Ljava/lang/Class;)V"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, dumpObjectNative, <span style="color: #2d9574;">"(Ljava/lang/Object;)V"</span><span style="color: #4f97d7;">)</span>,
+        NATIVE_METHOD<span style="color: #4f97d7;">(</span>XposedBridge, cloneToSubclassNative, <span style="color: #2d9574;">"(Ljava/lang/Object;Ljava/lang/Class;)Ljava/lang/Object;"</span><span style="color: #4f97d7;">)</span>,
+
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgfe7381d" class="outline-2">
+<h2 id="orgfe7381d">XposedBridge源码分析</h2>
+<div class="outline-text-2" id="text-orgfe7381d">
+<p>
+通过上一部分的分析,可以发现Xposed(native)的代码需要调用XposedBrige中的代码,所以本部分会对XposedBridge中的代码进行分析,而且分析过程中XposedBridge中的代码还会调用Xposed中的代码.首先来看de.robv.android.xposed.XposedBridge中的main方法.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">main</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span><span style="color: #bc6ec5;">[]</span> <span style="color: #7590db;">args</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Initialize the Xposed framework and modules</span>
+    <span style="color: #4f97d7; font-weight: bold;">try</span> <span style="color: #bc6ec5;">{</span>
+      SELinuxHelper.initOnce<span style="color: #2d9574;">()</span>;
+      SELinuxHelper.initForProcess<span style="color: #2d9574;">(</span><span style="color: #a45bad;">null</span><span style="color: #2d9574;">)</span>;
+
+      runtime = getRuntime<span style="color: #2d9574;">()</span>;
+      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING-1:&#35843;&#29992;initNative&#30340;&#26041;&#27861;</span>
+      <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>initNative<span style="color: #67b11d;">()</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        XPOSED_BRIDGE_VERSION = getXposedVersion<span style="color: #67b11d;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>isZygote<span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+          startsSystemServer = startsSystemServer<span style="color: #b1951d;">()</span>;
+          <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING-2:&#35843;&#29992;initForZygote&#26041;&#27861;</span>
+          initForZygote<span style="color: #b1951d;">()</span>;
+        <span style="color: #67b11d;">}</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Warning-3: &#35843;&#29992;LoadModules&#27169;&#22359;,&#21152;&#36733;XposedInstaller&#20013;&#30340;&#27169;&#22359;</span>
+        loadModules<span style="color: #67b11d;">()</span>;
+      <span style="color: #2d9574;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #2d9574;">{</span>
+        log<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"Errors during native Xposed initialization"</span><span style="color: #67b11d;">)</span>;
+      <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">catch</span> <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #7590db;">t</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+      log<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Errors during Xposed initialization"</span><span style="color: #2d9574;">)</span>;
+      log<span style="color: #2d9574;">(</span>t<span style="color: #2d9574;">)</span>;
+      disableHooks = <span style="color: #a45bad;">true</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Call the original startup code</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#35843;&#29992;com.android.internal.os.ZygoteInit.main&#30340;&#20195;&#30721;, &#22238;&#21040;&#21407;&#22987;&#30340;&#36923;&#36753;&#36827;&#34892;&#25191;&#34892;</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>isZygote<span style="color: #bc6ec5;">)</span>
+      ZygoteInit.main<span style="color: #bc6ec5;">(</span>args<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">else</span>
+      RuntimeInit.main<span style="color: #bc6ec5;">(</span>args<span style="color: #bc6ec5;">)</span>;
+  <span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+先来看initNative的源码,通过研究发现initNative的函数定义如下:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #4f97d7; font-weight: bold;">private</span> native <span style="color: #4f97d7; font-weight: bold;">static</span> boolean initNative<span style="color: #4f97d7;">()</span>;
+</pre>
+</div>
+<p>
+从该函数的声明中可以发现,该方法是native方法.所以通过对Xposed(native)的代码的查找.找到了该函数的具体的实现.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">jboolean</span> <span style="color: #bc6ec5; font-weight: bold;">XposedBridge_initNative</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">clazz</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>xposedLoadedSuccessfully<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Not initializing Xposed because of previous errors"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING: &#20851;&#38190;&#30340;&#20195;&#30721;</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>callback_XposedBridge_initNative<span style="color: #2d9574;">(</span>env<span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">.....</span>
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+继续往下追踪:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">jboolean</span> <span style="color: #bc6ec5; font-weight: bold;">callback_XposedBridge_initNative</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">WARNING: &#33719;&#21462;XposedBridge.jar&#20013;&#30340;handleHookedMethod&#26041;&#27861;,&#24182;&#23558;&#35813;&#26041;&#27861;&#36171;&#20540;&#32473;xposedHandleHookedMethod</span>
+    xposedHandleHookedMethod = <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">Method</span>*<span style="color: #bc6ec5;">)</span> env-&gt;GetStaticMethodID<span style="color: #bc6ec5;">(</span>classXposedBridge, <span style="color: #2d9574;">"handleHookedMethod"</span>,
+        <span style="color: #2d9574;">"(Ljava/lang/reflect/Member;ILjava/lang/Object;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>xposedHandleHookedMethod == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"ERROR: could not find method %s.handleHookedMethod(Member, int, Object, Object, Object[])"</span>, CLASS_XPOSED_BRIDGE<span style="color: #2d9574;">)</span>;
+        dvmLogExceptionStackTrace<span style="color: #2d9574;">()</span>;
+        env-&gt;ExceptionClear<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#33719;&#21462;&#21040;invokeOriginalMethodNative&#26041;&#27861;,&#24182;&#23558;&#35813;&#26041;&#27861;&#36171;&#20540;&#32473;invokeOrignalMethodNative&#26041;&#27861;</span>
+    <span style="color: #ce537a; font-weight: bold;">Method</span>* <span style="color: #7590db;">xposedInvokeOriginalMethodNative</span> = <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">Method</span>*<span style="color: #bc6ec5;">)</span> env-&gt;GetStaticMethodID<span style="color: #bc6ec5;">(</span>classXposedBridge, <span style="color: #2d9574;">"invokeOriginalMethodNative"</span>,
+        <span style="color: #2d9574;">"(Ljava/lang/reflect/Member;I[Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>xposedInvokeOriginalMethodNative == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"ERROR: could not find method %s.invokeOriginalMethodNative(Member, int, Class[], Class, Object, Object[])"</span>, CLASS_XPOSED_BRIDGE<span style="color: #2d9574;">)</span>;
+        dvmLogExceptionStackTrace<span style="color: #2d9574;">()</span>;
+        env-&gt;ExceptionClear<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+    dvmSetNativeFunc<span style="color: #bc6ec5;">(</span>xposedInvokeOriginalMethodNative, XposedBridge_invokeOriginalMethodNative, <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+
+    objectArrayClass = dvmFindArrayClass<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"[Ljava/lang/Object;"</span>, <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>objectArrayClass == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Error while loading Object[] class"</span><span style="color: #2d9574;">)</span>;
+        dvmLogExceptionStackTrace<span style="color: #2d9574;">()</span>;
+        env-&gt;ExceptionClear<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">true</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+上面的方法总结起来只有一个功能,从XposedBrige.jar包中获取关键的两个方法,然后将这两个方法赋值给native代码的两个全局变量,以便于后期使用.
+</p>
+
+
+<p>
+接下来继续研究XposedBrige.jar中的第一个main方法.该方法后续调用了initForZygote()方法.该方法的实现如下所示:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">/**</span>
+<span style="color: #2aa1ae; background-color: #292e34;">   * Hook some methods which we want to create an easier interface for developers.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">   */</span>
+  <span style="color: #4f97d7; font-weight: bold;">private</span> <span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">void</span> initForZygote<span style="color: #4f97d7;">()</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">HashSet</span><span style="color: #bc6ec5;">&lt;</span>String<span style="color: #bc6ec5;">&gt;</span> <span style="color: #7590db;">loadedPackagesInProcess</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> HashSet<span style="color: #bc6ec5;">&lt;</span>String<span style="color: #bc6ec5;">&gt;(</span><span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">normal process initialization (for new Activity, Service, BroadcastReceiver etc.)</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Hook Android&#31995;&#32479;&#30340;HandleBindApplication&#26041;&#27861;</span>
+    findAndHookMethod<span style="color: #bc6ec5;">(</span>ActivityThread.<span style="color: #4f97d7; font-weight: bold;">class</span>, <span style="color: #2d9574;">"handleBindApplication"</span>, <span style="color: #2d9574;">"android.app.ActivityThread.AppBindData"</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #2d9574;">()</span> <span style="color: #2d9574;">{</span>
+      <span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> beforeHookedMethod<span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #67b11d;">)</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #67b11d;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">ActivityThread</span> <span style="color: #7590db;">activityThread</span> = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">ActivityThread</span><span style="color: #b1951d;">)</span> param.thisObject;
+        <span style="color: #ce537a; font-weight: bold;">ApplicationInfo</span> <span style="color: #7590db;">appInfo</span> = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">ApplicationInfo</span><span style="color: #b1951d;">)</span> getObjectField<span style="color: #b1951d;">(</span>param.args<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>, <span style="color: #2d9574;">"appInfo"</span><span style="color: #b1951d;">)</span>;
+        <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">reportedPackageName</span> = appInfo.packageName.equals<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"android"</span><span style="color: #b1951d;">)</span> ? <span style="color: #2d9574;">"system"</span> : appInfo.packageName;
+        SELinuxHelper.initForProcess<span style="color: #b1951d;">(</span>reportedPackageName<span style="color: #b1951d;">)</span>;
+        <span style="color: #ce537a; font-weight: bold;">ComponentName</span> <span style="color: #7590db;">instrumentationName</span> = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">ComponentName</span><span style="color: #b1951d;">)</span> getObjectField<span style="color: #b1951d;">(</span>param.args<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>, <span style="color: #2d9574;">"instrumentationName"</span><span style="color: #b1951d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>instrumentationName != null<span style="color: #b1951d;">)</span> <span style="color: #b1951d;">{</span>
+          XposedBridge.log<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Instrumentation detected, disabling framework for "</span> + reportedPackageName<span style="color: #4f97d7;">)</span>;
+          disableHooks = <span style="color: #a45bad;">true</span>;
+          <span style="color: #4f97d7; font-weight: bold;">return</span>;
+        <span style="color: #b1951d;">}</span>
+        <span style="color: #ce537a; font-weight: bold;">CompatibilityInfo</span> <span style="color: #7590db;">compatInfo</span> = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">CompatibilityInfo</span><span style="color: #b1951d;">)</span> getObjectField<span style="color: #b1951d;">(</span>param.args<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>, <span style="color: #2d9574;">"compatInfo"</span><span style="color: #b1951d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>appInfo.sourceDir == null<span style="color: #b1951d;">)</span>
+          <span style="color: #4f97d7; font-weight: bold;">return</span>;
+
+        setObjectField<span style="color: #b1951d;">(</span>activityThread, <span style="color: #2d9574;">"mBoundApplication"</span>, param.args<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span><span style="color: #b1951d;">)</span>;
+        loadedPackagesInProcess.add<span style="color: #b1951d;">(</span>reportedPackageName<span style="color: #b1951d;">)</span>;
+        <span style="color: #ce537a; font-weight: bold;">LoadedApk</span> <span style="color: #7590db;">loadedApk</span> = activityThread.getPackageInfoNoCheck<span style="color: #b1951d;">(</span>appInfo, compatInfo<span style="color: #b1951d;">)</span>;
+        XResources.setPackageNameForResDir<span style="color: #b1951d;">(</span>appInfo.packageName, loadedApk.getResDir<span style="color: #4f97d7;">()</span><span style="color: #b1951d;">)</span>;
+
+        <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span> <span style="color: #7590db;">lpparam</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span><span style="color: #b1951d;">(</span>sLoadedPackageCallbacks<span style="color: #b1951d;">)</span>;
+        lpparam.packageName = reportedPackageName;
+        lpparam.processName = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">String</span><span style="color: #b1951d;">)</span> getObjectField<span style="color: #b1951d;">(</span>param.args<span style="color: #4f97d7;">[</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">]</span>, <span style="color: #2d9574;">"processName"</span><span style="color: #b1951d;">)</span>;
+        lpparam.classLoader = loadedApk.getClassLoader<span style="color: #b1951d;">()</span>;
+        lpparam.appInfo = appInfo;
+        lpparam.isFirstApplication = <span style="color: #a45bad;">true</span>;
+        XC_LoadPackage.callAll<span style="color: #b1951d;">(</span>lpparam<span style="color: #b1951d;">)</span>;
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>reportedPackageName.equals<span style="color: #4f97d7;">(</span>INSTALLER_PACKAGE_NAME<span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>
+          hookXposedInstaller<span style="color: #b1951d;">(</span>lpparam.classLoader<span style="color: #b1951d;">)</span>;
+      <span style="color: #67b11d;">}</span>
+    <span style="color: #2d9574;">}</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">system_server initialization</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>Build.VERSION.SDK_INT &lt; <span style="color: #a45bad;">21</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#22914;&#26524;&#31995;&#32479;&lt; 21,&#23601;hook&#31995;&#32479;&#30340;com.android.server.ServerThread&#26041;&#27861;</span>
+      findAndHookMethod<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"com.android.server.ServerThread"</span>, null,
+          Build.VERSION.SDK_INT &lt; <span style="color: #a45bad;">19</span> ? <span style="color: #2d9574;">"run"</span> : <span style="color: #2d9574;">"initAndLoop"</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #67b11d;">()</span> <span style="color: #67b11d;">{</span>
+        @Override
+        <span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> beforeHookedMethod<span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #b1951d;">)</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #b1951d;">{</span>
+          SELinuxHelper.initForProcess<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"android"</span><span style="color: #4f97d7;">)</span>;
+          loadedPackagesInProcess.add<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"android"</span><span style="color: #4f97d7;">)</span>;
+
+          <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span> <span style="color: #7590db;">lpparam</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span><span style="color: #4f97d7;">(</span>sLoadedPackageCallbacks<span style="color: #4f97d7;">)</span>;
+          lpparam.packageName = <span style="color: #2d9574;">"android"</span>;
+          lpparam.processName = <span style="color: #2d9574;">"android"</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">it's actually system_server, but other functions return this as well</span>
+          lpparam.classLoader = BOOTCLASSLOADER;
+          lpparam.appInfo = null;
+          lpparam.isFirstApplication = <span style="color: #a45bad;">true</span>;
+          XC_LoadPackage.callAll<span style="color: #4f97d7;">(</span>lpparam<span style="color: #4f97d7;">)</span>;
+        <span style="color: #b1951d;">}</span>
+      <span style="color: #67b11d;">}</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>startsSystemServer<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#22914;&#26524;&#31995;&#32479;&#29256;&#26412;&#22823;&#20110; 21.&#21017;hook&#31995;&#32479;&#30340;system&#26041;&#27861;</span>
+      findAndHookMethod<span style="color: #2d9574;">(</span>ActivityThread.<span style="color: #4f97d7; font-weight: bold;">class</span>, <span style="color: #2d9574;">"systemMain"</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #67b11d;">()</span> <span style="color: #67b11d;">{</span>
+        @Override
+        <span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> afterHookedMethod<span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #b1951d;">)</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #b1951d;">{</span>
+          <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">ClassLoader</span> <span style="color: #7590db;">cl</span> = Thread.currentThread<span style="color: #4f97d7;">()</span>.getContextClassLoader<span style="color: #4f97d7;">()</span>;
+          findAndHookMethod<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"com.android.server.SystemServer"</span>, cl, <span style="color: #2d9574;">"startBootstrapServices"</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #bc6ec5;">()</span> <span style="color: #bc6ec5;">{</span>
+            @Override
+            <span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> beforeHookedMethod<span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #2d9574;">)</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #2d9574;">{</span>
+              SELinuxHelper.initForProcess<span style="color: #9cb6ad;">(</span><span style="color: #2d9574;">"android"</span><span style="color: #9cb6ad;">)</span>;
+              loadedPackagesInProcess.add<span style="color: #9cb6ad;">(</span><span style="color: #2d9574;">"android"</span><span style="color: #9cb6ad;">)</span>;
+
+              <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span> <span style="color: #7590db;">lpparam</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span><span style="color: #9cb6ad;">(</span>sLoadedPackageCallbacks<span style="color: #9cb6ad;">)</span>;
+              lpparam.packageName = <span style="color: #2d9574;">"android"</span>;
+              lpparam.processName = <span style="color: #2d9574;">"android"</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">it's actually system_server, but other functions return this as well</span>
+              lpparam.classLoader = cl;
+              lpparam.appInfo = null;
+              lpparam.isFirstApplication = <span style="color: #a45bad;">true</span>;
+              XC_LoadPackage.callAll<span style="color: #9cb6ad;">(</span>lpparam<span style="color: #9cb6ad;">)</span>;
+            <span style="color: #2d9574;">}</span>
+          <span style="color: #bc6ec5;">}</span><span style="color: #4f97d7;">)</span>;
+        <span style="color: #b1951d;">}</span>
+      <span style="color: #67b11d;">}</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">when a package is loaded for an existing process, trigger the callbacks as well</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Hook&#19968;&#20010;&#36827;&#31243;&#20013;&#25152;&#26377;&#26041;&#27861;&#30340;&#26500;&#36896;&#26041;&#27861; </span>
+    hookAllConstructors<span style="color: #bc6ec5;">(</span>LoadedApk.<span style="color: #4f97d7; font-weight: bold;">class</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #2d9574;">()</span> <span style="color: #2d9574;">{</span>
+      @Override
+      <span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> afterHookedMethod<span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #67b11d;">)</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #67b11d;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">LoadedApk</span> <span style="color: #7590db;">loadedApk</span> = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">LoadedApk</span><span style="color: #b1951d;">)</span> param.thisObject;
+
+        <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">packageName</span> = loadedApk.getPackageName<span style="color: #b1951d;">()</span>;
+        XResources.setPackageNameForResDir<span style="color: #b1951d;">(</span>packageName, loadedApk.getResDir<span style="color: #4f97d7;">()</span><span style="color: #b1951d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>packageName.equals<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"android"</span><span style="color: #4f97d7;">)</span> || <span style="color: #a45bad;">!</span>loadedPackagesInProcess.add<span style="color: #4f97d7;">(</span>packageName<span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span>
+          <span style="color: #4f97d7; font-weight: bold;">return</span>;
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">Boolean</span><span style="color: #4f97d7;">)</span> getBooleanField<span style="color: #4f97d7;">(</span>loadedApk, <span style="color: #2d9574;">"mIncludeCode"</span><span style="color: #4f97d7;">)</span> == <span style="color: #a45bad;">false</span><span style="color: #b1951d;">)</span>
+          <span style="color: #4f97d7; font-weight: bold;">return</span>;
+
+        <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span> <span style="color: #7590db;">lpparam</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span><span style="color: #b1951d;">(</span>sLoadedPackageCallbacks<span style="color: #b1951d;">)</span>;
+        lpparam.packageName = packageName;
+        lpparam.processName = AndroidAppHelper.currentProcessName<span style="color: #b1951d;">()</span>;
+        lpparam.classLoader = loadedApk.getClassLoader<span style="color: #b1951d;">()</span>;
+        lpparam.appInfo = loadedApk.getApplicationInfo<span style="color: #b1951d;">()</span>;
+        lpparam.isFirstApplication = <span style="color: #a45bad;">false</span>;
+        XC_LoadPackage.callAll<span style="color: #b1951d;">(</span>lpparam<span style="color: #b1951d;">)</span>;
+      <span style="color: #67b11d;">}</span>
+    <span style="color: #2d9574;">}</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Hook&#31995;&#32479;&#30340;ApplicationPackageManager&#26041;&#27861;</span>
+    findAndHookMethod<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"android.app.ApplicationPackageManager"</span>, null, <span style="color: #2d9574;">"getResourcesForApplication"</span>,
+        ApplicationInfo.<span style="color: #4f97d7; font-weight: bold;">class</span>, <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #2d9574;">()</span> <span style="color: #2d9574;">{</span>
+      @Override
+      <span style="color: #4f97d7; font-weight: bold;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> beforeHookedMethod<span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #67b11d;">)</span> <span style="color: #ce537a; font-weight: bold;">throws</span> <span style="color: #7590db;">Throwable</span> <span style="color: #67b11d;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">ApplicationInfo</span> <span style="color: #7590db;">app</span> = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">ApplicationInfo</span><span style="color: #b1951d;">)</span> param.args<span style="color: #b1951d;">[</span><span style="color: #a45bad;">0</span><span style="color: #b1951d;">]</span>;
+        XResources.setPackageNameForResDir<span style="color: #b1951d;">(</span>app.packageName,
+          app.uid == Process.myUid<span style="color: #4f97d7;">()</span> ? app.sourceDir : app.publicSourceDir<span style="color: #b1951d;">)</span>;
+      <span style="color: #67b11d;">}</span>
+    <span style="color: #2d9574;">}</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>SELinuxHelper.getAppDataFileService<span style="color: #2d9574;">()</span>.checkFileExists<span style="color: #2d9574;">(</span>BASE_DIR + <span style="color: #2d9574;">"conf/disable_resources"</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+      hookResources<span style="color: #2d9574;">()</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+      disableResources = <span style="color: #a45bad;">true</span>;
+    <span style="color: #bc6ec5;">}</span>
+  <span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+以上的代码中最重要的就是hook了系统的方法handleBindApplication方法.该方法是每个应用打开时必须调用的方法.所以当一个新的应用打开时,在调用handleBindApplication方法之前都会首先执行XposedBridge中的代码.
+</p>
+</div>
+</div>
+<div id="outline-container-org9040e4e" class="outline-2">
+<h2 id="org9040e4e">参考资料</h2>
+<div class="outline-text-2" id="text-org9040e4e">
+<ol class="org-ol">
+<li><a href="https://bbs.pediy.com/thread-223713.htm">Xposed注入实现分析及免重启定制</a></li>
+</ol>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2017-12-15 五 11:32</p>
+<p class="author">Author: tiankai</p>
+<p class="date">Created: 2018-01-29 一 13:52</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

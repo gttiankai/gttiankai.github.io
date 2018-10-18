@@ -1,0 +1,13 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2016-01-20 Wed 18:37
+#+TITLE: shell调用python,传递带空格的参数
+#+DESCRIPTION: shell python 空格 参数
+#+TAGS: Python
+#+CATEGORIES: Python
+
+* shell调用python,传递带空格的参数
+今天使用

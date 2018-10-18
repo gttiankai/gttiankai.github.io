@@ -1,0 +1,157 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-06-06 二 21:17
+#+TITLE: Ali2014ctf第三题
+#+DESCRIPTION: Ali ctf 2014 IDA so 脱壳
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* 题目说明 
+该题目是阿里移动安全挑战赛2014年的第三题.题目的内容如下:
+#+begin_example 
+  EvilAPK-300
+  该破解程序jscrack主界面包含两个控件：
+  1）URL输入框
+  2）进入”按钮“
+  要求自己构造一个网页，并把网页对应的URL输入到URL输入框控件，然后，点击”进入”按钮，jscrack会打开webview浏览你的网页，如果jscrack能弹出一个Toast，就证明已经成功破解，同时Toast显示的内容就是这个题目的flag。
+#+end_example
+[[http://gttiankai.github.io/public/files/EvilAPK-3.apk][题目下载]]
+
+* 解题过程
+** 初步分析
+首先安装该应用,然后启动该应用.启动后的界面如下图所示,从启动界面来看,该题目的要求和题目的说明一致,需要找到一个URL.
+
+#+attr_html: :width 20% :height 20%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p1.jpg
+
+使用JEB打开APK,结果如如下图所示,通过下图中的观察,一看就知道该APK是经过加壳保护的.下一步的重点就要进行脱壳了.而从图中可以看到关键的native方法attachBaseContext和Oncreate方法都是再libmobisec.so中.所以要想脱壳肯定需要分析该so.
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p2.jpg
+
+** 静态分析libmobisec.so
+使用IDA pro 代开ibmobisec.so.在IDA pro的导出表中找到JNI_OnLoad方法,解析到的结果如下图所示:
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p3.jpg
+
+上图中的逆向结果并不是很直观,这时需要对JNI_OnLoad方法进行修复,具体的修复的方法可以参考:[[http://blog.csdn.net/u010382106/article/details/44960243][链接]]. 修复之后的逆向结果如下图所示:
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p4.jpg
+
+从上图可以看到,修复之后已经可以看到JNI的方法,但是这些函数都没有修复完整.例如RegisterNatives方法并不是无参的,该函数其实有参数的,但是IDA pro没有修复完整.这个地方我看了很多资料,也不知道怎么继续修复.所以只能看汇编语言.从汇编语言中可以找到要注册的函数attachBaseContext的实现了.
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p5.jpg
+
+具体分析attachBaseContext的过程在这里不在赘述,因为我以前做过加壳,所以对这一块比较熟悉,不需要非常详细的分析.如果想要详细的了解atttachBaseContext的分析可以这个链接:[[http://biubiubiu.info/2016/12/11/aliCTF143/][传送门]]. 
+** 动态调试脱壳
+接下来就是动态调试libmobisec.so了.IDA连接上调试器,对libdvm.so中的dvmDexFileOpenPartial函数下断点. 其中对libdvm.so下断点的方法参考下面的博客([[http://blog.csdn.net/pengyan0812/article/details/46275317][传送门]])中有详细的步骤,在这里不再赘述.我们为什么选择dvmDexFileOpenPartial?这是因为对dex进行解析肯定会调用该函数.而且该函数的第一个参数正好是dex文件的起始地址,第二个参数正好是dex文件的长度.主要能够获取到这两个参数就可以从内存中将dex文件dump出来.dvmDexFileOpenPartial在Android4.4.2源码中的定义如下所示:
+#+begin_src C++
+int dvmDexFileOpenPartial(const void* addr, int len, DvmDex** ppDvmDex)
+{
+    DvmDex* pDvmDex;
+    DexFile* pDexFile;
+    int parseFlags = kDexParseDefault;
+    int result = -1;
+
+    /* -- file is incomplete, new checksum has not yet been calculated
+    if (gDvm.verifyDexChecksum)
+        parseFlags |= kDexParseVerifyChecksum;
+    */
+
+    pDexFile = dexFileParse((u1*)addr, len, parseFlags);
+    if (pDexFile == NULL) {
+        ALOGE("DEX parse failed");
+        goto bail;
+    }
+    pDvmDex = allocateAuxStructures(pDexFile);
+    if (pDvmDex == NULL) {
+        dexFileFree(pDexFile);
+        goto bail;
+    }
+
+    pDvmDex->isMappedReadOnly = false;
+    *ppDvmDex = pDvmDex;
+    result = 0;
+
+bail:
+    return result;
+}
+#+end_src
+
+使用IDA调试该APK,在dvmDexFileOpenPartial处下断点,运行截图如下所示:
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p6.jpg
+
+此时使用IDA的脚本将dex文件从内存中dump出来.使用的脚本如下所示:
+#+begin_example 
+  auto fp, dex_addr, end_addr;
+	fp = fopen("C:\\dump.dex", "wb");
+  end_addr = r0 + r1;
+  for (dex_addr = r0; dex_addr < end_addr; dex_addr++){
+      fputc(Byte(dex_addr), fp);
+  }
+#+end_example
+
+运行脚本之后就可以拿到脱壳之后的dex文件了.但是使用JEB不能直接解析dex文件.一般的做法就是先用baksmali反编译,然后使用smali编译回去.此时就可以使用JEB打开脱壳之后的代码了.
+
+个人感觉IDA pro的脚本要好好的看一下,如果需要进一步了解IDA脚本相关的只是可以看一下这个链接:[[https://security.tencent.com/index.php/blog/msg/4][传送门]].
+
+** 分析脱壳后的dex文件
+使用jeb打开脱壳后的dex文件的截图如下所示:
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p7.jpg
+
+从上面的图中的Java代码可以看到,当点击了按钮之后,会直接调用WebViewActivity.所以我们下一步需要分析的就是WebViewActivity中的内容.WebViewActivity中内容如下图所示:
+
+#+attr_html: :width 40% :height 40%
+http://gttiankai.github.io/public/img/alictf-2014-game3/p8.jpg
+
+从WebViewAcitivity中可以非常清楚的看到相应代码.根据题目中的提示我们需要构造一个网页,然后让该应用加载这个网页,这个网页会使该应用弹出一个Toast.分析代码可以找到弹出Toastd的代码.分析这段代码,我们可以发现,虽然在调用Toast之前代码中使用了decrypt_native等加密算法,但是弹出Toast的方法并没有对这些内容进行处理.也就是说这个Toast方法弹出的是一个固定的字符串.这个固定的字符串就是"祥龙!".所以我们不需要自己构造网页,直接从代码中就可以获取到.当然你也可以自己构造网页.但是构造网页时就需要对代码进行分析,需要对decrypt_natiave方法进行逆向分析.当然了也可以利用Xposed模块将解密后的内容直接吐出来.编写Xposed模块的相关的代码如下:
+
+#+begin_src java
+public class Jscrack implements IXposedHookLoadPackage {
+    @Override
+    public void handleLoadPackage(XC_LoadPackage.LoadPackageParam loadPackageParam) throws Throwable {
+        if (!loadPackageParam.packageName.equals("com.ali.tg.testapp")) return;
+        findAndHookMethod("android.webkit.WebView", loadPackageParam.classLoader, "addJavascriptInterface", Object.class, String.class, new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                XposedBridge.log("before addJavascriptInterface:" + param.args[1].toString());
+            }
+            @Override
+            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+            }
+        });
+    }
+}
+#+end_src
+
+根据上面的Xposed模块可以直接获得解密后的结果:SmokeyBear. 根据结果构造的html的代码如下:
+#+begin_src HTML
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="gbk"/>
+    <title>js调用java测试</title>
+	<script type="text/javascript">
+	function fun()
+	{
+		SmokeyBear.showToast();
+	}
+	window.onload=fun;
+	</script>
+</head>
+<body>
+</body>
+</html>
+#+end_src
+

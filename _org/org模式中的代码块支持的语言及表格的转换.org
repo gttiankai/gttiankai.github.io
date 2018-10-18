@@ -1,0 +1,90 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2016-02-17 Wed 17:28
+#+TITLE: org模式中的代码块支持的语言及表格的转换
+#+DESCRIPTION: emacs org sourcecode 
+#+TAGS: emacs 
+#+CATEGORIES: emacs
+
+* org模式中的代码块中支持的语言
+
+| Language       | Identifier | Language   | Identifier |
+|----------------+------------+------------+------------|
+| Asymptote      | asymptote  | Awk        | awk        |
+| C              | C          | C++        | C++        |
+| Clojure        | clojure    | CSS        | css        |
+| D              | d          | ditaa      | ditaa      |
+| Graphviz       | dot        | Emacs Calc | calc       |
+| Emacs Lisp     | emacs-lisp | Fortran    | fortran    |
+| gnuplot        | gnuplot    | Haskell    | haskell    |
+| Java           | java       | Javascript | js         |
+| LaTeX          | latex      | Ledger     | ledger     |
+| Lisp           | lisp       | Lilypond   | lilypond   |
+| MATLAB         | matlab     | Mscgen     | mscgen     |
+| Objective Caml | ocaml      | Octave     | octave     |
+| Org mode       | org        | Oz         | oz         |
+| Perl           | perl       | Plantuml   | plantuml   |
+| Processing.js  | processing | Python     | python     |
+| R              | R          | Ruby       | ruby       |
+| Sass           | sass       | Scheme     | scheme     |
+| GNU Screen     | screen     | Sed        | sed        |
+| shell          | sh         | SQL        | sql        |
+| SQLite         | sqlite     |            |            |
+|----------------+------------+------------+------------|
+* org模式中的表格
+在日常生活中,常遇到将一些数据转换为表格的情况,我们最常用的方法就是手动的一项项的书写,
+现在有了org模式之后,可以将很方便将一些数据直接转换为表格.如下所示的数据:
+#+begin_example
+Language	Identifier	Language	Identifier 
+Asymptote	asymptote	Awk	awk 
+C	C	C++	C++ 
+Clojure	clojure	CSS	css 
+D	d	ditaa	ditaa 
+Graphviz	dot	Emacs Calc	calc 
+Emacs Lisp	emacs-lisp	Fortran	fortran 
+gnuplot	gnuplot	Haskell	haskell 
+Java	java	Javascript	js 
+LaTeX	latex	Ledger	ledger 
+Lisp	lisp	Lilypond	lilypond 
+MATLAB	matlab	Mscgen	mscgen 
+Objective Caml	ocaml	Octave	octave 
+Org mode	org	Oz	oz 
+Perl	perl	Plantuml	plantuml 
+Processing.js	processing	Python	python 
+R	R	Ruby	ruby 
+Sass	sass	Scheme	scheme 
+GNU Screen	screen	Sed	sed 
+shell	sh	SQL	sql 
+SQLite	sqlite
+#+end_example
+上面的数据其实就是上一个模块中的表格的原始数据,在emacs中的org模式下先选中需要转换
+的数据,然后可以通过下面的快捷键将一些数据很方便的转换为表格.
+#+begin_example
+C-c | ( function: (org-table-create-or-convert-from-region ARG) )
+#+end_example
+
+转换后的结果如下:
+| Language       | Identifier | Language   | Identifier |
+| Asymptote      | asymptote  | Awk        | awk        |
+| C              | C          | C++        | C++        |
+| Clojure        | clojure    | CSS        | css        |
+| D              | d          | ditaa      | ditaa      |
+| Graphviz       | dot        | Emacs Calc | calc       |
+| Emacs Lisp     | emacs-lisp | Fortran    | fortran    |
+| gnuplot        | gnuplot    | Haskell    | haskell    |
+| Java           | java       | Javascript | js         |
+| LaTeX          | latex      | Ledger     | ledger     |
+| Lisp           | lisp       | Lilypond   | lilypond   |
+| MATLAB         | matlab     | Mscgen     | mscgen     |
+| Objective Caml | ocaml      | Octave     | octave     |
+| Org mode       | org        | Oz         | oz         |
+| Perl           | perl       | Plantuml   | plantuml   |
+| Processing.js  | processing | Python     | python     |
+| R              | R          | Ruby       | ruby       |
+| Sass           | sass       | Scheme     | scheme     |
+| GNU Screen     | screen     | Sed        | sed        |
+| shell          | sh         | SQL        | sql        |
+| SQLite         | sqlite     |            |            |

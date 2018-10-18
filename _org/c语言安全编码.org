@@ -1,0 +1,15 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-05-24 三 12:02
+#+TITLE: C语言安全编码
+#+DESCRIPTION: 
+#+TAGS: C语言
+#+CATEGORIES: C语言
+
+* 代码风格
+
+* 代码设计
+** 全局变量不能保存敏感信息

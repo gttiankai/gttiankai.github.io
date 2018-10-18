@@ -1,0 +1,19 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2017-03-05 日 16:37
+#+TITLE: 代码混淆-obfuscator
+#+DESCRIPTION: 混淆
+#+TAGS: 
+#+CATEGORIES: 
+
+* 代码混淆（Obfuscator） 
+阅读《逆向工程实战》中的最后一章关于混淆的知识，在这里进行一个简单的记录的工作。
+
+* 基于操作系统的控制间接化
+基本思想就是再正常的代码中插入混淆的代码，混淆后的代码触发一个异常，操作系统调用
+一个或多个已注册的异常处理函数。异常处理的函数会根据其内部逻辑分发指令流，然后
+把程序设置到正常状态。
+

@@ -1,0 +1,66 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2016-08-15 一 22:47
+#+TITLE: C语言中的extern关键词
+#+DESCRIPTION: C extern
+#+TAGS: C语言
+#+CATEGORIES: C语言
+
+* extern的意义
+关于extern的说明网上有很多的帖子进行讲解，我这里不再赘述，如果想详细的了解一下，可以直接查看那
+下面的链接：
+[[http://blog.csdn.net/xinyuwuxian/article/details/8996014][Daily-C-Study(5)：C语言extern关键字]]
+
+[[http://www.cnblogs.com/yc_sunniwell/archive/2010/07/14/1777431.html][C/C++中extern关键字详解]]
+
+以上两篇文章都是比较好的文章，大家有兴趣可以自己去读一读，我在这里主要的介绍一个使用extern 属性的小技巧
+
+* extern使用技巧
+首先看下面的代码：
+#+source: main.c
+#+begin_src c
+#include <stdio.h>
+#include "do.h"
+int g_var = 0;
+int main(int argc, char *argv[])
+{
+  printf("the g_var is %d", g_var);
+  do_something();
+  return 0;
+}
+#+end_src
+#+source: main.h
+#+begin_src c
+#ifndef MAIN_H
+#define MAIN_H
+
+extern int g_var;
+
+
+#endif /* MAIN_H */
+
+#+end_src
+
+
+#+source: do.c
+#+begin_src c
+#include "main.h"
+#include <stdio.h>
+void do_something(){
+  printf("add the global var %d", ++g_var);
+}
+#+end_src
+
+#+source: do.h
+#+begin_src c
+#ifndef DO_H
+#define DO_H
+
+void do_something();
+
+#endif /* DO_H */
+#+end_src
+

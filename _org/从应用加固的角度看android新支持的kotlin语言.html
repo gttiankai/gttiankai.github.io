@@ -1,0 +1,459 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<!-- 2017-05-31 三 11:10 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>从应用加固的角度看Android新支持的Kotlin语言</title>
+<meta name="generator" content="Org mode" />
+<meta name="author" content="tiankai" />
+<meta name="description" content="加固"
+ />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara { display: inline; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">从应用加固的角度看Android新支持的Kotlin语言</h1>
+
+
+<div id="outline-container-org6d969fb" class="outline-2">
+<h2 id="org6d969fb">Kotlin语言是什么</h2>
+<div class="outline-text-2" id="text-org6d969fb">
+<p>
+2017年5月18日Google在I/O大会上宣布,支持将Kotlin语言作为Android开发的编程语言.
+一夜之间网络上多了很多关于Kotlin语言的介绍.我也因此对该语言产生了兴趣,于是就对Kotin做了一定的调研.
+</p>
+
+<p>
+Kotlin语言是一门静态类型JVM语言,由JetBrains设计开发并进行了
+开源.JetBrains就是开发了著名的IntelliJ IDEA的公司.Kotlin语言的创建的目的是为
+开发人员创建一种通用语言,可作为一种安全,简介,灵活与Java 100%兼容的的语言.Kotlin
+语言比Java语法更简介,更具表达性,而且提供了更多的特性,例如:高阶函数,操作符重载,
+字符串模板等.而且它与Java可以进行互操作.
+</p>
+
+<p>
+Kotlin的特性
+</p>
+<ol class="org-ol">
+<li>Kotlin是一种兼容Java的语言;</li>
+<li>Kotlin比Java更安全.
+能够静态检测常见的陷阱.如:引用空指针;</li>
+<li>Kotlin比Java更简洁,通过支持variable type inference, higher-order functions
+(closures),extension functions,mixins and first-class delegation等实现;</li>
+<li>Kotlin可与Java语言无缝通信.这意味着我们可以在Kotlin代码中使用任何已有的Java
+库;同样的Kotlin代码还可以为Java代码所用;</li>
+<li>Kotlin在代码中很少需要在代码中指定类型,因为编译器可以在绝大多数情况下推断
+出变量或是函数返回值的类型.这样就能获得两个好处:简洁与安全</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org15af6a2" class="outline-2">
+<h2 id="org15af6a2">Kotlin与Java语言的对比</h2>
+<div class="outline-text-2" id="text-org15af6a2">
+<p>
+Kotlin语言的解决了Java语言不能解决的问题.Kotlin解决的
+问题主要有:
+</p>
+<ol class="org-ol">
+<li>类型系统控制了空引用的发生.</li>
+<li>没有原始类型</li>
+<li>Kotlin中数组是不变的</li>
+<li>相对于Java的SAM-conversions，Kotlin有更加合适的函数类型</li>
+<li>使用没有通配符的site variance</li>
+<li>Kotlin 没有检查异常</li>
+</ol>
+
+
+<p>
+Kotlin在拓展Java语言的基础上同样抛弃或者说不具备Java的一些特性.这些特性如下所
+示:
+</p>
+<ol class="org-ol">
+<li>检查异常.</li>
+<li>原始类型</li>
+<li>静态成员</li>
+<li>通配符类型</li>
+<li>未私有化字段</li>
+</ol>
+
+<p>
+Kotlin语言引入的新特征有:
+</p>
+<ol class="org-ol">
+<li>高性能自定义结构(Lamda表达式+内联函数)</li>
+<li>拓展函数</li>
+<li>Null安全</li>
+<li>智能类型转换</li>
+<li>字符串模板</li>
+<li>运算符重载
+&#x2026;&#x2026;</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-orge29a140" class="outline-2">
+<h2 id="orge29a140">加固是否支持Kotlin语言</h2>
+<div class="outline-text-2" id="text-orge29a140">
+<p>
+因为我目前研究的是移动应用的程序保护方向.当看到Kotlin语言的时候,我就在想当前的
+加固手段能否处理Kotlin语言吗?从原理上来说Koltin语言是基于JVM的语言,也就是说Kotlin
+语言最终也会编译成class文件,才能在JVM上运行.而再Android平台上是直接使用dx工具将class
+文件转换成dex文件.所以从理论上来讲目前已有的加固手段是可以直接支持Kotlin语言的.
+接下来我们通过逆向分析的手段对Kotlin语言做个逆向分析,以便我们更加深入的了解Kotlin
+语言.
+</p>
+
+<p>
+首先使用Java语言实现一个打印日志的功能.源代码如下所示:
+</p>
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #268bd2; font-weight: bold;">import</span> <span style="color: #d75fd7;">android</span>.<span style="color: #d75fd7;">util</span>.<span style="color: #df005f; font-weight: bold;">Log</span>;
+
+<span style="color: #008787;">/**</span>
+<span style="color: #008787;"> * Created by ** on 2017/5/27.</span>
+<span style="color: #008787;"> */</span>
+<span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #268bd2; font-weight: bold;">class</span> <span style="color: #df005f; font-weight: bold;">LoggingSub</span> <span style="color: #268bd2;">{</span>
+    <span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #268bd2; font-weight: bold;">static</span> <span style="color: #df005f; font-weight: bold;">String</span> <span style="color: #8787d7;">Flag</span> = <span style="color: #2aa198;">"a"</span>;
+
+    <span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #268bd2; font-weight: bold;">static</span> <span style="color: #df005f; font-weight: bold;">void</span> <span style="color: #d75fd7; font-weight: bold;">pintflog</span><span style="color: #d75fd7;">(){</span>
+        <span style="color: #268bd2; font-weight: bold;">for</span> <span style="color: #2aa198;">(</span><span style="color: #df005f; font-weight: bold;">int</span> <span style="color: #8787d7;">i</span> = <span style="color: #d75fd7;">0</span>; i &lt; <span style="color: #d75fd7;">10</span>; i++<span style="color: #2aa198;">){</span>
+            Log.d<span style="color: #67b11d;">(</span>Flag, <span style="color: #2aa198;">"this is log.d"</span><span style="color: #67b11d;">)</span>;
+            Log.e<span style="color: #67b11d;">(</span>Flag, <span style="color: #2aa198;">"this is log.e"</span><span style="color: #67b11d;">)</span>;
+            Log.i<span style="color: #67b11d;">(</span>Flag, <span style="color: #2aa198;">"this is log.i"</span><span style="color: #67b11d;">)</span>;
+            Log.w<span style="color: #67b11d;">(</span>Flag, <span style="color: #2aa198;">"this is log.w"</span><span style="color: #67b11d;">)</span>;
+            Log.v<span style="color: #67b11d;">(</span>Flag, <span style="color: #2aa198;">"this is log.v"</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #2aa198;">}</span>
+
+    <span style="color: #d75fd7;">}</span>
+<span style="color: #268bd2;">}</span>
+</pre>
+</div>
+
+<p>
+然后使用IDEA提供的插件直接将Java代码转换成为Kotlin语言,获得的源码如下所示: 
+</p>
+<pre class="example">
+import android.util.Log
+
+/**
+ * Created by **  on 2017/5/25.
+ */
+object Logging {
+    var Flag = "payegis"
+    fun printlog() {
+        for (i in 0..5) {
+            Log.d(Flag, "this is log.d")
+            Log.e(Flag, "this is log.e")
+            Log.i(Flag, "this is log.i")
+            Log.w(Flag, "this is log.w")
+            Log.v(Flag, "this is log.v")
+        }
+
+    }
+}
+</pre>
+
+
+<p>
+然后在APK中的oncreate()对以上的两个方法进行调用,关于调用的代码,这里就不再贴出
+来,网上有很多教程.将以上的代码进行打包.最终生成APK.然后对APK进行逆向分析.在逆向
+分析过程中着重对以上两个文件分析.
+</p>
+
+<p>
+使用Java语言编写的代码的逆向分析结果如下图所示:
+</p>
+
+
+<div class="figure">
+<p><img src="file:///Users/tiankai/git-hub/gttiankai.github.io/public/img/logging-jeb-java.jpg" alt="logging-jeb-java.jpg" />
+</p>
+</div>
+
+<p>
+使用Kotlin语言编写的代码的逆向分析结果如下图所示:
+</p>
+
+
+<div class="figure">
+<p><img src="file:///Users/tiankai/git-hub/gttiankai.github.io/public/img/logging-jeb-kotlin.jpg" alt="logging-jeb-kotlin.jpg" />
+</p>
+</div>
+
+<p>
+通过分析以上两张图片中的代码,从反编译得到的smali语法的角度来看, Kotlin语言只
+是对Java语言做了一定的拓展和封装.例如Kotlin语法在Logging的类中添加了下面的属性:
+</p>
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #268bd2; font-weight: bold;">static</span> <span style="color: #268bd2; font-weight: bold;">final</span> <span style="color: #df005f; font-weight: bold;">Logging</span> <span style="color: #8787d7;">INSTANCE</span>;
+</pre>
+</div>
+
+<p>
+而且Kotlin语言还对类中的属性自动添加了set方法,构造方法如下所示:
+</p>
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #268bd2; font-weight: bold;">final</span> <span style="color: #df005f; font-weight: bold;">void</span> <span style="color: #d75fd7; font-weight: bold;">setFlag</span><span style="color: #268bd2;">(</span><span style="color: #d75fd7;">@NotNnull</span> <span style="color: #df005f; font-weight: bold;">String</span> <span style="color: #8787d7;">args</span><span style="color: #268bd2;">){</span>
+    Intrinsics.checkParameterIsNotNull<span style="color: #d75fd7;">(</span>arg2, <span style="color: #2aa198;">"&lt;set-?&gt;"</span><span style="color: #d75fd7;">)</span>;
+    <span style="color: #d75fd7;">Logging</span>.Flag = arg2;
+<span style="color: #268bd2;">}</span>
+</pre>
+</div>
+<p>
+在上面的代码中还有一点需要注意,该方法对输入的参数做了非空的检查.调用的方法是
+Kotlin中自带的库中的Intrinsics.checkParameterIsNotNull方法.这个方法是Kotlin语
+言提供的Jar中的方法,换句话说只需要使用了Kotlin语言,都需要依赖于这个Jar包.这个
+Jar的内容如下图所示:
+</p>
+
+
+<div class="figure">
+<p><img src="file:///Users/tiankai/git-hub/gttiankai.github.io/public/img/Kotlin-jar.jpg" alt="Kotlin-jar.jpg" />
+</p>
+</div>
+
+<p>
+总之,从逆向结果的分析来看,Kotlin语言就是对Java语言的封装和拓展.当使用Kotlin
+语言开发应用程序时,都是将Kotlin文件转换成class,然后将class文件转换成为dex文件.
+而对于应用程序加固保护的角度来看,只要是合法的dex文件就可以进行保护.
+所以现有的应用加固的技术可以很好的支持对Kotlin语言开发的程序进行保护.
+而且我也做了实验,使用现有的加固技术可以对上面的demo APK进行加固保护,也同样证明了现有的加固保护技术能够直接支持Kotlin语言.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org20e2e78" class="outline-2">
+<h2 id="org20e2e78">写在文章的最后</h2>
+<div class="outline-text-2" id="text-org20e2e78">
+<p>
+由于本人能力有限,加之对本文涉及内容的研究时间较短,文章中难免有错误或者遗漏之处,请大家多多批评指教,本人万分感激.
+</p>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="date">Date: 2017-05-27 六 13:11</p>
+<p class="author">Author: tiankai</p>
+<p class="date">Created: 2017-05-31 三 11:10</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

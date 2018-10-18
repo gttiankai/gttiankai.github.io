@@ -1,0 +1,46 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2016-04-02 Sat 14:27
+#+TITLE: HKKB Pro2开箱和选购
+#+DESCRIPTION: HHKB
+#+TAGS: 硬件
+#+CATEGORIES: 硬件
+
+* HHKB Pro的选择
+今天期待已久的HHHB Pro2终于到的货了,开箱之后手感感觉很不错,所以就写了一篇blog给想选购HHKB Pro2的人,顺便熟悉键盘.
+
+刚开始知道HHKB Pro2是因为看了Timothy的blog<<码农神器HHKB Pro2入手与开箱>>[1],看了这篇 Blog 之后就感觉对 HHKB Pr2 这个键盘很喜欢.这才开始接触机械键盘,这才想要以一个好一点的键盘.在选购期间看了好多键盘,包括原厂的键盘,还有 Filoc 的键盘.自己感觉选择键盘就是要看自己的需求和自己的实际的使用情况,能满足自己需求的基础上,然后进行选择是最好的. 
+
+我自己平常工作和学习主要使用的就是 Ubuntu 和 Mac, 并且我使用的做多的编辑器是 emacs.所以我很喜欢 HHKB Pro2 的键盘布局.并且我想随身携带着键盘,不想买一个很重的,还有一点是我不想买个声音特别大的键盘.基于以上的考虑我选择比较小的键盘,所以我把目标锁定到 HHKB Pro2 和 Filco Minila Air,感觉这两款键盘都是我比价喜欢的类型,在键位上 Filco 的键盘也可以通过改变键盘的布局成为 HHKB Pro2 的布局.下面是我查询的资料,对比 HHKB  Pro2 和 Filco Minila Air.
+
+| 名称                    | 手感       | 键位（方向键） | 重量（便携性） | 声音大小   | 日亚价格         |   国内价格 | 蓝牙 | 键帽材质    |
+|-------------------------+------------+----------------+----------------+------------+------------------+------------+------+-------------|
+| HHKB pro2               | 静电容键盘 | 无             | 780g           | 小         | 1272(加上转运费) |       1511 | 无   | PBT(不打油) |
+| HHKB pro2 types         | 静电容键盘 | 无             | 531g           | 最小       | 1717             |       1911 | 无   | PBT(不打油) |
+| Filco Minila air( 白色) | 机械键盘   | 有(其他都一样) | 1000g          | 中等(茶轴) | 842(黑色)        | 1320(白色) | 无   | ABS(会打油) |
+
+在决定要买哪个键盘的时候,我也在 HHKB Pro2 和 FIlco 中间纠结了很久. Filco 的键盘有方向键并且是蓝牙的,移动性很好,并且是可以通过改键位,价格也便宜. HHKB Pro2的键位我很喜欢,造型我也很喜欢,并且是静电容键盘.我其实一度想买 Filco 的键盘,但是我最终选了 HHKB Pro2.有一点打动了我,我本人手上经常出汗, Filco 的键盘是 ABS 的,但是 HHKB Pro2的键帽是 PBT, 本人不喜欢打油的键盘,所以最后下定决心买 HHKB Pro2,一步到位了!
+
+*  HHKB Pro2 的选购
+决定了要买的键盘之后,剩下的就要看在哪里买了,我主要查了一下日亚和某包上的价格(没办法别处没有卖的),价格的比较也在上面的列表中,通过上面的比较可以看到日亚要比中国便宜差不过300块钱,而且有点信不过淘宝上的店家,不知道是不是二手的,再加上最近这边不收关税.所以选择日亚海淘.海淘的话就要选择转运,我使用的是*铭瑄海淘*,第一次用铭瑄总体感觉挺快的.从我下单到我收到货,一共6天时间,还是蛮快的.铭瑄海淘的链接 http://www.mxhaitao.com/web/search?act=search&orderIds=10470806
+
+* HHKB Pro2 开箱
+给大家看下我的 HHKB Pro2 的开箱图,
+
+[http://gttiankai.github.io/public/img/HHKB1.JPG]
+[http://gttiankai.github.io/public/img/HHKB2.JPG]
+[http://gttiankai.github.io/public/img/HHKB3.JPG]
+[http://gttiankai.github.io/public/img/HHKB4.JPG]
+[http://gttiankai.github.io/public/img/HHKB5.JPG]
+[http://gttiankai.github.io/public/img/HHKB6.JPG]
+
+* HHKB Pro2 的使用感受和配置
+总体 HHKB Pro2 的手感是很不错的,敲击起来也很舒服.本人只有短时间用过 Filco 圣手二代的(87键)的键盘,总体感觉 HHKB Pro2 的键帽要比 Filco 的舒服一点,并且 HHKB Pro2 真的好轻啊,可以随身携带者(但是在包里不知道会不会压坏啊!).还有就是配置,我推荐<<HHKB 纯小白入坑指南>>[2]这篇博客,里面讲的都很详细.还有就是声音,总体感觉不是很大,要比 Filco 的茶轴的声音稍微小一点,当然了键盘声音还与人敲击的力度有关.
+
+* Footnotes
+
+[1] http://www.xiaozhou.net/got_hhkb_pro_2-2013-06-03.html
+[2] http://yannisxu.me/post/hhkb-chun-xiao-bai-ru-keng-zhi-nan

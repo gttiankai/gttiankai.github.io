@@ -1,0 +1,44 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2018-05-23 三 22:45
+#+TITLE: A study & review on code obfuscation
+#+DESCRIPTION: obufscation
+#+TAGS: Paper
+#+CATEGORIES: Paper
+
+最近在研究混淆器的设计，所以抽空看了一下IEEE中的一篇论文《A Study & Review on Code Obfuscator》.这篇论文主要是对混淆技术做了一个整体的介绍，这篇博客作为论文的阅读笔记，记录一下该论文中重要的技术点。
+
+* 论文整体框架的介绍
+该篇论文的主要的目的是对代码混淆技术做了一个技术的回顾。论文讨论了代码混淆的需求以及进行代码混淆的方法。
+* 计算机科学定义安全系统的三要素
+1. Data Confidentiality: 数据的机密性
+2. Data Integrity: 数据的完整性
+3. Data Availability： 数据的可用性
+满足安全需求的两种方式
+1. Security by Design （设计确保安全）
+2. Security by Obscurity（封闭确保安全）
+* 代码混淆技术
+代码混淆使用的技术主要有如下几个方面
+1. Layout Transformations（布局转换）
+   改变代码的布局,删除注释,以及重新格式化,甚至改变原来的标志符
+2. Control Flow Transformations（控制流转换）
+   将原来的代码转换成功能上等价,但是控制流不同的代码.技术手段包括aggregation, reording,redundant computation.
+3. Data Abstraction(数据抽象)
+   name modifacation:名称混淆
+   updating inheritance relations:升级继承关系.程序的复杂性会随着在类中创建子功能或者实现虚拟类(抽象类)来提供程序的复杂度.
+   Restructure Arrays:重构数组. 分割数组,合并两个或多个数组.
+4. Obfuscating Procedural Abstractions(混淆程序抽象)
+   Table Interpretation: 
+   Inline and Outline Functions:
+   Clone Methods:
+   Inbuilt Datatypes:
+   Split variables:
+   Basic Conversions:
+   Merging:
+
+* 总结
+读完了以上的文章,感觉有很多不懂的地方.通过这篇文章主要是了解一些专有的术语,后面还需要加强对这些属于的了解.
+

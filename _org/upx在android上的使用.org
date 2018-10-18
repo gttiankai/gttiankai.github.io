@@ -1,0 +1,49 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2016-01-15 Fri 13:38
+#+TITLE: upx在android上的移植
+#+DESCRIPTION: upx android
+#+TAGS: android
+#+CATEGORIES: Android
+
+* 关于upx的介绍
+这一部分不做太多的介绍，wiki上有详细的介绍，链接： [[https://zh.wikipedia.org/wiki/UPX][upx wiki]]
+* upx的编译
+将upx的代码下载下来之后，upx中会有很多的目录和文件，文档的目录结构如下
+所示:
+#+begin_example
+/Users/tiankai/Downloads/upx-3.91-src
+|-- BUGS
+|-- COPYING
+|-- LICENSE
+|-- Makefile
+|-- NEWS
+|-- PROJECTS
+|-- README
+|-- README.1ST
+|-- README.SRC
+|-- THANKS
+|-- TODO
+|-- doc
+`-- src
+#+end_example
+
+因为要自己修改源码并且编译源码，所以我们一般建议阅读一下的README.SRC,
+里面有很多东西都是在修改upx过程中需要注意的。有几个地方是很好的。
+** 关键文件夹说明
+upx中包含比较重要的两个文件夹:一个是src/stub,另一个是src目录,其中
+src/stub目录中包含的是使用汇编语言编写解压缩的程序以及相应的头文件.
+src目录下存放的是实际的压缩程序的实现代码.
+** 
+
+
+
+
+
+
+* 参考的blog
+1. [[https://zh.wikipedia.org/wiki/UPX][upx wiki]]
+2. [[http://upx.sourceforge.net/][upx官网]]

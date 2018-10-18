@@ -1,0 +1,21 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /Users/tiankai/git-hub/gttiankai.github.io/_org/lzma压缩算法.org
+
+
+* LZMA压缩算法的介绍
+:PROPERTIES:
+:ARCHIVE_TIME: 2015-12-23 Wed 17:27
+:ARCHIVE_FILE: ~/git-hub/gttiankai.github.io/_org/lzma压缩算法.org
+:ARCHIVE_CATEGORY: lzma压缩算法
+:END:
+lzma压缩算法是使用非常广泛的开源的压缩算法,具体的介绍看以查看wiki:[[https://zh.wikipedia.org/wiki/LZMA][lzma维基百科]]
+lzma压缩算法的特点:
+    1. 高压缩比.
+    2. 解压缩代码较小.
+    3. 开源跨平台.
+    4. 支持在多核心系统上多线程运行. 所以适合嵌入式系统的设计. 
+
+lzma算法的缺点
+1. 
