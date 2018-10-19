@@ -1,45 +1,28 @@
-<div id="table-of-contents">
-<h2>Table of Contents</h2>
-<div id="text-table-of-contents">
-<ul>
-<li><a href="#sec-1">1. 博客介绍</a></li>
-<li><a href="#sec-2">2. 致谢</a></li>
-<li><a href="#sec-3">3. License</a></li>
-</ul>
-</div>
-</div>
+# 博客介绍
 
+使用博客记录自己学习生活中的点点滴滴。
 
-# 博客介绍<a id="sec-1" name="sec-1"></a>
+## 贴心提示
 
-使用blog记录自己的点点滴滴
+1. 排版建议遵照一定的规范，推荐 [中文文案排版指北（简体中文版）][1]。
 
-# 致谢<a id="sec-2" name="sec-2"></a>
+2. 在本地预览博客效果可以参考 [Setting up your Pages site locally with Jekyll][2]。
 
-我是使用的闫肃的blog的主题,在此首先表示对闫肃的感谢.  
-闫肃的博客空间的链接:[点这里](http://yansu.org/)
+## 经验与思考
 
-# License<a id="sec-3" name="sec-3"></a>
+* 简约，尽量每个页面都不展示多余的内容。
 
-Copyright (c) 2013 Su Yan - Released under The MIT License.
+* 有时一图抵千言，有时可能只会拖慢网页加载速度。
 
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
+* 言之有物，不做无痛之呻吟。
 
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
+* 如果写技术文章，那先将技术原理完全理清了再开始写，一边摸索技术一边组织文章效率较低。
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
+* 杜绝难断句、难理解的长句子，如果不能将其拆分成几个简洁的短句，说明脑中的理解并不清晰。
+
+* 可以学习一下那些高质量的博主，他们的行文，内容组织方式，有什么值得借鉴的地方。
+
+## 致谢
+
+本博客外观基于 [码志](https://mazhuang.org/) 修改，感谢！
+

@@ -1,48 +1,125 @@
-permalink: /:year/:month/:day/:title.html # 博文的固定链接
-paginate: 100 #每页的博文数量
+# ---------------- #
+#   Main Configs   #
+# ---------------- #
+baseurl:
+url: http://gttiankai.github.io/
+date_format: "ordinal"
+title: 博客
+subtitle: "生死看淡，不服就干"
+description: "个人博客"
+keywords: 博客
+timezone: Asia/Shanghai
+encoding: "utf-8"
+side_bar_repo_limit: 5
+
+# ---------------- #
+#      Author      #
+# ---------------- #
+author: Tiankai
+organization: null
+organization_url: https://www.tongfudun.com/
+github_username: tiankai
+location: Suzhou, China
+email: gttiankai@gmail.com
+
+# ---------------- #
+#    Navigation    #
+# ---------------- #
+navs:
+  -
+    href: /
+    label: 首页
+
+  -
+    href: /categories/
+    label: 分类
+
+#   -
+#     href: /archives/
+#     label: 归档
+
+  -
+    href: /wiki/
+    label: 维基
+
+  -
+    href: /links/
+    label: 链接
+
+  -
+    href: /about/
+    label: 关于
+
+# ---------------- #
+#       RSS        #
+# ---------------- #
+subscribe_rss: /feed.xml
+
+# ---------------- #
+#      Jekyll      #
+# ---------------- #
 markdown: kramdown
-
 kramdown:
-  input: GFM
+    input: GFM
+highlighter: rouge
+paginate: 10
+lsi: false
+quiet: false
+excerpt_separator: "\n\n"
+permalink: /:year/:month/:day/:title/
+gems:
+    - jekyll-github-metadata
+    - rouge
+#     - jekyll-html-pipeline
+    - jekyll-paginate
+    - jekyll-sitemap
+    - jekyll-feed
+    - jemoji
+#     - jekyll-mentions
+collections:
+    wiki:
+        output: true
+        permalink: /wiki/:path/
 
-# 作者信息
-author: 
-  name: Tin Kai
-  email: gttiankai@163.com
-  link: gttiankai.github.io
-  github: http://github.com/gttiankai
+repository: gttiankai/gttiankai.github.io
 
-# 站点信息
-title: Tiankai`s Blog
-description: Tiankai`s Blog
-url: gttiankai.github.io
-rss_url: /pages/atom.xml
-iamge_url: http://gttiankai.github.com/public/img
-# gavatar头像及Favicon
-gavatar: /public/img/mypicture.png
-#favicon: 
-
-# google analytics 设置
-# ga:
-#   id: UA-54767140-1
-#   url: gttiankai.github.io
-
-# disqus 设置
+# ---------------- #
+#      Comments    #
+# ---------------- #
+# support provider: disqus, gitment, gitalk
+comments_provider: gitalk
+# !!!重要!!! 请修改下面这些信息为你自己申请的
+# !!!Important!!! Please modify infos below to yours
+# https://disqus.com
 disqus:
-  shortname: Tiankai-zh
+    username: 
+# https://imsun.net/posts/gitment-introduction/
+gitment:
+    owner: mzlogin
+    repo: blog-comments
+    oauth:
+        client_id: d2e1cbbd298958076462
+        client_secret: b42a4178e5fd4a7cf63189ef4b1453b05c375709
+# https://github.com/gitalk/gitalk#install
+gitalk:
+    owner: gttiankai
+    repo: blog-comments
+    clientID: ec62078da00e9a6cd535
+    clientSecret: b5ba60346ab7ee09009bc50367b6a87102fd806a
+# 在使用其它评论组件时可点击显示 Disqus
+lazy_load_disqus : false
 
-# 主题设置，自动激活某个标签
-active: tags
+# ---------------- #
+#      Search      #
+# ---------------- #
+simple_jekyll_search:
+    # 是否支持全文搜索
+    fulltext: false
+    # 最多显示多少条搜索结果
+    limit: 10
 
-# 首页除了最新文章外显示分类
-# cates: 
-#   - Android 
-
-# 中文本地化
-locals:
-  tags: 标签
-  about: 关于
-  newest: 最新文章
-  archive: 归档
-  content: 目录
-gems: [jekyll-paginate]
+# ---------------- #
+#    Analytics     #
+# ---------------- #
+google:
+    analytics_id: UA-80669434-1
