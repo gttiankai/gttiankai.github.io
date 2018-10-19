@@ -7,7 +7,7 @@
 #+TITLE: Android系统ClassLoader介绍
 #+DESCRIPTION: Android
 #+TAGS: Android
-+CATEGORIES: Android
+#+CATEGORIES: Android
 
 * 起源
 为什么要写这篇博客呢？是因为最近在做热修复的相关功能，其中非常重要的一部分内容就

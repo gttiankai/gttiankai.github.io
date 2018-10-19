@@ -1,0 +1,77 @@
+---
+date: 2018-09-30
+tags: 
+- Android
+author: tiankai
+layout: post
+title: Android系统ClassLoader介绍
+excerpt: Android
+categories: 
+- Android
+---
+
+<div id="outline-container-orgab0ecbc" class="outline-2">
+<h2 id="orgab0ecbc">起源</h2>
+<div class="outline-text-2" id="text-orgab0ecbc">
+<p>
+为什么要写这篇博客呢？是因为最近在做热修复的相关功能，其中非常重要的一部分内容就
+是关于ClassLoder的内容，这一部分内容也是Android系统中非常重要的一部分内容。
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-org69bf615" class="outline-2">
+<h2 id="org69bf615">ClassLoader简介</h2>
+<div class="outline-text-2" id="text-org69bf615">
+<p>
+Java程序的本质就是JVM执行编译好的Class文件，Android虚拟机在本质上和JVM是一致的。
+所以我们理解了JVM的ClassLoader也就理解了Android端的ClassLoder机制。ClassLoder的
+作用简单来说就是加载class文件，然后提供给程序运行时使用。
+</p>
+</div>
+
+<div id="outline-container-org4989786" class="outline-3">
+<h3 id="org4989786">ClassLoader的双亲委派机制</h3>
+<div class="outline-text-3" id="text-org4989786">
+<p>
+双亲委派机制核心思想就是“找事找我爹”，当类加载器（ClassLoder）收到加载类
+（class）或者资源的请求时，首先会先委托给弗雷加载器进行加载，以此类推。只有当自
+己的父加载器也找不到指定类或资源时，自己才会执行时间的类加载过程。
+</p>
+
+<p>
+具体的过程如下所示：
+</p>
+<ol class="org-ol">
+<li>源ClassLoader先判断该Class是否已加载，如果已加载，则直接返回Class，如果没有则
+委托给父类加载器。</li>
+<li>父类加载器判断是否加载过该Class，如果已加载，则直接返回Class，如果没有则委托
+给祖父类加载器。</li>
+<li>依此类推，直到始祖类加载器（引用类加载器）。</li>
+<li>始祖类加载器判断是否加载过该Class，如果已加载，则直接返回Class，如果没有则
+尝试从其对应的类路径下寻找class字节码文件并载入。如果载入成功，则直接返回
+Class，如果载入失败，则委托给始祖类加载器的子类加载器。</li>
+<li>始祖类加载器的子类加载器尝试从其对应的类路径下寻找 class 字节码文件并载入。如
+果载入成功，则直接返回Class，如果载入失败，则委托给始祖类加载器的孙类加载器。</li>
+<li>依此类推，直到源ClassLoader。</li>
+<li>源ClassLoader尝试从其对应的类路径下寻找class字节码文件并载入。如果载入成功，
+则直接返回Class，如果载入失败，源ClassLoader 不会再委托其子类加载器，而是抛出
+异常。</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-orge8b4e95" class="outline-3">
+<h3 id="orge8b4e95">Android 中的ClassLoder</h3>
+</div>
+</div>
+
+<div id="outline-container-org0daf495" class="outline-2">
+<h2 id="org0daf495">参考链接</h2>
+<div class="outline-text-2" id="text-org0daf495">
+<ol class="org-ol">
+<li><a href="https://jaeger.itscoder.com/android/2016/08/27/android-classloader.html">热修复入门：Android中的ClassLoder</a></li>
+<li></li>
+</ol>
+</div>
+</div>
