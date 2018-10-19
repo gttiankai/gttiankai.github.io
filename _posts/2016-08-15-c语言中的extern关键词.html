@@ -1,0 +1,82 @@
+---
+date: 2016-08-15
+tags: 
+- C语言
+author: tiankai
+layout: post
+title: C语言中的extern关键词
+excerpt: C extern
+categories: 
+- C语言
+---
+
+<div id="outline-container-orge3a8e4b" class="outline-2">
+<h2 id="orge3a8e4b">extern的意义</h2>
+<div class="outline-text-2" id="text-orge3a8e4b">
+<p>
+关于extern的说明网上有很多的帖子进行讲解，我这里不再赘述，如果想详细的了解一下，可以直接查看那
+下面的链接：
+<a href="http://blog.csdn.net/xinyuwuxian/article/details/8996014">Daily-C-Study(5)：C语言extern关键字</a>
+</p>
+
+<p>
+<a href="http://www.cnblogs.com/yc_sunniwell/archive/2010/07/14/1777431.html">C/C++中extern关键字详解</a>
+</p>
+
+<p>
+以上两篇文章都是比较好的文章，大家有兴趣可以自己去读一读，我在这里主要的介绍一个使用extern 属性的小技巧
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc2e45c4" class="outline-2">
+<h2 id="orgc2e45c4">extern使用技巧</h2>
+<div class="outline-text-2" id="text-orgc2e45c4">
+<p>
+首先看下面的代码：
+</p>
+<div class="org-src-container">
+<pre class="src src-c" id="orga4db761"><span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">stdio.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #2d9574;">"do.h"</span>
+<span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">g_var</span> = <span style="color: #a45bad;">0</span>;
+<span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">main</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">argc</span>, <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">argv</span><span style="color: #bc6ec5;">[]</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+  printf<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"the g_var is %d"</span>, g_var<span style="color: #bc6ec5;">)</span>;
+  do_something<span style="color: #bc6ec5;">()</span>;
+  <span style="color: #4f97d7; font-weight: bold; font-style: italic;">return</span> <span style="color: #a45bad;">0</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<div class="org-src-container">
+<pre class="src src-c" id="org631b0bb"><span style="color: #bc6ec5;">#if</span><span style="color: #bc6ec5;">n</span><span style="color: #bc6ec5;">def</span> MAIN_H
+<span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">MAIN_H</span>
+
+<span style="color: #4f97d7; font-weight: bold; font-style: italic;">extern</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">g_var</span>;
+
+
+<span style="color: #bc6ec5;">#endif</span> <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">MAIN_H </span><span style="color: #2aa1ae; background-color: #292e34;">*/</span>
+
+</pre>
+</div>
+
+
+<div class="org-src-container">
+<pre class="src src-c" id="org0d62b15"><span style="color: #bc6ec5;">#include</span> <span style="color: #2d9574;">"main.h"</span>
+<span style="color: #bc6ec5;">#include</span> <span style="color: #4f97d7;">&lt;</span><span style="color: #2d9574;">stdio.h</span><span style="color: #4f97d7;">&gt;</span>
+<span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">do_something</span><span style="color: #4f97d7;">(){</span>
+  printf<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"add the global var %d"</span>, ++g_var<span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-c" id="org760a0f9"><span style="color: #bc6ec5;">#if</span><span style="color: #bc6ec5;">n</span><span style="color: #bc6ec5;">def</span> DO_H
+<span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">DO_H</span>
+
+<span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">do_something</span><span style="color: #4f97d7;">()</span>;
+
+<span style="color: #bc6ec5;">#endif</span> <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">DO_H </span><span style="color: #2aa1ae; background-color: #292e34;">*/</span>
+</pre>
+</div>
+</div>
+</div>

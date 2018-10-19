@@ -1,0 +1,75 @@
+---
+date: 2018-05-23
+tags: 
+- Paper
+author: tiankai
+layout: post
+title: A study & review on code obfuscation
+excerpt: obufscation
+categories: 
+- Paper
+---
+<p>
+最近在研究混淆器的设计，所以抽空看了一下IEEE中的一篇论文《A Study &amp; Review on Code Obfuscator》.这篇论文主要是对混淆技术做了一个整体的介绍，这篇博客作为论文的阅读笔记，记录一下该论文中重要的技术点。
+</p>
+
+<div id="outline-container-orge516cc4" class="outline-2">
+<h2 id="orge516cc4">论文整体框架的介绍</h2>
+<div class="outline-text-2" id="text-orge516cc4">
+<p>
+该篇论文的主要的目的是对代码混淆技术做了一个技术的回顾。论文讨论了代码混淆的需求以及进行代码混淆的方法。
+</p>
+</div>
+</div>
+<div id="outline-container-org3a69bae" class="outline-2">
+<h2 id="org3a69bae">计算机科学定义安全系统的三要素</h2>
+<div class="outline-text-2" id="text-org3a69bae">
+<ol class="org-ol">
+<li>Data Confidentiality: 数据的机密性</li>
+<li>Data Integrity: 数据的完整性</li>
+<li>Data Availability： 数据的可用性</li>
+</ol>
+<p>
+满足安全需求的两种方式
+</p>
+<ol class="org-ol">
+<li>Security by Design （设计确保安全）</li>
+<li>Security by Obscurity（封闭确保安全）</li>
+</ol>
+</div>
+</div>
+<div id="outline-container-org32e134f" class="outline-2">
+<h2 id="org32e134f">代码混淆技术</h2>
+<div class="outline-text-2" id="text-org32e134f">
+<p>
+代码混淆使用的技术主要有如下几个方面
+</p>
+<ol class="org-ol">
+<li>Layout Transformations（布局转换）
+改变代码的布局,删除注释,以及重新格式化,甚至改变原来的标志符</li>
+<li>Control Flow Transformations（控制流转换）
+将原来的代码转换成功能上等价,但是控制流不同的代码.技术手段包括aggregation, reording,redundant computation.</li>
+<li>Data Abstraction(数据抽象)
+name modifacation:名称混淆
+updating inheritance relations:升级继承关系.程序的复杂性会随着在类中创建子功能或者实现虚拟类(抽象类)来提供程序的复杂度.
+Restructure Arrays:重构数组. 分割数组,合并两个或多个数组.</li>
+<li>Obfuscating Procedural Abstractions(混淆程序抽象)
+Table Interpretation: 
+Inline and Outline Functions:
+Clone Methods:
+Inbuilt Datatypes:
+Split variables:
+Basic Conversions:
+Merging:</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orga9a4a66" class="outline-2">
+<h2 id="orga9a4a66">总结</h2>
+<div class="outline-text-2" id="text-orga9a4a66">
+<p>
+读完了以上的文章,感觉有很多不懂的地方.通过这篇文章主要是了解一些专有的术语,后面还需要加强对这些属于的了解.
+</p>
+</div>
+</div>

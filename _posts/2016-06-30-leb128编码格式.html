@@ -1,18 +1,18 @@
 ---
-layout: post
-title: LEB128编码格式
 date: 2016-06-30
-categories: 
-- Android
 tags: 
 - Android
 author: tiankai
+layout: post
+title: LEB128编码格式
 excerpt: Android leb128
+categories: 
+- Android
 ---
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">LEB128格式的说明</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-org3b05825" class="outline-2">
+<h2 id="org3b05825">LEB128格式的说明</h2>
+<div class="outline-text-2" id="text-org3b05825">
 <p>
 LEB128（Little-Endian Base 128）是一种基于小端法表示的128位、可变长度的编码格式。它既可以表示无符号整数（uleb128，unsigned LEB128），也可以表示有符号的整数（sleb128，signed LEB128）。在Android系统的Dex文件格式中，LEB128只使用了32位进行编码。每一个LEB128编码包含1到5个字节（bytes）,所有的字节合起来表示一个32位的值。Android系统在Dex文件中使用LEB128格式编码的主要目的是为了减少Dex文件的体积。
 </p>
@@ -54,12 +54,11 @@ LEB128编码格式中还有一种特殊的编码格式uleb128p1(unsigned LEB128 
 </p>
 </div>
 </div>
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">参考链接</h2>
-<div class="outline-text-2" id="text-2">
+<div id="outline-container-org1d1e79d" class="outline-2">
+<h2 id="org1d1e79d">参考链接</h2>
+<div class="outline-text-2" id="text-org1d1e79d">
 <ol class="org-ol">
-<li><a href="https://source.android.com/devices/tech/dalvik/dex-format.html">Dalvik Executable format</a>
-</li>
+<li><a href="https://source.android.com/devices/tech/dalvik/dex-format.html">Dalvik Executable format</a></li>
 </ol>
 </div>
 </div>

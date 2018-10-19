@@ -1,0 +1,140 @@
+---
+date: 2015-12-30
+tags: 
+- Android packer
+author: tiankai
+layout: post
+title: Android的多渠道打包
+excerpt: Android 多渠道打包
+categories: 
+- Android
+---
+
+<div id="outline-container-org0519794" class="outline-2">
+<h2 id="org0519794">文章的目的</h2>
+<div class="outline-text-2" id="text-org0519794">
+<p>
+主要研究了现在比较流行的多渠道打包的方式,并且实现了通过Apktool反编译APK,实现多渠道打包的
+方式.
+</p>
+</div>
+</div>
+<div id="outline-container-orge7c6fcd" class="outline-2">
+<h2 id="orge7c6fcd">Android多渠道打包的方式之一:maven,gradle插件</h2>
+<div class="outline-text-2" id="text-orge7c6fcd">
+<p>
+使用maven或者gradle提供的插件,进行自动化的多渠道打包.这种方式的主要思路就是在APK的构架过
+程中,将AndroidManifest.xml中meta-data,对应的value值设为变量,在打包的时候,通过自动化构
+建脚本,将相应的value值设为对应的值.
+关于maven的自动化构建方式的细节,请看下面参考博客:美团Android自动化之旅—生成渠道包.
+关于gradle的自动化构建方式,请查看下面参考的博客:Gradle多渠道打包和Android多渠道打包工具
+Gradle插件.
+</p>
+</div>
+</div>
+
+<div id="outline-container-orgc8cea3a" class="outline-2">
+<h2 id="orgc8cea3a">Android多渠道打包方式之二:使用apktool反编译实现</h2>
+<div class="outline-text-2" id="text-orgc8cea3a">
+<p>
+这种办法的思路是生成一个apk后,使用反编译工具Apktool,将APK中的AndroidManifest.xml文件进
+行反编译,然后通过找到meta-data中对应的value值,修改其中的值为对应的分发渠道的名称,然后使用
+Apktool进行重打包,就可以生成多渠道的方式.具体的做法,我会在下面进行说明.也可以参考博客美团
+Android自动化之旅—生成渠道包.
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> re
+<span style="color: #4f97d7; font-weight: bold; font-style: italic;">def</span> <span style="color: #bc6ec5; font-weight: bold;">replace_channel</span><span style="color: #4f97d7;">(</span>channel, manifest<span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">pattern</span> = r<span style="color: #2d9574;">'(&lt;meta-data\s+android:name="TD_CHANNEL_ID"\s+android:value=")(\S+)("\s*/&gt;)'</span>
+    <span style="color: #7590db;">replacement</span> = r<span style="color: #2d9574;">"\g&lt;1&gt;{channel}\g&lt;3&gt;"</span>.<span style="color: #4f97d7;">format</span><span style="color: #4f97d7;">(</span>channel=channel<span style="color: #4f97d7;">)</span>
+    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">return</span> re.sub<span style="color: #4f97d7;">(</span>pattern, replacement, manifest<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+
+<p>
+上面代码channel是写死的,下面这个是可以进行接受channel作为参数的
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">def</span> <span style="color: #bc6ec5; font-weight: bold;">replace_market</span><span style="color: #4f97d7;">(</span>channel, market, manifest<span style="color: #4f97d7;">)</span>:
+    <span style="color: #7590db;">pattern_str</span> = <span style="color: #2d9574;">'(&lt;meta-data\\s+android:name="'</span> + channel + <span style="color: #2d9574;">'"\\s+android:value=")(\\S+)("\\s*/&gt;)'</span>
+    <span style="color: #7590db;">replacement</span> = r<span style="color: #2d9574;">"\g&lt;1&gt;{channel}\g&lt;3&gt;"</span>.<span style="color: #4f97d7;">format</span><span style="color: #4f97d7;">(</span>channel=market<span style="color: #4f97d7;">)</span>
+    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">return</span> re.sub<span style="color: #4f97d7;">(</span>pattern_str, replacement, manifest<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org5716642" class="outline-2">
+<h2 id="org5716642">Android多渠道打包方式之三:META-INF(借鉴自美团的blog,链接在下面)</h2>
+<div class="outline-text-2" id="text-org5716642">
+<p>
+这种方式本人是感觉最好的,同样也是效率最高的.
+这种办法的解决的问题就是使用apktool这种方式,需要重新打包,浪费很多时间.APK包的签名有一个特
+性,就是在签名之后的META-INF文件夹中添加文件,不会影响APK在安装过程中的签名校验,这是由Android
+系统的签名原理决定的.
+利用以上的特点,就可以直接在META-INFO中添加标识不同渠道名称的空文件,然后通过在Java层进行
+动态读取文件名称的方式,就可以识别不同的渠道,从而实现多渠道打包.
+在APK中添加不同空文件的python代码如下:
+</p>
+<div class="org-src-container">
+<pre class="src src-python"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> zipfile
+<span style="color: #7590db;">zipped</span> = zipfile.ZipFile<span style="color: #4f97d7;">(</span>your_apk, <span style="color: #2d9574;">'a'</span>, zipfile.ZIP_DEFLATED<span style="color: #4f97d7;">)</span>
+<span style="color: #7590db;">empty_channel_file</span> = <span style="color: #2d9574;">"META-INF/mtchannel_{channel}"</span>.<span style="color: #4f97d7;">format</span><span style="color: #4f97d7;">(</span>channel=your_channel<span style="color: #4f97d7;">)</span>
+zipped.write<span style="color: #4f97d7;">(</span>your_empty_file, empty_channel_file<span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+
+<p>
+其中关键的java代码如下:
+</p>
+<div class="org-src-container">
+<pre class="src src-Java">public static String getChannel(Context context) {
+        ApplicationInfo appinfo = context.getApplicationInfo();
+        String sourceDir = appinfo.sourceDir;
+        String ret = "";
+        ZipFile zipfile = null;
+        try {
+            zipfile = new ZipFile(sourceDir);
+            Enumeration&lt;?&gt; entries = zipfile.entries();
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = ((ZipEntry) entries.nextElement());
+                String entryName = entry.getName();
+                if (entryName.startsWith("mtchannel")) {
+                    ret = entryName;
+                    break;
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (zipfile != null) {
+                try {
+                    zipfile.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        String[] split = ret.split("_");
+        if (split != null &amp;&amp; split.length &gt;= 2) {
+            return ret.substring(split[0].length() + 1);
+
+        } else {
+            return "";
+        }
+    }
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org19c3a3e" class="outline-2">
+<h2 id="org19c3a3e">参考博客</h2>
+<div class="outline-text-2" id="text-org19c3a3e">
+<ol class="org-ol">
+<li><a href="http://tech.meituan.com/mt-apk-packaging.html">美团Android自动化之旅—生成渠道包</a></li>
+<li><a href="http://www.jianshu.com/p/8b8fdd37bf26">Gradle多渠道打包{umeng}</a></li>
+<li><a href="https://github.com/mcxiaoke/gradle-packer-plugin">Android多渠道打包工具Gradle插件</a></li>
+</ol>
+</div>
+</div>

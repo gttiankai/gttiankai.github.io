@@ -1,57 +1,52 @@
 ---
-layout: post
-title: 基于xposed的通用破解签名的方法
 date: 2015-06-11
-categories: 
-- 工具
 tags: 
 - Android
 author: tiankai
+layout: post
+title: 基于xposed的通用破解签名的方法
 excerpt: 工具
+categories: 
+- 工具
 ---
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">常见的android完整性检测方式</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-orgd9bbac5" class="outline-2">
+<h2 id="orgd9bbac5">常见的android完整性检测方式</h2>
+<div class="outline-text-2" id="text-orgd9bbac5">
 <ol class="org-ol">
-<li>检测签名
-</li>
-<li>检验classes.dex
-</li>
-<li>校验整个apk文件(这种方式比较少见)
-</li>
+<li>检测签名</li>
+<li>检验classes.dex</li>
+<li>校验整个apk文件(这种方式比较少见)</li>
 </ol>
 <p>
 判断使用的那种签名方式:
 </p>
 <ol class="org-ol">
-<li>先直接对apk进行签名，然后安装运行，如果运行出错那么可以推测有签名检测；
-</li>
-<li>如果第一步没有问题,那反编译再回编译APK,进行安装运行出问题，那么说明有校验classes.dex校验.
-</li>
-<li>只有首先查找出apk使用的哪种签名校验的方式,才能再下一步的破解过程中进行相应的处理.
-</li>
+<li>先直接对apk进行签名，然后安装运行，如果运行出错那么可以推测有签名检测；</li>
+<li>如果第一步没有问题,那反编译再回编译APK,进行安装运行出问题，那么说明有校验classes.dex校验.</li>
+<li>只有首先查找出apk使用的哪种签名校验的方式,才能再下一步的破解过程中进行相应的处理.</li>
 </ol>
 <p>
 通过调查发现,现在市场上90%以上的签名校验方式,都是直接对签名文件(*.RSA)进行校验,基于此,现在有下面这种很通用的破解签名校验方式,
 </p>
 </div>
 </div>
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">签名校验原理介绍</h2>
-<div class="outline-text-2" id="text-2">
-</div><div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">apk安装过程中的签名校验的原理</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-org0fd9d60" class="outline-2">
+<h2 id="org0fd9d60">签名校验原理介绍</h2>
+<div class="outline-text-2" id="text-org0fd9d60">
+</div>
+<div id="outline-container-orgab6b509" class="outline-3">
+<h3 id="orgab6b509">apk安装过程中的签名校验的原理</h3>
+<div class="outline-text-3" id="text-orgab6b509">
 <p>
 apk在进行安装的过程中,Android系统会对系统的签名文件做一次校验,这次校验的目的是保证,APK中的每个文件,在APK签名后,没有被修改,
 在一定程度上保证了Apk的安全性.
 </p>
 </div>
 </div>
-<div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">使用检测签名校验的方式的原理</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-orgec8bb63" class="outline-3">
+<h3 id="orgec8bb63">使用检测签名校验的方式的原理</h3>
+<div class="outline-text-3" id="text-orgec8bb63">
 <p>
 apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,会对自己发布的apk做完整性校验,其中一种非常有效的方式就是通过校验签名的方式,
 对apk进行完整性检测.做法就是解析签名之后的RSA文件,然后在本地(手机上)或者远程服务器中进行校验,如果检验不通过则停止该APK的运行.
@@ -61,9 +56,9 @@ apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,
 </div>
 </div>
 </div>
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">破解原理</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-org54136c0" class="outline-2">
+<h2 id="org54136c0">破解原理</h2>
+<div class="outline-text-2" id="text-org54136c0">
 <p>
 因为该方案的核心就是解析RSA文件,所以我们可以通过偷梁换柱的方式,将重打包之后的apk中RSA文件替换成为,正常APK的RSA文件,但此时重打包的APK
 时无法安装的.因为通不过系统的校验.
@@ -76,9 +71,9 @@ apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,
 </div>
 </div>
 
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4">软件使用</h2>
-<div class="outline-text-2" id="text-4">
+<div id="outline-container-org099ab4a" class="outline-2">
+<h2 id="org099ab4a">软件使用</h2>
+<div class="outline-text-2" id="text-org099ab4a">
 <p>
 基于Xposed框架的Hook系统方法java.security.Signature的Xposed模块,在Xposed模块仓库中已经存在(名字叫做DisableVerifySignature),
 可以直接下载,我们也可以自己实现.
@@ -88,15 +83,14 @@ apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,
 代码如下所示:
 </p>
 <div class="org-src-container">
+<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">initZygote</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">StartupParam</span> <span style="color: #7590db;">startupParam</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #4f97d7;">{</span>
 
-<pre class="src src-java"><span style="color: #66D9EF;">public</span> <span style="color: #66D9EF;">void</span> <span style="color: #F92672; font-style: italic;">initZygote</span>(<span style="color: #66D9EF;">StartupParam</span> <span style="color: #F92672;">startupParam</span>) <span style="color: #66D9EF;">throws</span> <span style="color: #66D9EF;">Throwable</span> {
-
-               XposedHelpers.findAndHookMethod(<span style="color: #E6DB74;">"java.security.Signature"</span>,<span style="color: #AE81FF;">null</span>,<span style="color: #E6DB74;">"verify"</span>, <span style="color: #66D9EF;">byte</span>[].<span style="color: #66D9EF;">class</span>,<span style="color: #66D9EF;">new</span> <span style="color: #66D9EF;">XC_MethodHook</span>(){
-             <span style="color: #66D9EF;">protected</span> <span style="color: #66D9EF;">void</span> <span style="color: #F92672; font-style: italic;">afterHookedMethod</span>(<span style="color: #66D9EF;">MethodHookParam</span> <span style="color: #F92672;">param</span>) <span style="color: #66D9EF;">throws</span> <span style="color: #66D9EF;">Throwable</span> {
-               XposedBridge.log(<span style="color: #E6DB74;">"disabled verifysignature......"</span>);
-               param.setResult(<span style="color: #AE81FF;">Boolean</span>.TRUE);
-          }   
-               });
+               XposedHelpers.findAndHookMethod<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"java.security.Signature"</span>,<span style="color: #a45bad;">null</span>,<span style="color: #2d9574;">"verify"</span>, <span style="color: #ce537a; font-weight: bold;">byte</span><span style="color: #2d9574;">[]</span>.<span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span>,<span style="color: #4f97d7; font-weight: bold; font-style: italic;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #2d9574;">(){</span>
+             <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">afterHookedMethod</span><span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #67b11d;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #67b11d;">{</span>
+               XposedBridge.log<span style="color: #b1951d;">(</span><span style="color: #2d9574;">"disabled verifysignature......"</span><span style="color: #b1951d;">)</span>;
+               param.setResult<span style="color: #b1951d;">(</span><span style="color: #a45bad;">Boolean</span>.TRUE<span style="color: #b1951d;">)</span>;
+          <span style="color: #67b11d;">}</span>   
+               <span style="color: #2d9574;">}</span><span style="color: #bc6ec5;">)</span>;
 </pre>
 </div>
 <p>
@@ -105,16 +99,13 @@ apk的开发者在开发过程,为了保证自己的APK的完整性和安全性,
 </div>
 </div>
 
-<div id="outline-container-sec-5" class="outline-2">
-<h2 id="sec-5">参考的blog</h2>
-<div class="outline-text-2" id="text-5">
+<div id="outline-container-org6664037" class="outline-2">
+<h2 id="org6664037">参考的blog</h2>
+<div class="outline-text-2" id="text-org6664037">
 <ul class="org-ul">
-<li><a href="http://bbs.pediy.com/showthread.php?t=190876">调试小技巧：绕过apk安装时的签名验证</a>
-</li>
-<li><a href="http://blog.csdn.net/wxyyxc1992/article/details/17320911">Android Hook框架Xposed原理与源代码分析</a>
-</li>
-<li><a href="http://www.sjsjw.com/kf_mobile/article/1_19087_30637.asp">Android Hook框架Xposed详解：从源代码分析到开发指南</a>
-</li>
+<li><a href="http://bbs.pediy.com/showthread.php?t=190876">调试小技巧：绕过apk安装时的签名验证</a></li>
+<li><a href="http://blog.csdn.net/wxyyxc1992/article/details/17320911">Android Hook框架Xposed原理与源代码分析</a></li>
+<li><a href="http://www.sjsjw.com/kf_mobile/article/1_19087_30637.asp">Android Hook框架Xposed详解：从源代码分析到开发指南</a></li>
 </ul>
 </div>
 </div>

@@ -1,0 +1,78 @@
+---
+date: 2016-01-15
+tags: 
+- android
+author: tiankai
+layout: post
+title: upx在android上的移植
+excerpt: upx android
+categories: 
+- Android
+---
+
+<div id="outline-container-org812ebe8" class="outline-2">
+<h2 id="org812ebe8">关于upx的介绍</h2>
+<div class="outline-text-2" id="text-org812ebe8">
+<p>
+这一部分不做太多的介绍，wiki上有详细的介绍，链接： <a href="https://zh.wikipedia.org/wiki/UPX">upx wiki</a>
+</p>
+</div>
+</div>
+<div id="outline-container-orga26d547" class="outline-2">
+<h2 id="orga26d547">upx的编译</h2>
+<div class="outline-text-2" id="text-orga26d547">
+<p>
+将upx的代码下载下来之后，upx中会有很多的目录和文件，文档的目录结构如下
+所示:
+</p>
+<pre class="example">
+/Users/tiankai/Downloads/upx-3.91-src
+|-- BUGS
+|-- COPYING
+|-- LICENSE
+|-- Makefile
+|-- NEWS
+|-- PROJECTS
+|-- README
+|-- README.1ST
+|-- README.SRC
+|-- THANKS
+|-- TODO
+|-- doc
+`-- src
+</pre>
+
+<p>
+因为要自己修改源码并且编译源码，所以我们一般建议阅读一下的README.SRC,
+里面有很多东西都是在修改upx过程中需要注意的。有几个地方是很好的。
+</p>
+</div>
+<div id="outline-container-org1dae946" class="outline-3">
+<h3 id="org1dae946">关键文件夹说明</h3>
+<div class="outline-text-3" id="text-org1dae946">
+<p>
+upx中包含比较重要的两个文件夹:一个是src/stub,另一个是src目录,其中
+src/stub目录中包含的是使用汇编语言编写解压缩的程序以及相应的头文件.
+src目录下存放的是实际的压缩程序的实现代码.
+</p>
+</div>
+</div>
+<div id="outline-container-org24db7dd" class="outline-3">
+<h3 id="org24db7dd"></h3>
+</div>
+</div>
+
+
+
+
+
+
+<div id="outline-container-org404e64e" class="outline-2">
+<h2 id="org404e64e">参考的blog</h2>
+<div class="outline-text-2" id="text-org404e64e">
+<ol class="org-ol">
+<li><a href="https://zh.wikipedia.org/wiki/UPX">upx wiki</a></li>
+<li><a href="http://upx.sourceforge.net/">upx官网</a></li>
+</ol>
+</div>
+</div>

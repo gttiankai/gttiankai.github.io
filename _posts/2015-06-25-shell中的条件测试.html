@@ -1,18 +1,18 @@
 ---
-layout: post
-title: shell中的条件测试
 date: 2015-06-25
-categories: 
-- 技术
 tags: 
 - bash
 author: tiankai
+layout: post
+title: shell中的条件测试
 excerpt: shell
+categories: 
+- 技术
 ---
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">shell中的条件测试</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-orgad20ff5" class="outline-2">
+<h2 id="orgad20ff5">shell中的条件测试</h2>
+<div class="outline-text-2" id="text-orgad20ff5">
 <p>
 test命令用于测试字符串、文件状态和数字，
 </p>
@@ -23,18 +23,18 @@ expr测试和执行数值输出,一般用于整数值，但也可以用于字符
 </div>
 </div>
 
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">test命令</h2>
-<div class="outline-text-2" id="text-2">
-</div><div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">test的格式</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-org933b47f" class="outline-2">
+<h2 id="org933b47f">test命令</h2>
+<div class="outline-text-2" id="text-org933b47f">
+</div>
+<div id="outline-container-orgd5c7ab2" class="outline-3">
+<h3 id="orgd5c7ab2">test的格式</h3>
+<div class="outline-text-3" id="text-orgd5c7ab2">
 <p>
 Test格式：
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">test condition or test [ condition ]
+<pre class="src src-bash"><span style="color: #4f97d7;">test</span> condition or test <span style="color: #4f97d7;">[</span> condition <span style="color: #4f97d7;">]</span>
 </pre>
 </div>
 <p>
@@ -43,103 +43,102 @@ test命令返回0表示成功。
 </p>
 </div>
 </div>
-<div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">文件状态测试</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-org3657c3a" class="outline-3">
+<h3 id="org3657c3a">文件状态测试</h3>
+<div class="outline-text-3" id="text-org3657c3a">
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">-d</td>
-<td class="left">测试是否文件夹</td>
+<td class="org-left">-d</td>
+<td class="org-left">测试是否文件夹</td>
 </tr>
 
 <tr>
-<td class="left">-f</td>
-<td class="left">测试是否一般文件</td>
+<td class="org-left">-f</td>
+<td class="org-left">测试是否一般文件</td>
 </tr>
 
 <tr>
-<td class="left">-L</td>
-<td class="left">测试是否链接文件</td>
+<td class="org-left">-L</td>
+<td class="org-left">测试是否链接文件</td>
 </tr>
 
 <tr>
-<td class="left">-r</td>
-<td class="left">测试文件是否可读</td>
+<td class="org-left">-r</td>
+<td class="org-left">测试文件是否可读</td>
 </tr>
 
 <tr>
-<td class="left">-w</td>
-<td class="left">测试文件是否可写</td>
+<td class="org-left">-w</td>
+<td class="org-left">测试文件是否可写</td>
 </tr>
 
 <tr>
-<td class="left">-x</td>
-<td class="left">测试文件是否可执行</td>
+<td class="org-left">-x</td>
+<td class="org-left">测试文件是否可执行</td>
 </tr>
 
 <tr>
-<td class="left">-s</td>
-<td class="left">测试文件是否非空</td>
+<td class="org-left">-s</td>
+<td class="org-left">测试文件是否非空</td>
 </tr>
 </tbody>
 </table>
 </div>
 </div>
 
-<div id="outline-container-sec-2-3" class="outline-3">
-<h3 id="sec-2-3">字符串测试</h3>
-<div class="outline-text-3" id="text-2-3">
+<div id="outline-container-org1422d98" class="outline-3">
+<h3 id="org1422d98">字符串测试</h3>
+<div class="outline-text-3" id="text-org1422d98">
 <p>
 五种格式：
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">test  “string”
-test  string_operator  “string”
-test  “string”  string_operator  “string”
-[ string_operator  “string” ]
-[ “string”  string_operator  “string” ]
+<pre class="src src-bash"><span style="color: #4f97d7;">test</span>  &#8220;string&#8221;
+<span style="color: #4f97d7;">test</span>  string_operator  &#8220;string&#8221;
+<span style="color: #4f97d7;">test</span>  &#8220;string&#8221;  string_operator  &#8220;string&#8221;
+<span style="color: #4f97d7;">[</span> string_operator  &#8220;string&#8221; <span style="color: #4f97d7;">]</span>
+<span style="color: #4f97d7;">[</span> &#8220;string&#8221;  string_operator  &#8220;string&#8221; <span style="color: #4f97d7;">]</span>
 </pre>
 </div>
 
 <p>
-其中string<sub>operator可以为：</sub>       
+其中string<sub>operator可以为</sub>：       
 </p>
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">=</td>
-<td class="left">两字符串相等</td>
+<td class="org-left">=</td>
+<td class="org-left">两字符串相等</td>
 </tr>
 
 <tr>
-<td class="left">!=</td>
-<td class="left">两字符串不等</td>
+<td class="org-left">!=</td>
+<td class="org-left">两字符串不等</td>
 </tr>
 
 <tr>
-<td class="left">-z</td>
-<td class="left">空串</td>
+<td class="org-left">-z</td>
+<td class="org-left">空串</td>
 </tr>
 
 <tr>
-<td class="left">-n</td>
-<td class="left">非空串</td>
+<td class="org-left">-n</td>
+<td class="org-left">非空串</td>
 </tr>
 </tbody>
 </table>
@@ -147,16 +146,15 @@ test  “string”  string_operator  “string”
 </div>
 
 
-<div id="outline-container-sec-2-4" class="outline-3">
-<h3 id="sec-2-4">数值测试</h3>
-<div class="outline-text-3" id="text-2-4">
+<div id="outline-container-org41d409f" class="outline-3">
+<h3 id="org41d409f">数值测试</h3>
+<div class="outline-text-3" id="text-org41d409f">
 <p>
 两种格式： 
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">“number”  number_operator  “number”
-[ “number”  number_operator  “number” ]
+<pre class="src src-bash">&#8220;number&#8221;  number_operator  &#8220;number&#8221;
+<span style="color: #4f97d7;">[</span> &#8220;number&#8221;  number_operator  &#8220;number&#8221; <span style="color: #4f97d7;">]</span>
 </pre>
 </div>
 <p>
@@ -166,34 +164,34 @@ test  “string”  string_operator  “string”
 
 
 <colgroup>
-<col  class="left" />
+<col  class="org-left" />
 
-<col  class="left" />
+<col  class="org-left" />
 </colgroup>
 <tbody>
 <tr>
-<td class="left">-eq</td>
-<td class="left">相等</td>
+<td class="org-left">-eq</td>
+<td class="org-left">相等</td>
 </tr>
 
 <tr>
-<td class="left">-ne</td>
-<td class="left">不等于</td>
+<td class="org-left">-ne</td>
+<td class="org-left">不等于</td>
 </tr>
 
 <tr>
-<td class="left">-gt</td>
-<td class="left">大于</td>
+<td class="org-left">-gt</td>
+<td class="org-left">大于</td>
 </tr>
 
 <tr>
-<td class="left">-lt</td>
-<td class="left">小于</td>
+<td class="org-left">-lt</td>
+<td class="org-left">小于</td>
 </tr>
 
 <tr>
-<td class="left">-ge</td>
-<td class="left">大于或等于</td>
+<td class="org-left">-ge</td>
+<td class="org-left">大于或等于</td>
 </tr>
 </tbody>
 </table>
@@ -211,18 +209,17 @@ test  “string”  string_operator  “string”
 </div>
 </div>
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">expr测试</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-org7c1a9d0" class="outline-2">
+<h2 id="org7c1a9d0">expr测试</h2>
+<div class="outline-text-2" id="text-org7c1a9d0">
 <p>
 expr命令一般用于整数值，但也可以用于字符串。
 </p>
 </div>
-<div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1">格式</h3>
-<div class="outline-text-3" id="text-3-1">
+<div id="outline-container-org5c6f0e0" class="outline-3">
+<h3 id="org5c6f0e0">格式</h3>
+<div class="outline-text-3" id="text-org5c6f0e0">
 <div class="org-src-container">
-
 <pre class="src src-bash">expr srgument operator  argument
 </pre>
 </div>
@@ -231,40 +228,37 @@ expr命令一般用于整数值，但也可以用于字符串。
 例如：
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">expr 10 + 10
-expr 10 ^ 2 (10的平方)
-expr $value + 10
+<pre class="src src-bash">expr <span style="color: #a45bad;">10</span> + <span style="color: #a45bad;">10</span>
+expr <span style="color: #a45bad;">10</span> ^ <span style="color: #a45bad;">2</span> <span style="color: #4f97d7;">(</span><span style="color: #a45bad;">10&#30340;&#24179;&#26041;</span><span style="color: #4f97d7;">)</span>
+expr $<span style="color: #7590db;">value</span> + <span style="color: #a45bad;">10</span>
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2">增量计数――expr在循环中最基本的用法</h3>
-<div class="outline-text-3" id="text-3-2">
+<div id="outline-container-org0e75656" class="outline-3">
+<h3 id="org0e75656">增量计数――expr在循环中最基本的用法</h3>
+<div class="outline-text-3" id="text-org0e75656">
 <p>
 例如：
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">LOOP=0
-LOOP=`expr $LOOP + 1`
+<pre class="src src-bash"><span style="color: #7590db;">LOOP</span>=<span style="color: #a45bad;">0</span>
+<span style="color: #7590db;">LOOP</span>=<span style="color: #fa8072;">`expr $LOOP + 1`</span>
 </pre>
 </div>
 </div>
 </div>
 
-<div id="outline-container-sec-3-3" class="outline-3">
-<h3 id="sec-3-3">模式匹配：通过指定的冒号选项计算字符串中的字符数</h3>
-<div class="outline-text-3" id="text-3-3">
+<div id="outline-container-orgd013a70" class="outline-3">
+<h3 id="orgd013a70">模式匹配：通过指定的冒号选项计算字符串中的字符数</h3>
+<div class="outline-text-3" id="text-orgd013a70">
 <p>
 例如：
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">value=account.doc
-expr $value : `\(.*\).doc`
+<pre class="src src-bash"><span style="color: #7590db;">value</span>=account.doc
+expr $<span style="color: #7590db;">value</span> : <span style="color: #fa8072;">`\(.*\).doc`</span>
 </pre>
 </div>
 <p>

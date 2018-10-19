@@ -1,0 +1,178 @@
+---
+date: 2015-07-08
+tags: 
+- 
+- 
+- Android
+author: tiankai
+layout: post
+title: Zjdroid定制记录
+excerpt: zjdroid 脱壳 破解
+categories: 
+- 技术
+---
+
+<div id="outline-container-org7685fce" class="outline-2">
+<h2 id="org7685fce">Zjdroid修复过程</h2>
+<div class="outline-text-2" id="text-org7685fce">
+<p>
+从github上下载的源码,不能执行,在xposed的log中存在下面的报错
+</p>
+<pre class="example">
+-----------------
+2015年7月9日 上午6:38:17 UTC
+Loading Xposed v54 (for Zygote)...
+Running ROM 'KXB21.14-L1.40' with fingerprint 'motorola/falcon_asia_ds/falcon_umtsds:4.4.4/KXB21.14-L1.40/34:user/release-keys'
+Loading modules from /data/app/com.android.reverse-2.apk
+  Loading class com.android.reverse.mod.ReverseXposedModule
+java.lang.IllegalAccessError: Class ref in pre-verified class resolved to unexpected implementation
+	at dalvik.system.DexFile.defineClassNative(Native Method)
+	at dalvik.system.DexFile.defineClass(DexFile.java:222)
+	at dalvik.system.DexFile.loadClassBinaryName(DexFile.java:215)
+	at dalvik.system.DexPathList.findClass(DexPathList.java:322)
+	at dalvik.system.BaseDexClassLoader.findClass(BaseDexClassLoader.java:54)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:497)
+	at java.lang.ClassLoader.loadClass(ClassLoader.java:457)
+	at de.robv.android.xposed.XposedBridge.loadModule(XposedBridge.java:421)
+	at de.robv.android.xposed.XposedBridge.loadModules(XposedBridge.java:386)
+	at de.robv.android.xposed.XposedBridge.main(XposedBridge.java:120)
+	at dalvik.system.NativeStart.main(Native Method)
+</pre>
+<p>
+解决方案竟然出人意料的简单,就是对xposed的处理不对.
+直接看下面的链接就可以:<a href="https://blog.czbix.com/import-xposed-in-android-studio.html">点这里</a>
+最后还是建议在开发之前,可以把开发者手册(如果不是很长的话)好好看一下,可以避免走好多弯路
+</p>
+</div>
+</div>
+<div id="outline-container-org3568dff" class="outline-2">
+<h2 id="org3568dff">各加固方案对抗zjdroid情况</h2>
+<div class="outline-text-2" id="text-org3568dff">
+</div>
+<div id="outline-container-orgc97c6ea" class="outline-3">
+<h3 id="orgc97c6ea">梆梆加固(齐鲁银行)</h3>
+<div class="outline-text-3" id="text-orgc97c6ea">
+</div>
+<ul class="org-ul">
+<li><a id="org93fc6ad"></a>运行Zjdroid的效果<br />
+<div class="outline-text-4" id="text-org93fc6ad">
+<ol class="org-ol">
+<li>dump<sub>dexinfo可以直接运行</sub></li>
+<li>dump<sub>class可以直接看到正常class的名字</sub></li>
+<li>使用dump<sub>dexfile可以正常执行,拿出来的odex文件进行反编译,方向只能反编译一部分,拿不到全部的代码</sub>.</li>
+<li>使用backsmali命令,应用直接推出,梆梆肯定对Zjdroid做了对抗.</li>
+</ol>
+</div>
+</li>
+<li><a id="orgb62f7e5"></a>反Zjdroid的方式(梆梆)<br />
+<div class="outline-text-4" id="text-orgb62f7e5">
+<ol class="org-ol">
+<li>根据上面的情况推测,应该梆梆直接也注册了广播接收器,如果没有接受到了backsmali,就直接退出环境,初步推测了是使用了广播拦截,
+拦截带关键字backsmali的广播,来防止zjroid,通过修改backsmali关键字来进行脱壳,但是发现还是不行,得到下面的报错的信息</li>
+</ol>
+<pre class="example">
+java.lang.NullPointerException
+	at com.android.reverse.collecter.DexFileInfoCollecter$1.afterHookedMethod(DexFileInfoCollecter.java:60)
+	at com.android.reverse.hook.MethodHookCallBack.afterHookedMethod(MethodHookCallBack.java:22)
+	at de.robv.android.xposed.XposedBridge.handleHookedMethod(XposedBridge.java:645)
+	at dalvik.system.DexFile.openDexFileNative(Native Method)
+	at dalvik.system.DexFile.openDexFile(DexFile.java:296)
+	at dalvik.system.DexFile.&lt;init&gt;(DexFile.java:80)
+	at com.secneo.guard.ACall.jniCheckRawDexAvailable(Native Method)
+	at com.secneo.guard.Util.createChildProcess(Util.java:684)
+	at com.secneo.guard.Util.runAll(Util.java:840)
+	at com.secneo.guard.ApplicationWrapper.onCreate(ApplicationWrapper.java:253)
+	at de.robv.android.xposed.XposedBridge.invokeOriginalMethodNative(Native Method)
+	at de.robv.android.xposed.XposedBridge.handleHookedMethod(XposedBridge.java:631)
+	at com.secneo.guard.ApplicationWrapper.onCreate(Native Method)
+	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1030)
+	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:4409)
+	at de.robv.android.xposed.XposedBridge.invokeOriginalMethodNative(Native Method)
+	at de.robv.android.xposed.XposedBridge.handleHookedMethod(XposedBridge.java:631)
+	at android.app.ActivityThread.handleBindApplication(Native Method)
+	at android.app.ActivityThread.access$1500(ActivityThread.java:139)
+	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:1270)
+	at android.os.Handler.dispatchMessage(Handler.java:102)
+	at android.os.Looper.loop(Looper.java:136)
+	at android.app.ActivityThread.main(ActivityThread.java:5086)
+	at java.lang.reflect.Method.invokeNative(Native Method)
+	at java.lang.reflect.Method.invoke(Method.java:515)
+	at com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:785)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:601)
+	at de.robv.android.xposed.XposedBridge.main(XposedBridge.java:132)
+	at dalvik.system.NativeStart.main(Native Method)
+java.lang.NullPointerException
+	at com.android.reverse.collecter.DexFileInfoCollecter$1.afterHookedMethod(DexFileInfoCollecter.java:60)
+	at com.android.reverse.hook.MethodHookCallBack.afterHookedMethod(MethodHookCallBack.java:22)
+	at de.robv.android.xposed.XposedBridge.handleHookedMethod(XposedBridge.java:645)
+	at dalvik.system.DexFile.openDexFileNative(Native Method)
+	at dalvik.system.DexFile.openDexFile(DexFile.java:296)
+	at dalvik.system.DexFile.&lt;init&gt;(DexFile.java:80)
+	at com.secneo.guard.ACall.jniCheckRawDexAvailable(Native Method)
+	at com.secneo.guard.Util.createChildProcess(Util.java:684)
+	at com.secneo.guard.Util.runAll(Util.java:840)
+	at com.secneo.guard.ApplicationWrapper.onCreate(ApplicationWrapper.java:253)
+	at de.robv.android.xposed.XposedBridge.invokeOriginalMethodNative(Native Method)
+	at de.robv.android.xposed.XposedBridge.handleHookedMethod(XposedBridge.java:631)
+	at com.secneo.guard.ApplicationWrapper.onCreate(Native Method)
+	at android.app.Instrumentation.callApplicationOnCreate(Instrumentation.java:1030)
+	at android.app.ActivityThread.handleBindApplication(ActivityThread.java:4409)
+	at de.robv.android.xposed.XposedBridge.invokeOriginalMethodNative(Native Method)
+	at de.robv.android.xposed.XposedBridge.handleHookedMethod(XposedBridge.java:631)
+	at android.app.ActivityThread.handleBindApplication(Native Method)
+	at android.app.ActivityThread.access$1500(ActivityThread.java:139)
+	at android.app.ActivityThread$H.handleMessage(ActivityThread.java:1270)
+	at android.os.Handler.dispatchMessage(Handler.java:102)
+	at android.os.Looper.loop(Looper.java:136)
+	at android.app.ActivityThread.main(ActivityThread.java:5086)
+	at java.lang.reflect.Method.invokeNative(Native Method)
+	at java.lang.reflect.Method.invoke(Method.java:515)
+	at com.android.internal.os.ZygoteInit$MethodAndArgsCaller.run(ZygoteInit.java:785)
+	at com.android.internal.os.ZygoteInit.main(ZygoteInit.java:601)
+	at de.robv.android.xposed.XposedBridge.main(XposedBridge.java:132)
+	at dalvik.system.NativeStart.main(Native Method)
+</pre>
+</div>
+</li>
+<li><a id="org6868a9a"></a>脱壳(齐鲁银行)常用命令<br />
+<div class="outline-text-4" id="text-org6868a9a">
+<ol class="org-ol">
+<li>dump<sub>dexInfo</sub>:获得dex基本信息</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-bash">am broadcast -a com.zjdroid.invoke --ei target pid --es cmd <span style="color: #2d9574;">'{"action":"dump_dexinfo"}'</span>
+</pre>
+</div>
+<ol class="org-ol">
+<li>dump<sub>class</sub>:获取指定DEX文件包含可加载类名</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-bash">am broadcast -a com.zjdroid.invoke --ei target pid --es cmd <span style="color: #2d9574;">'{"action":"dump_class","dexpath":"/data/data/com.rytong.bankql.newql/.cache/classes.dex"}'</span>
+</pre>
+</div>
+<ol class="org-ol">
+<li>backsmali:根据Dalvik相关内存指针动态反编译指定DEX，并以文件形式保存。</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-bash">am broadcast -a com.zjdroid.invoke --ei target pid --es cmd <span style="color: #2d9574;">'{"action":"backsmali","dexpath":"/data/app/com.rytong.bankbj-1.apk"}'</span>
+</pre>
+</div>
+<ol class="org-ol">
+<li>dump<sub>dexfile</sub>:Dump指定DEX内存中的数据并保存到文件（数据为odex格式，可在pc上反编译）</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-bash">am broadcast -a com.zjdroid.invoke --ei target pid --es cmd <span style="color: #2d9574;">'{"action":"dump_dexfile","dexpath":/data/data/com.rytong.bankql.newql/.cache/classes.dex"}'</span>
+</pre>
+</div>
+<ol class="org-ol">
+<li>get<sub>dexfile</sub>:同baksmali</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-bash">am broadcast -a com.zjdroid.invoke --ei target pid --es cmd <span style="color: #2d9574;">'{"action":"backsmali","dexpath":"/data/data/com.rytong.bankql.newql/.cache/classes.dex"}'</span>
+</pre>
+</div>
+</div>
+</li>
+</ul>
+</div>
+</div>

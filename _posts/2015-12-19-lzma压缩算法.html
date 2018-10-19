@@ -1,0 +1,47 @@
+---
+date: 2015-12-19
+tags: 
+- 压缩算法
+author: tiankai
+layout: post
+title: LZMA压缩算法
+excerpt: LZMA Android 
+categories: 
+- 压缩算法
+---
+
+<div id="outline-container-org4b5f7e4" class="outline-2">
+<h2 id="org4b5f7e4">LZMA压缩算法的介绍</h2>
+<div class="outline-text-2" id="text-org4b5f7e4">
+<p>
+lzma压缩算法是使用非常广泛的开源的压缩算法,具体的介绍看以查看wiki:<a href="https://zh.wikipedia.org/wiki/LZMA">lzma维基百科</a>
+lzma压缩算法的特点:
+</p>
+<ol class="org-ol">
+<li>高压缩比.
+经过测试,压缩率确实很高.</li>
+<li>解压缩代码较小.</li>
+<li>开源跨平台.</li>
+<li>支持在多核心系统上多线程运行. 所以适合嵌入式系统的设计.</li>
+</ol>
+
+<p>
+lzma算法的缺点
+</p>
+<ol class="org-ol">
+<li>因为高压缩率,所以解压的运行效率较低.
+这一点经过本人的测试.我是在android系统进行测试的.解压缩600KB多的数据,解压缩的时间在6秒左右,时间很慢.
+不知道是不是我不会写的多线程的代码,感觉和wiki百科的说的"适合嵌入式系统"的说法有冲突.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-orgfee1494" class="outline-2">
+<h2 id="orgfee1494">LZMA的集成</h2>
+<div class="outline-text-2" id="text-orgfee1494">
+<p>
+因为要将程序集成到Android系统中,没有使用动态链接库进行集成,所以需要通过源码进行集成.
+要集成到要使用lzma算法进行开发过程中,遇到了很大的问题,主要就是官方文档中没有明确的
+</p>
+</div>
+</div>

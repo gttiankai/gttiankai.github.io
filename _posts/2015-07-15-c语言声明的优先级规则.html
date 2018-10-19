@@ -1,65 +1,55 @@
 ---
-layout: post
-title: C语言声明的优先级规则
 date: 2015-07-15
-categories: 
-- 技术
 tags: 
 - C语言
 author: tiankai
+layout: post
+title: C语言声明的优先级规则
 excerpt: C 声明 优先级 signale定义
+categories: 
+- 技术
 ---
 
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1">C语言声明的优先级规则</h2>
-<div class="outline-text-2" id="text-1">
+<div id="outline-container-org390e756" class="outline-2">
+<h2 id="org390e756">C语言声明的优先级规则</h2>
+<div class="outline-text-2" id="text-org390e756">
 <p>
 今天看《C专家编程》,其中由有一张讲声明,其中讲声明的优先级很有用,现在记录一下,以备后期查看.
 </p>
 <ol class="org-ol">
-<li>声明从它的名字开始读取,然后按照优先级的顺序依次读取.
-</li>
+<li>声明从它的名字开始读取,然后按照优先级的顺序依次读取.</li>
 <li>优先级从高到低依次是:
 <ol class="org-ol">
-<li>声明中括号括起来的部分
-</li>
+<li>声明中括号括起来的部分</li>
 <li>后缀操作符:
 括号() 表示这是一个函数,返回&#x2026;的函数
-方括号[]表示这是一个数组
-</li>
+方括号[]表示这是一个数组</li>
 <li>前缀操作符:
-星号*表示"指向&#x2026;的指针"
-</li>
-</ol>
-</li>
+星号*表示"指向&#x2026;的指针"</li>
+</ol></li>
 <li>如果const和(或)volatile关键字后面紧跟类型说明符(如:int,long等),那么他作用于类型说明符,在其他情况下,
-const和(或)volatile关键字作用于它左边紧邻的指针星号, 这个指针是&#x2026;类型
-</li>
+const和(或)volatile关键字作用于它左边紧邻的指针星号, 这个指针是&#x2026;类型</li>
 </ol>
 </div>
 </div>
 
-<div id="outline-container-sec-2" class="outline-2">
-<h2 id="sec-2">实例</h2>
-<div class="outline-text-2" id="text-2">
-</div><div id="outline-container-sec-2-1" class="outline-3">
-<h3 id="sec-2-1">1. char * const *(*next)()</h3>
-<div class="outline-text-3" id="text-2-1">
+<div id="outline-container-orgfa9160d" class="outline-2">
+<h2 id="orgfa9160d">实例</h2>
+<div class="outline-text-2" id="text-orgfa9160d">
+</div>
+<div id="outline-container-orgd80f62e" class="outline-3">
+<h3 id="orgd80f62e">1. char * const *(*next)()</h3>
+<div class="outline-text-3" id="text-orgd80f62e">
 <p>
 我们来分析上面的这个声明
 </p>
 <ol class="org-ol">
-<li>根据上面的规则1, 确定名字是next.其中括号括起来的部分是(*next)
-</li>
-<li>根据2.3确认next是指向&#x2026;的指针.
-</li>
+<li>根据上面的规则1, 确定名字是next.其中括号括起来的部分是(*next)</li>
+<li>根据2.3确认next是指向&#x2026;的指针.</li>
 <li>分析完了(*next),然后我们将(*next)作为一个整体.
-再根据2.2的原则,(*next)后边是一个括号,便是一个函数,说明next现在是: 指向函数的指针, 指向一个返回&#x2026;的函数,此时(*next)()是一个整体.
-</li>
-<li>再根据2.3, 处理前缀(*next)()的前缀"*",说明这个函数返回一个指针,这个指针指向&#x2026;类型.将*(*next)()作为一个整体.
-</li>
-<li>根据3的原则,const修饰的时他左边紧邻的指针星号.char * const说明是一个指向char类型的常量指针.
-</li>
+再根据2.2的原则,(*next)后边是一个括号,便是一个函数,说明next现在是: 指向函数的指针, 指向一个返回&#x2026;的函数,此时(*next)()是一个整体.</li>
+<li>再根据2.3, 处理前缀(<b>next)()的前缀"</b>",说明这个函数返回一个指针,这个指针指向&#x2026;类型.将*(*next)()作为一个整体.</li>
+<li>根据3的原则,const修饰的时他左边紧邻的指针星号.char * const说明是一个指向char类型的常量指针.</li>
 </ol>
 <p>
 所以最后总结起来就是: next是一个指针,它指向一个指针,该函数返回另一个指针,这个指针指向一个类型为char的常量指针.
@@ -67,80 +57,79 @@ const和(或)volatile关键字作用于它左边紧邻的指针星号, 这个指
 </div>
 </div>
 
-<div id="outline-container-sec-2-2" class="outline-3">
-<h3 id="sec-2-2">2. void ( *signal(int sig, void(*func)(int) ))( int )</h3>
-<div class="outline-text-3" id="text-2-2">
+<div id="outline-container-org4536181" class="outline-3">
+<h3 id="org4536181">2. void ( *signal(int sig, void(*func)(int) ))( int )</h3>
+<div class="outline-text-3" id="text-org4536181">
 <p>
 我们来分析上面的这个声明:
 </p>
 <ol class="org-ol">
-<li>我们根据上面的规则进行分析,首先先找到声明,我们从左到右查找最内层的声明,找到如下声明:
+<li><p>
+我们根据上面的规则进行分析,首先先找到声明,我们从左到右查找最内层的声明,找到如下声明:
+</p>
 <pre class="example">
 void(*func)(int)
 </pre>
 <p>
 说明func是一个指向函数的指针.该函数的形参为int,返回值为void,
+</p></li>
+<li>我们接下来注意到了前面的int sig我们发现他和void(*func)(int)是平级的,这说明func不是我们要说明的东西,因为我们不可能声明两个.</li>
+<li><p>
+再往前分析,为我们注意到剩下的部分
 </p>
-</li>
-<li>我们接下来注意到了前面的int sig我们发现他和void(*func)(int)是平级的,这说明func不是我们要说明的东西,因为我们不可能声明两个.
-</li>
-<li>再往前分析,为我们注意到剩下的部分
 <pre class="example">
 void ( *signal(       )) ( int )
 </pre>
 <p>
 根据上面的经验,signal才是我们的要声明的的东西.
+</p></li>
+<li>根据规则2,我们发现signal是一个函数(因为signal后边跟的时括号,而且后缀的优先级比前缀高),这就确定了signal得属性,它是一个函数.</li>
+<li><p>
+我们再来看signal这个函数的特殊性. 现在剩下的部分是
 </p>
-</li>
-<li>根据规则2,我们发现signal是一个函数(因为signal后边跟的时括号,而且后缀的优先级比前缀高),这就确定了signal得属性,它是一个函数.
-</li>
-<li>我们再来看signal这个函数的特殊性. 现在剩下的部分是
 <pre class="example">
 void (* ..... )(int)
 </pre>
 <p>
 我们分析剩下的部分.由规则2.1,我们分析(* &#x2026;)是一个指针,后边跟着(int),所以是一个函数指针,这个函数的形参是int,返回值时void
+</p></li>
+<li><p>
+现在我们基本分析完了,把我们分析出来的总结一下:
 </p>
-</li>
-<li>现在我们基本分析完了,把我们分析出来的总结一下:
 <pre class="example">
 signal 是一个函数,他返回一个函数指针,返回的这个函数指针的形参是int,返回值是void. signal这个函数的形参有两个,第一个就是int,
 第二个形参是一个函数指针,这个函数指针func的形参是int,返回值是void.我们可以发现signal这个函数的第二个形参,和它本身的返回值类型相同的
-</pre>
-</li>
+</pre></li>
 </ol>
 </div>
 </div>
 </div>
 
 
-<div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3">使用typedef来理解signal定义.</h2>
-<div class="outline-text-2" id="text-3">
+<div id="outline-container-org21db1a6" class="outline-2">
+<h2 id="org21db1a6">使用typedef来理解signal定义.</h2>
+<div class="outline-text-2" id="text-org21db1a6">
 <p>
 signal这个函数的定义,基本上是c语言中最复杂的声明类型,我们可以通过typedef来帮助我们理解signal的定义.
 首先定义如下:
 </p>
 <div class="org-src-container">
-
-<pre class="src src-C"><span style="color: #66D9EF;">typedef</span> <span style="color: #66D9EF;">void</span>(*<span style="color: #66D9EF;">ptr_to_func</span>)(<span style="color: #66D9EF;">int</span>);
+<pre class="src src-C"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">typedef</span> <span style="color: #ce537a; font-weight: bold;">void</span><span style="color: #4f97d7;">(</span>*<span style="color: #ce537a; font-weight: bold;">ptr_to_func</span><span style="color: #4f97d7;">)(</span><span style="color: #ce537a; font-weight: bold;">int</span><span style="color: #4f97d7;">)</span>;
 </pre>
 </div>
 <p>
-我们定义ptr<sub>to</sub><sub>func为一个指针</sub>,他指向一个函数,这个函数的形参是int,返回值为void
+我们定义ptr<sub>to</sub><sub>func为一个指针,他指向一个函数,这个函数的形参是int,返回值为void</sub>
 我们再来看signal的定义
 </p>
 <div class="org-src-container">
-
-<pre class="src src-C"><span style="color: #66D9EF;">void</span> ( *<span style="color: #F92672; font-style: italic;">signal</span>(<span style="color: #66D9EF;">int</span> <span style="color: #F92672;">sig</span>, <span style="color: #66D9EF;">void</span>(*<span style="color: #F92672;">func</span>)(<span style="color: #66D9EF;">int</span>) ))( <span style="color: #66D9EF;">int</span> )
+<pre class="src src-C"><span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #4f97d7;">(</span> *signal<span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">sig</span>, <span style="color: #ce537a; font-weight: bold;">void</span><span style="color: #2d9574;">(</span>*<span style="color: #bc6ec5; font-weight: bold;">func</span><span style="color: #2d9574;">)(</span><span style="color: #ce537a; font-weight: bold;">int</span><span style="color: #2d9574;">)</span> <span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)(</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #4f97d7;">)</span>
 </pre>
 </div>
 <p>
 根据我们上面的分析的分析我们可以做如下的简化
 </p>
 <div class="org-src-container">
-
-<pre class="src src-C"><span style="color: #66D9EF;">ptr_to_func</span> <span style="color: #F92672; font-style: italic;">signal</span>(<span style="color: #66D9EF;">int</span> <span style="color: #F92672;">sig</span>, <span style="color: #66D9EF;">ptr_to_func</span> <span style="color: #F92672;">func</span>);
+<pre class="src src-C"><span style="color: #ce537a; font-weight: bold;">ptr_to_func</span> <span style="color: #bc6ec5; font-weight: bold;">signal</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">sig</span>, <span style="color: #ce537a; font-weight: bold;">ptr_to_func</span> <span style="color: #7590db;">func</span><span style="color: #4f97d7;">)</span>;
 </pre>
 </div>
 <p>

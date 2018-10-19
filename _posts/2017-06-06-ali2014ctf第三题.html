@@ -10,9 +10,9 @@ categories:
 - Android
 ---
 
-<div id="outline-container-org13ab0da" class="outline-2">
-<h2 id="org13ab0da">题目说明</h2>
-<div class="outline-text-2" id="text-org13ab0da">
+<div id="outline-container-org4ce7ba5" class="outline-2">
+<h2 id="org4ce7ba5">题目说明</h2>
+<div class="outline-text-2" id="text-org4ce7ba5">
 <p>
 该题目是阿里移动安全挑战赛2014年的第三题.题目的内容如下:
 </p>
@@ -29,12 +29,13 @@ EvilAPK-300
 </div>
 </div>
 
-<div id="outline-container-orgd42ad71" class="outline-2">
-<h2 id="orgd42ad71">解题过程</h2>
-<div class="outline-text-2" id="text-orgd42ad71">
-</div><div id="outline-container-orga321e12" class="outline-3">
-<h3 id="orga321e12">初步分析</h3>
-<div class="outline-text-3" id="text-orga321e12">
+<div id="outline-container-org944eb29" class="outline-2">
+<h2 id="org944eb29">解题过程</h2>
+<div class="outline-text-2" id="text-org944eb29">
+</div>
+<div id="outline-container-org639ecf5" class="outline-3">
+<h3 id="org639ecf5">初步分析</h3>
+<div class="outline-text-3" id="text-org639ecf5">
 <p>
 首先安装该应用,然后启动该应用.启动后的界面如下图所示,从启动界面来看,该题目的要求和题目的说明一致,需要找到一个URL.
 </p>
@@ -57,9 +58,9 @@ EvilAPK-300
 </div>
 </div>
 
-<div id="outline-container-orga1ca07a" class="outline-3">
-<h3 id="orga1ca07a">静态分析libmobisec.so</h3>
-<div class="outline-text-3" id="text-orga1ca07a">
+<div id="outline-container-org988557d" class="outline-3">
+<h3 id="org988557d">静态分析libmobisec.so</h3>
+<div class="outline-text-3" id="text-org988557d">
 <p>
 使用IDA pro 代开ibmobisec.so.在IDA pro的导出表中找到JNI<sub>OnLoad方法,解析到的结果如下图所示</sub>:
 </p>
@@ -95,43 +96,43 @@ EvilAPK-300
 </p>
 </div>
 </div>
-<div id="outline-container-org709e3db" class="outline-3">
-<h3 id="org709e3db">动态调试脱壳</h3>
-<div class="outline-text-3" id="text-org709e3db">
+<div id="outline-container-org8f06f3f" class="outline-3">
+<h3 id="org8f06f3f">动态调试脱壳</h3>
+<div class="outline-text-3" id="text-org8f06f3f">
 <p>
 接下来就是动态调试libmobisec.so了.IDA连接上调试器,对libdvm.so中的dvmDexFileOpenPartial函数下断点. 其中对libdvm.so下断点的方法参考下面的博客(<a href="http://blog.csdn.net/pengyan0812/article/details/46275317">传送门</a>)中有详细的步骤,在这里不再赘述.我们为什么选择dvmDexFileOpenPartial?这是因为对dex进行解析肯定会调用该函数.而且该函数的第一个参数正好是dex文件的起始地址,第二个参数正好是dex文件的长度.主要能够获取到这两个参数就可以从内存中将dex文件dump出来.dvmDexFileOpenPartial在Android4.4.2源码中的定义如下所示:
 </p>
 <div class="org-src-container">
-<pre class="src src-C++"><span style="color: #df005f; font-weight: bold;">int</span> <span style="color: #d75fd7; font-weight: bold;">dvmDexFileOpenPartial</span><span style="color: #268bd2;">(</span><span style="color: #268bd2; font-weight: bold;">const</span> <span style="color: #df005f; font-weight: bold;">void</span>* <span style="color: #8787d7;">addr</span>, <span style="color: #df005f; font-weight: bold;">int</span> <span style="color: #8787d7;">len</span>, <span style="color: #df005f; font-weight: bold;">DvmDex</span>** <span style="color: #8787d7;">ppDvmDex</span><span style="color: #268bd2;">)</span>
-<span style="color: #268bd2;">{</span>
-    <span style="color: #df005f; font-weight: bold;">DvmDex</span>* <span style="color: #8787d7;">pDvmDex</span>;
-    <span style="color: #df005f; font-weight: bold;">DexFile</span>* <span style="color: #8787d7;">pDexFile</span>;
-    <span style="color: #df005f; font-weight: bold;">int</span> <span style="color: #8787d7;">parseFlags</span> = kDexParseDefault;
-    <span style="color: #df005f; font-weight: bold;">int</span> <span style="color: #8787d7;">result</span> = -<span style="color: #d75fd7;">1</span>;
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">dvmDexFileOpenPartial</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold; font-style: italic;">const</span> <span style="color: #ce537a; font-weight: bold;">void</span>* <span style="color: #7590db;">addr</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">len</span>, <span style="color: #ce537a; font-weight: bold;">DvmDex</span>** <span style="color: #7590db;">ppDvmDex</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">DvmDex</span>* <span style="color: #7590db;">pDvmDex</span>;
+    <span style="color: #ce537a; font-weight: bold;">DexFile</span>* <span style="color: #7590db;">pDexFile</span>;
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">parseFlags</span> = kDexParseDefault;
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">result</span> = -<span style="color: #a45bad;">1</span>;
 
-    <span style="color: #008787; background-color: #262626;">/* </span><span style="color: #008787; background-color: #262626;">-- file is incomplete, new checksum has not yet been calculated</span>
-<span style="color: #008787; background-color: #262626;">    if (gDvm.verifyDexChecksum)</span>
-<span style="color: #008787; background-color: #262626;">        parseFlags |= kDexParseVerifyChecksum;</span>
-<span style="color: #008787; background-color: #262626;">    */</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">-- file is incomplete, new checksum has not yet been calculated</span>
+<span style="color: #2aa1ae; background-color: #292e34;">    if (gDvm.verifyDexChecksum)</span>
+<span style="color: #2aa1ae; background-color: #292e34;">        parseFlags |= kDexParseVerifyChecksum;</span>
+<span style="color: #2aa1ae; background-color: #292e34;">    */</span>
 
-    pDexFile = dexFileParse<span style="color: #d75fd7;">(</span><span style="color: #2aa198;">(</span><span style="color: #df005f; font-weight: bold;">u1</span>*<span style="color: #2aa198;">)</span>addr, len, parseFlags<span style="color: #d75fd7;">)</span>;
-    <span style="color: #268bd2; font-weight: bold;">if</span> <span style="color: #d75fd7;">(</span>pDexFile == <span style="color: #d75fd7;">NULL</span><span style="color: #d75fd7;">)</span> <span style="color: #d75fd7;">{</span>
-        ALOGE<span style="color: #2aa198;">(</span><span style="color: #2aa198;">"DEX parse failed"</span><span style="color: #2aa198;">)</span>;
-        <span style="color: #268bd2; font-weight: bold;">goto</span> <span style="color: #d75fd7;">bail</span>;
-    <span style="color: #d75fd7;">}</span>
-    pDvmDex = allocateAuxStructures<span style="color: #d75fd7;">(</span>pDexFile<span style="color: #d75fd7;">)</span>;
-    <span style="color: #268bd2; font-weight: bold;">if</span> <span style="color: #d75fd7;">(</span>pDvmDex == <span style="color: #d75fd7;">NULL</span><span style="color: #d75fd7;">)</span> <span style="color: #d75fd7;">{</span>
-        dexFileFree<span style="color: #2aa198;">(</span>pDexFile<span style="color: #2aa198;">)</span>;
-        <span style="color: #268bd2; font-weight: bold;">goto</span> <span style="color: #d75fd7;">bail</span>;
-    <span style="color: #d75fd7;">}</span>
+    pDexFile = dexFileParse<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">u1</span>*<span style="color: #2d9574;">)</span>addr, len, parseFlags<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">if</span> <span style="color: #bc6ec5;">(</span>pDexFile == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"DEX parse failed"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold; font-style: italic;">goto</span> <span style="color: #a45bad;">bail</span>;
+    <span style="color: #bc6ec5;">}</span>
+    pDvmDex = allocateAuxStructures<span style="color: #bc6ec5;">(</span>pDexFile<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">if</span> <span style="color: #bc6ec5;">(</span>pDvmDex == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        dexFileFree<span style="color: #2d9574;">(</span>pDexFile<span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold; font-style: italic;">goto</span> <span style="color: #a45bad;">bail</span>;
+    <span style="color: #bc6ec5;">}</span>
 
-    pDvmDex-&gt;isMappedReadOnly = <span style="color: #d75fd7;">false</span>;
+    pDvmDex-&gt;isMappedReadOnly = <span style="color: #a45bad;">false</span>;
     *ppDvmDex = pDvmDex;
-    result = <span style="color: #d75fd7;">0</span>;
+    result = <span style="color: #a45bad;">0</span>;
 
-<span style="color: #d75fd7;">bail</span>:
-    <span style="color: #268bd2; font-weight: bold;">return</span> result;
-<span style="color: #268bd2;">}</span>
+<span style="color: #a45bad;">bail</span>:
+    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">return</span> result;
+<span style="color: #4f97d7;">}</span>
 </pre>
 </div>
 
@@ -167,9 +168,9 @@ for (dex_addr = r0; dex_addr &lt; end_addr; dex_addr++){
 </div>
 </div>
 
-<div id="outline-container-org60ac39f" class="outline-3">
-<h3 id="org60ac39f">分析脱壳后的dex文件</h3>
-<div class="outline-text-3" id="text-org60ac39f">
+<div id="outline-container-org881a29f" class="outline-3">
+<h3 id="org881a29f">分析脱壳后的dex文件</h3>
+<div class="outline-text-3" id="text-org881a29f">
 <p>
 使用jeb打开脱壳后的dex文件的截图如下所示:
 </p>
@@ -195,21 +196,21 @@ for (dex_addr = r0; dex_addr &lt; end_addr; dex_addr++){
 </p>
 
 <div class="org-src-container">
-<pre class="src src-java"><span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #268bd2; font-weight: bold;">class</span> <span style="color: #df005f; font-weight: bold;">Jscrack</span> <span style="color: #268bd2; font-weight: bold;">implements</span> <span style="color: #df005f; font-weight: bold;">IXposedHookLoadPackage</span> <span style="color: #268bd2;">{</span>
-    <span style="color: #d75fd7;">@Override</span>
-    <span style="color: #268bd2; font-weight: bold;">public</span> <span style="color: #df005f; font-weight: bold;">void</span> <span style="color: #d75fd7; font-weight: bold;">handleLoadPackage</span><span style="color: #d75fd7;">(</span><span style="color: #d75fd7;">XC_LoadPackage</span>.<span style="color: #df005f; font-weight: bold;">LoadPackageParam</span> <span style="color: #8787d7;">loadPackageParam</span><span style="color: #d75fd7;">)</span> <span style="color: #268bd2; font-weight: bold;">throws</span> <span style="color: #df005f; font-weight: bold;">Throwable</span> <span style="color: #d75fd7;">{</span>
-        <span style="color: #268bd2; font-weight: bold;">if</span> <span style="color: #2aa198;">(</span><span style="color: #d75fd7;">!</span>loadPackageParam.packageName.equals<span style="color: #67b11d;">(</span><span style="color: #2aa198;">"com.ali.tg.testapp"</span><span style="color: #67b11d;">)</span><span style="color: #2aa198;">)</span> <span style="color: #268bd2; font-weight: bold;">return</span>;
-        findAndHookMethod<span style="color: #2aa198;">(</span><span style="color: #2aa198;">"android.webkit.WebView"</span>, loadPackageParam.classLoader, <span style="color: #2aa198;">"addJavascriptInterface"</span>, Object.<span style="color: #268bd2; font-weight: bold;">class</span>, String.<span style="color: #268bd2; font-weight: bold;">class</span>, <span style="color: #268bd2; font-weight: bold;">new</span> <span style="color: #df005f; font-weight: bold;">XC_MethodHook</span><span style="color: #67b11d;">()</span> <span style="color: #67b11d;">{</span>
-            <span style="color: #d75fd7;">@Override</span>
-            <span style="color: #268bd2; font-weight: bold;">protected</span> <span style="color: #df005f; font-weight: bold;">void</span> <span style="color: #d75fd7; font-weight: bold;">beforeHookedMethod</span><span style="color: #875f00;">(</span><span style="color: #df005f; font-weight: bold;">MethodHookParam</span> <span style="color: #8787d7;">param</span><span style="color: #875f00;">)</span> <span style="color: #268bd2; font-weight: bold;">throws</span> <span style="color: #df005f; font-weight: bold;">Throwable</span> <span style="color: #875f00;">{</span>
-                XposedBridge.log<span style="color: #268bd2;">(</span><span style="color: #2aa198;">"before addJavascriptInterface:"</span> + param.args<span style="color: #d75fd7;">[</span><span style="color: #d75fd7;">1</span><span style="color: #d75fd7;">]</span>.toString<span style="color: #d75fd7;">()</span><span style="color: #268bd2;">)</span>;
-            <span style="color: #875f00;">}</span>
-            <span style="color: #d75fd7;">@Override</span>
-            <span style="color: #268bd2; font-weight: bold;">protected</span> <span style="color: #df005f; font-weight: bold;">void</span> <span style="color: #d75fd7; font-weight: bold;">afterHookedMethod</span><span style="color: #875f00;">(</span><span style="color: #df005f; font-weight: bold;">MethodHookParam</span> <span style="color: #8787d7;">param</span><span style="color: #875f00;">)</span> <span style="color: #268bd2; font-weight: bold;">throws</span> <span style="color: #df005f; font-weight: bold;">Throwable</span> <span style="color: #875f00;">{</span>
-            <span style="color: #875f00;">}</span>
-        <span style="color: #67b11d;">}</span><span style="color: #2aa198;">)</span>;
-    <span style="color: #d75fd7;">}</span>
-<span style="color: #268bd2;">}</span>
+<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span> <span style="color: #ce537a; font-weight: bold;">Jscrack</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">implements</span> <span style="color: #ce537a; font-weight: bold;">IXposedHookLoadPackage</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #a45bad;">@Override</span>
+    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">handleLoadPackage</span><span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">XC_LoadPackage</span>.<span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span> <span style="color: #7590db;">loadPackageParam</span><span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold; font-style: italic;">if</span> <span style="color: #2d9574;">(</span><span style="color: #a45bad;">!</span>loadPackageParam.packageName.equals<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"com.ali.tg.testapp"</span><span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">return</span>;
+        findAndHookMethod<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"android.webkit.WebView"</span>, loadPackageParam.classLoader, <span style="color: #2d9574;">"addJavascriptInterface"</span>, Object.<span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span>, String.<span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span>, <span style="color: #4f97d7; font-weight: bold; font-style: italic;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #67b11d;">()</span> <span style="color: #67b11d;">{</span>
+            <span style="color: #a45bad;">@Override</span>
+            <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">beforeHookedMethod</span><span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #b1951d;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #b1951d;">{</span>
+                XposedBridge.log<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"before addJavascriptInterface:"</span> + param.args<span style="color: #bc6ec5;">[</span><span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">]</span>.toString<span style="color: #bc6ec5;">()</span><span style="color: #4f97d7;">)</span>;
+            <span style="color: #b1951d;">}</span>
+            <span style="color: #a45bad;">@Override</span>
+            <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">afterHookedMethod</span><span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #b1951d;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #b1951d;">{</span>
+            <span style="color: #b1951d;">}</span>
+        <span style="color: #67b11d;">}</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+<span style="color: #4f97d7;">}</span>
 </pre>
 </div>
 
