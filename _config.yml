@@ -2,7 +2,7 @@
 #   Main Configs   #
 # ---------------- #
 baseurl:
-url: http://gttiankai.github.io/
+url: http://gttiankai.github.io
 date_format: "ordinal"
 title: 博客
 subtitle: "生死看淡，不服就干"
@@ -58,6 +58,7 @@ subscribe_rss: /feed.xml
 # ---------------- #
 #      Jekyll      #
 # ---------------- #
+github: [metadata]
 markdown: kramdown
 kramdown:
     input: GFM
@@ -103,7 +104,7 @@ gitment:
 # https://github.com/gitalk/gitalk#install
 gitalk:
     owner: gttiankai
-    repo: blog-comments
+    repo: gttiankai.github.io
     clientID: ec62078da00e9a6cd535
     clientSecret: b5ba60346ab7ee09009bc50367b6a87102fd806a
 # 在使用其它评论组件时可点击显示 Disqus
