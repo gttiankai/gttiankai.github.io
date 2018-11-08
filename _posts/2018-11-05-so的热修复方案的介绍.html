@@ -1,0 +1,138 @@
+---
+date: 2018-11-05
+tags: 
+- Android
+author: tiankai
+layout: post
+title: so的热修复方案的介绍
+excerpt: Android so 热修复
+categories: 
+- Android
+---
+
+<div id="outline-container-orgea4ea2b" class="outline-2">
+<h2 id="orgea4ea2b">so的热修复的方案介绍</h2>
+<div class="outline-text-2" id="text-orgea4ea2b">
+</div>
+<div id="outline-container-orge810af1" class="outline-3">
+<h3 id="orge810af1">so 的注册方式介绍</h3>
+<div class="outline-text-3" id="text-orge810af1">
+<p>
+so 的注册方式总共有两种，一种是静态注册，另外一种是动态注册。做 so 文件的热修复，
+这两种注册方式的 so 文件都需要支持。而且尤其注意的是这两种注册方式对 so 文件的热
+修复有着很大的影响。针对这两种注册方式，网上有很多的代码的演示，在这里不做展开。
+本小节中只对这两种注册方式的最重要的区别说明一下：
+</p>
+<ol class="org-ol">
+<li>动态注册的 native 方法映射是通过加载 so 文件的过程中调用 JNI<sub>Onload</sub> 方法来实
+现的。</li>
+<li>静态注册的 native 方法映射是在该 native 方法第一次执行的时候才完成映射的，当
+然前提是该 so 库已经加载（load）过了。</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org2c09ca5" class="outline-3">
+<h3 id="org2c09ca5">so 热修复方案的实时生效的探索</h3>
+<div class="outline-text-3" id="text-org2c09ca5">
+<p>
+首先要明确一下“so 实时生效”要达到的效果顾名思义：当应用拿到包含 so 的补丁包时，
+可以通过一系列的操作，是修改后的 so 文件中的函数立刻生效。这个实时生效的概念是对
+应于“重启生效”来说的。这种实时生效的方案对热修复方案的要求比较高，但是能够达到
+的效果比较好，这是实时生效方案最大的优势，也是所有的热修复方案都努力达成的目标。
+</p>
+</div>
+<ul class="org-ul">
+<li><a id="orgd753ea2"></a>动态注册 native 方法的实时生效方案<br />
+<div class="outline-text-4" id="text-orgd753ea2">
+<p>
+针对使用动态注册的方式开发的 so 文件，可以通过再次加载补丁 so 文件的方式，对需要
+修复的方法进行修复。按照 App 执行的流程先加载原始的 so 文件，原始的 so 文件中的
+注册方法对 native 方法进行了动态注册。Java 层的方法就可以调用 native 层的方法了。
+当有新的包含 so 的补丁包时，只需要再次加载新的 so 文件，这时补丁 so 文件中的动态
+注册方法会重新进行一次注册，这次方法注册会覆盖上一次注册的方法。此时 Java 层调用
+的就是新的 native 方法了。
+注意以上的方式是对 art 模式下的方案的探索，对 Dalvik 模式下的方案比对 art 模式下
+的方案更复杂一点，这里不在赘述，具体的可以看参考书。综上所示对动态注册的方式来说，
+通过重复加载的办法是可以做到对 so 文件中的方法做到实时生效的。
+</p>
+</div>
+</li>
+
+<li><a id="org126d8bd"></a>静态注册 native 方法的实时生效方案<br />
+<div class="outline-text-4" id="text-org126d8bd">
+<p>
+使用上面同样的原理对静态注册的 so 文件进行实时生效，结果发现不行。这是因为静态注
+册的 native 方法映射只在该方法第一次执行的时候，才会进行映射。设想一下场景，当使
+用上面的方案时，只将新的补丁 so 文件进行了加载，这时并不会触发新的映射（也叫做注
+册）的操作。所以这种方式是不能生效的。
+</p>
+
+<p>
+通过研究源码发现 Android 系统提供了针对某个 native 方法进行解注册的 API。研究发
+现通过调用该 API 可以将某个类（class） 的所有的 native 方法解注册，下次再调用该
+类中的native 的方法时，就会触发新的注册（映射）操作。
+</p>
+
+<p>
+以上的方法在实际的测试过程中发现还是发现一定的问题，出现的现象是：热修复之后有时
+调用的是修复后的方法，有时调用的是修复前的方法，修复的效果很不稳定。造成这种现象
+的原因就是系统底层有一个 nativeLibs 的全部变量，它是一个 hashtable，存放整个虚拟
+机加载 so 库的 sharedLib 结构指针。由于 hashtable 的特性决定了这不是一个顺序的表。
+</p>
+
+<p>
+*当对补丁 so 进行重新命名并且解注册之后，重新进行加载（load），如果补丁 so 在
+hashtable 中的位置比在元 so 库的位置靠前，找个静态注册的 native 方法就可以得到修
+复。如果位置靠后，就得不到修复*
+</p>
+</div>
+</li>
+</ul>
+</div>
+
+<div id="outline-container-org268335b" class="outline-3">
+<h3 id="org268335b">so 重启生效方案的探索</h3>
+<div class="outline-text-3" id="text-org268335b">
+</div>
+<ul class="org-ul">
+<li><a id="orgd44c20e"></a>重启生效方案一：接口替换<br />
+<div class="outline-text-4" id="text-orgd44c20e">
+<p>
+该方案的核心思想就是使用封装的 loadlibrary 方法去加载 so 文件。例如：
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java">proxyManager.laodLibrary<span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">libPath</span><span style="color: #4f97d7;">)</span>-&gt;&#26367;&#25442;&#21407;&#26377;&#30340;System.loadLibrary<span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">libPath</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div>
+<p>
+加载 so 文件的策略如下：
+</p>
+<ol class="org-ol">
+<li>首先查看是否存在补丁 so 文件，如果存在补丁 so 文件，则加载新的so 文件</li>
+<li>如果不存在补丁 so 文件，则调用 system.loadLibrary去加载 APK 目录下的 so 文件。</li>
+</ol>
+</div>
+</li>
+<li><a id="org6fe9aeb"></a>重启生效方案二：反射注入方案<br />
+<div class="outline-text-4" id="text-org6fe9aeb">
+<p>
+通过对 System.LoadLibrary(String libname) 方法的研究发现，这个方法最终会在一个数
+组 NativeLibraryDirectores中，按照先后顺序对 so 文件查找。如果将补丁 so 文件插入
+到这个数组的最前面，就可以实现对 so 文件的修复。
+</p>
+</div>
+</li>
+
+<li><a id="org5d8787d"></a>以上两种方案的对比：<br />
+<div class="outline-text-4" id="text-org5d8787d">
+<p>
+以上两种方案都可以很好的解决  so 重启生效的方案。方案一比较适合在自驾的产品中之
+直接编码实现。方案二由于不需要开发阶段参与，比较适合于第三方的热修复框架。
+</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
