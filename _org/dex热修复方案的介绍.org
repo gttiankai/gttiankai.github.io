@@ -1,0 +1,114 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2018-11-08 四 14:33
+#+TITLE: Dex热修复方案的介绍
+#+DESCRIPTION: Android 热修复 dex
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* Dex 热修复方案的调研
+对 Dex 文件进行热修复，本质上就是对 Dex 文件中的类进行类修复。目前主流的针对 dex
+文件的热修复方案有两种：底层替换方案和类加载方案。这两种方案各有千秋。
++ *底层替换方案* ：时效性最好，实时生效，加载轻快，但是有很大的限制，如不能添加新
+  的方法。
++ *类加载方案* ：修复的范围比较广，限制少，但是需要重新启动才能生效。
+** 底层替换方案的调研
+底层替换方案的原理：在 android 应用运行过程中，加载补丁包中需要修复的类的方法，
+然后找到需要修复的原始类，将原始类中底层的关于方法的结构体（method 结构体）替换
+成补丁包中的类的 method 结构体。
+
+这种修复方案有一个难点是如何保证在不同的 android 版本以及不同的 ROM 厂商的
+Android 版本下保证兼容性。这是因为不同的 android 版本甚至不同的 ROM 厂商发布的
+Android 系统的底层的 method 结构是不同的，不同的底层结构就带来了底层数据结构替换
+实现的困难。当然我们可以在编译阶段为每个系统做适配，指定每个系统相对应的 method
+结构体的大小。这种方案在实现起来比较复杂，而且现实中国内很多 ROM 厂商的 method结
+构体的大小是未知的。这就为该方案的兼容性带来比较大的难度。
+
+
+这里采用阿里巴巴 Sophix 的方案。这种方案的核心思想就是使用两个相邻的桩函数，通过
+计算这两个桩函数的 method 结构在内存中的地址的差值，将每个 method 结构体的大小计
+算出来，得到 method 结构体的大小之后，就很容易机型替换了。
+
+这里贴一小段关键的代码实现：
+#+begin_src C++
+void replaceMethod(JNIEnv* env, jclass clazz, jobject olderMethodObject,
+                          jobject fixedMethodObject) {
+    // get method size
+    jclass structModelClass = env->FindClass(STRUCTMODELCLASSNAME);
+    if (NULL == structModelClass) {
+        EGIS_DEBUG("can not find %s" , STRUCTMODELCLASSNAME);
+    }
+    size_t firMid = (size_t)env->GetStaticMethodID(structModelClass , "function1", "()V");
+    size_t secMid = (size_t)env->GetStaticMethodID(structModelClass , "function2", "()V");
+    size_t methodSize = secMid - firMid;
+    //get start id from src and dest
+    void* olderMethod = reinterpret_cast<void*>(env->FromReflectedMethod(olderMethodObject));
+    void* fixedMethod = reinterpret_cast<void*>(env->FromReflectedMethod(fixedMethodObject));
+    memcpy(olderMethod, fixedMethod, methodSize);
+#+end_src
+
+该方案的实现基本上已经讲清楚了，但是有一个关键的点需要说明一下：底层替换方案的有
+很大的限制，这个限制主要指的是底层替换方案只能修复方案，不能处理添加方法的情况。
+这是因为什么呢？其实原因很简单，我们进行底层替换需要找到需要修复的类中的方法的底
+层 method 结构体，但是对于类中的方法增加的情况， 由于找不到需要替换的结构体，所
+以这种方案就无法实现。如果遇到需要修复的类中有方法增加的情况，底层替换方案就不试
+用了，此时需要使用类加载的方案进行热修复。
+** 类加载方案调研
+类加载方案的原理：在 Android 应用程序重新启动后，让 classloader 去加载新的类（补
+丁包中的类），因为在 app 运行到一半的时候，所有的需要修复的类都已经加载过了，在
+Android 系统中是没有办法对一个类进行卸载的，如果不重启，原来的类还在虚拟机中，就
+无法加载新的类。只有在下次重启的时候，在还没有走到正常的业务逻辑之前抢先加载补丁
+中的新类，这样后续使用这个类时，就会使用新的类。
+
+关于类加载的方案由于  Android 系统在 Dalvik 以及 ART 模式下的不同，造成了类加载
+方案在具体实现上的不同。
+
+*ART 模式下的实现* 
+将补丁包命名为 classes.dex 文件，将原 APK 中的 dex 文件以此命名为 classes2.dex、
+classes3.dex...文件，然后将这些文件作为一个整体打包为一个  Jar 包。使用
+DexFile.LoadDex得到 DexFile对象，然后将这个 DexFile 的对象整个替换就得
+DexElements 数组就可以了。（关于这个数组的介绍，本文不再涉及，如果感兴趣可以自行
+查阅资料）
+
+*Dalvik 模式下的实现* 
+对于 Android 下的类加载的方案，最早的实现方案是 QQ 空间提出的 dex 插入方案。该方
+案的主要思想是把补丁 dex 文件插入到 ClassLoader 的索引路径的最签名，这样在 Load
+一个 class 时，就会优先找到补丁中的 class。但是这类插入 Dex 文件的方案都会遇到一
+个共同的问题：Dalvik 模式下的 pre-verified问题。
+
+在  Dalvik 模式下的热修复方案是最复杂的，这是由于在 Dalvik 虚拟机中对类以及加载类的
+ClassLoader进行了校验，简单来说，如果 B（原始的类，在原 dex 中） 调用了 A（修复
+后的类，在补丁 dex 中），由于Android 系统的 dexopt 机制， B 类被打上了
+/CLASS_ISPREVERIFIED/标签，此时对 A 进行解析是就会触发异常，触发的异常如下所示：
+#+begin_src C++
+// referer: class B
+// resClassClassCheck: class A
+if (referer->pDvmDex != resClassCheck->pDvmDex &&
+    resClassCheck->classLoader != NULL) {
+    dvmThrowIllegalAccessError("Class ref in pre-verified class resolve to unexpected implementation");
+    return NULL;
+}
+#+end_src
+为了解决上面的问题，不同的热修复的框架想了不同的办法，在这里介绍几个。
++ 单独放一个类在一个独立的 dex 文件中，这个帮助类需要被其他类调用，阻止类被加上
+  CLASS_ISPREVERIFIED 标签。然后加载补丁 dex 文件，得到 DexFile对象，使用得到的
+  DexFile 作为参数构造一个 DexElement 对象， *插入* 到原始的 dexElements 数组的前面。
++ 使用补丁 Dex 文件和原始的 APK 中的文件进行重组，重组成一个 Jar 文件，然后使用
+  这个 Jar 包进行加载，得到 dexFile 对象，使用这个对象作为参数，构建 dexElements
+  数组，然后 *整体替换* 旧的 dexElements 数组。
+
+本文主要介绍合成  jar 包文件的方式。这种方案的核心思想是获取到补丁 dex 文件中的
+所有的类，然后通过二进制解析的方式对原始 APK 中的 dex 文件进行解析，在原始的 dex
+文件中抹掉需要修复的类的 ClassDefs 结构，再讲补丁 dex 和修改后的原始 dex 文件组
+合成一个 Jar 包。然后使用 DexFile.Load 对这个 Jar 包进行加载，构造 dexElements
+结构体，然后替换掉原始的 dexElements 对象。
+
+** 关于类加载方案的另一种实现
+在实际对类加载方案的实现过程中，发现了一种比较好的方案，这里会详细的讲一下。
+
+** 致谢
+本文主要参考了阿里巴巴的《深入探索 Android 热修复技术原理》一书，在这里对这本书
+的作者表示敬意。
