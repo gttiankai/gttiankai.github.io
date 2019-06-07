@@ -1,0 +1,295 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2019-06-07 五 17:57
+#+TITLE: Android平台NDK开发知识汇总
+#+DESCRIPTION: Android NDK
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* JNI定义的数据类型
+JNI 中定义的数据类型和 Java 中定义的数据类型是一一对应的关系。JNI 中定义的数据类
+型分为基本数据类型和引用类型。基本数据类型见下表:
+#+CAPTION:  JNI 基本数据类型
+#+STARTUP: align shrink
+| JNI 类型 | Java 类型 | 描述         |   |       |      |        |
+|----------+-----------+--------------+---+-------+------+--------|
+| void     | void      | 无类型       |   |       |      |        |
+| jboolean | boolean   | 布尔型       |   |       |      |        |
+| jbyte    | byte      | 字节型       |   | jchar | char | 字符型 |
+| jshort   | short     | 短整型       |   |       |      |        |
+| jint     | int       | 整型         |   |       |      |        |
+| jlong    | long      | 长整型       |   |       |      |        |
+| jfloat   | float     | 浮点型       |   |       |      |        |
+| jdouble  | bouble    | 双精度浮点型 |   |       |      |        |
+
+引用类型：
+#+CAPTION: JNI 的引用类型
+| JNI 类型      | Java 类型 | 描述           |
+|---------------+-----------+----------------|
+| jobject       | Object    | 任意 java 对象 |
+| jclass        | class     | Class 对象     |
+| jstring       | String    | 字符串对象     |
+| jobjectArray  | Object[]  | 对象数组       |
+| jbooleanArray | boolean[] | 布尔型数组     |
+| jbyteArray    | byte[]    |                |
+| jcharArray    | char[]    |                |
+| jshortArray   | sort[]    |                |
+| jintArray     | int[]     |                |
+| jlongArray    | long[]    |                |
+| jfloatArray   | float[]   |                |
+| jdoubleArra   | bouble[]  |                |
+| jthrowable    | Throwable |                |
+
+除了以上的类型之外,还有一点需要注意, Java 语言的中的数据类型的签名如下表所示:
+#+CAPTION: 数据类型的签名
+| Java 类型 | signature          |
+|-----------+--------------------|
+| boolean   | Z                  |
+| byte      | B                  |
+| char      | C                  |
+| short     | S                  |
+| int       | I                  |
+| long      | J                  |
+| float     | F                  |
+| double    | D                  |
+| void      | void               |
+| String    | Ljava/lang/String; |
+| Object    | Ljava/lang/Object; |
+
+
+** Gradle中配置 cmak
+在 gradle 的配置文件中配置 cmake 的目的是为了让 gradle 在构建 APK 时能够自动的去
+构建 C/C++代码,也就是说要在 gradle 进行配置,以便让 Android Studio 能够识别 C/C++
+代码.要将下面的代码添加到 module 的 build.gradle 文件中.
+#+begin_example
+android {
+  ...
+  defaultConfig {
+    ...
+    // This block is different from the one you use to link Gradle
+    // to your CMake build script.
+    externalNativeBuild {
+      cmake {
+        ...
+        // Use the following syntax when passing arguments to variables:
+        // arguments "-DVAR_NAME=ARGUMENT".
+        arguments "-DANDROID_ARM_NEON=TRUE",
+        // If you're passing multiple arguments to a variable, pass them together:
+        // arguments "-DVAR_NAME=ARG_1 ARG_2"
+        // The following line passes 'rtti' and 'exceptions' to 'ANDROID_CPP_FEATURES'.
+                  "-DANDROID_CPP_FEATURES=rtti exceptions"
+       // add filter to api
+       adbFilters "armeabi-v7a", "armeabi-v8a", "x86", "x86-64"
+      }
+    }
+  }
+  buildTypes {...}
+
+  // Use this block to link Gradle to your CMake build script.
+  externalNativeBuild {
+    cmake {
+        path file('../CmakeLists.txt')
+    }
+  }
+}
+#+end_example
+
+
+
+** Cmake语法
+从 Android studio2.2 开始支持Cmake编译 C/C++代码,而且目前最新版的 Android
+studio,使用 cmake 作为默认的构建工具.接下来我们看一下最简单的CmakeLists.txt.
+#+begin_example
+cmake_minimum_required(VERSION 3.4.1)
+add_library( # 生成的so库名称，此处生成的so文件名称是libnative-lib.so
+             native-lib
+             # SHARED是动态库，会被动态链接，在运行时被加载
+             # STATIC：静态库，是目标文件的归档文件，在链接其它目标的时候使用
+             # MODULE：模块库，是不会被链接到其它目标中的插件
+             SHARED
+             # 资源路径是相对路径，相对于本CMakeLists.txt所在目录
+             src/main/cpp/native-lib.cpp )
+# 从系统查找依赖库
+find_library( # android系统每个类型的库会存放一个特定的位置，而log库存放在log-lib中
+              log-lib
+              # android系统在c环境下打log到logcat的库
+              log )
+# 配置库的链接（依赖关系）
+target_link_libraries( # 目标库
+                       native-lib
+                       # 依赖于
+                       ${log-lib} )
+#+end_example
+
+
+如果想在CmakeList s.txt 中添加另一个 so 库的依赖, CmakeListts.txt 如下所示:
+#+BEGIN_EXAMPLE
+cmake_minimum_required(VERSION 3.4.1)
+add_library( 
+            pre-build-lib
+            STATIC
+            src/main/cpp/pre-build-lib
+)
+add_library( native-lib
+             SHARED
+             src/main/cpp/native-lib.cpp 
+             src/main/cpp/native-lib2.cpp)
+# 从系统查找依赖库
+find_library( # android系统每个类型的库会存放一个特定的位置，而log库存放在log-lib中
+              log-lib
+              # android系统在c环境下打log到logcat的库
+              log )
+# 配置库的链接（依赖关系）
+target_link_libraries( # 目标库
+                       native-lib
+                       # 依赖于
+                       ${log-lib} 
+                       pre-build-lib
+                       )
+
+#+END_EXAMPLE
+
+
+** JNI注册的方式
+ java 要想调用 C/C++代码,java 必须找到相应的 C/C++代码,所以 C/C++代码需要进行注
+ 册,以便 java 代码能够找到相应的 C/C++代码.JNI 支持的注册方式有两种:静态注册方式
+ 和动态注册方式.先看静态的注册方式:
+#+begin_src C++
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_ndk_lingxiao_ndkproject_Hello_callJavaStaticMethod(JNIEnv *env, jclass thiz) {
+    jclass clazz = NULL;
+    jmethodID method_id = NULL;
+    jstring str_log = NULL;
+
+    clazz = env->FindClass("com/pacakge/Hello");
+    if (clazz == NULL){
+        return;
+    }
+    method_id = env->GetStaticMethodID(clazz,"staticMethod","(Ljava/lang/String;)V");
+    if (method_id == NULL){
+        return;
+    }
+    str_log = env->NewStringUTF("c++ 调用java的静态方法");
+    env->CallStaticVoidMethod(clazz,method_id,str_log);
+
+    env->DeleteLocalRef(clazz);
+    env->DeleteLocalRef(str_log);
+    return ;
+}
+#+end_src
+在静态注册的方式的函数定义部分是比较固定的写法,我们以此来解释一下: 
+1. *extern "C"*:表示C++代码能够调用其他 C 代码,主要用来兼容 C 语言.
+2. *JNIEXPORT*: 这个宏的定义如下,这个宏表示这函数对外是可见的,以便于 java 代码能
+   够找到这个函数.
+   #+begin_src C++
+   #define JNIEXPORT  __attribute__ ((visibility ("default")))
+   #+end_src
+3. *Java_com_ndk_lingxiao_ndkproject_Hello_callJavaStaticMethod*:函数的名称,这个
+   函数名是有固定的格式的,格式为:
+#+begin_example
+Java_类的全路径名_方法名(在类的全路径名中要将"/"装换成"_", 这个类定义这个 native 方法所在的类)
+#+end_example
+4. *JNIEnv* env*: JNI调用的运行环境的指针,每个函数的第一个参数都是一个 JNIEnv*类
+   型.
+5. *jclass* thiz: 如果注册的类是一个非静态类,这个thiz 指的的是调用这个方法的类实
+   例化后的对象.如果注册的类是一个静态类,这个 thiz 指的是就是这个类.
+
+
+接下来我们看动态注册的方式,在动态注册的方式有又分为两种形式:C 形式 和 C++形式,接
+下来我们会分别对这两种形式作介绍.
+先看 C 语言版本的动态注册方式:
+
+#+begin_src C
+static const char *mainClass = "payegis/com/jstest/MainActivity"; // path of Java file
+
+#define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
+
+JNIEXPORT jstring JNICALL get_hello(JNIEnv *env, jclass clazz) {
+    return (*env)->NewStringUTF(env, "hello from jni");
+}
+
+static JNINativeMethod g_methods[] = {
+        {"getHello",     "()Ljava/lang/String;", (void *) get_hello},
+};
+
+JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
+    JNIEnv *env = NULL;
+    jint result = JNI_ERR;
+
+    if ((*vm)->GetEnv(vm, (void **) &env, JNI_VERSION_1_6) != JNI_OK) {
+        return JNI_ERR;
+    }
+
+    assert(env != NULL);
+    
+    clazz = (*env)->FindClass(env, className);
+    if (clazz == NULL) {
+        return JNI_ERR;
+    }
+    // C 与 C++ 不同之处,
+    if ((*env)->RegisterNatives(env, clazz, gMethods, NELEM(gMethods)) < 0) {
+        return JNI_ERR;
+    }
+    // 代表 JNI 不同的版本.
+    result = JNI_VERSION_1_6;
+
+    return result;
+}
+
+#+end_src
+
+
+C++版本的动态注册如下所示：
+
+#+begin_src C++
+static const char *mainClass = "payegis/com/jstest/MainActivity"; // path of Java file
+
+#define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
+
+
+
+JNIEXPORT jstring JNICALL get_hello(JNIEnv *env, jclass clazz) {
+    return env->NewStringUTF("hello from jni");
+}
+
+
+static JNINativeMethod g_methods[] = {
+        {"getHello",     "()Ljava/lang/String;", (void *) get_hello},
+};
+
+
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved) {
+    JNIEnv *env = NULL;
+    jint result = JNI_FALSE;
+
+    //获取env指针
+    if (jvm->GetEnv((void **) &env, JNI_VERSION_1_6) != JNI_OK) {
+        return result;
+    }
+    if (env == NULL) {
+        return result;
+    }
+    //获取类引用，写类的全路径（包名+类名）。FindClass等JNI函数将在后面讲解
+    jclass clazz = env->FindClass(mainClass);
+    if (clazz == NULL) {
+        return result;
+    }
+    //注册方法
+    if (env->RegisterNatives(clazz, g_methods, NELEM(g_methods)) < 0) {
+        return result;
+    }
+    //成功
+    result = JNI_VERSION_1_6;
+    return result;
+}
+
+#+end_src
+
+ 
+** 参考链接
+1. [[https://juejin.im/post/5b9879976fb9a05d330aa206][Android NDK 开发之必知必会]]
+2. [[https://developer.android.com/ndk/guides/cmake][Android 官方 cmake 说明]]

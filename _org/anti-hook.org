@@ -1,0 +1,13 @@
+* Android Hook 技术防范方式
+** 如何对抗 xposed
+1. 通过PackageManager 查看安装列表
+2. 通过自己异常，然后读取异常堆栈的方式，查看其中有没有 xposed 的调用的方法。
+3. 检查关键的方式是否突然变成 native 方法
+4. 通过反射读取 XposedHelper 字段
+5. 还有一个办法是底层地区/proc/pid/maps文件，查看其中有没有 xposedBridge 的特征值。
+** 如何对抗 Cydia substrate
+1. 在 native 层读取/proc/pid/maps文件，查看其中有没有cydia 的特征值
+2. 基于方法特征码监测。首先逆向分析 so 文件的关键函数，获取特征码，然后在运行过程中找到相应的 so 文
+   件的路径，然后使用 fopen 打开，采用字符串模糊查找的方式进行减压。
+** Frida 框架
+Frida框架是一个 BS 结构的框架。有一个 Frida 的服务在服务端
