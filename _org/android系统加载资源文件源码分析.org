@@ -1,0 +1,261 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2019-06-02 日 21:50
+#+TITLE: Android系统加载资源文件源码分析
+#+DESCRIPTION: 
+#+TAGS: Android
+#+CATEGORIES: Android
+
+* 大纲
+1. 大体上讲解一下 Android 系统加载资源文件的过程。
+2. 讲解一下 Java 层的加载流程
+3. 讲解一下 native 层的加载流程
+
+* Android 记载资源文件的过程 
+
+* Native 层资源文件加载过程分析。
+Java 层对readAsset 的定义如下：
+#+begin_src java
+// frameworks/base/core/java/android/content/res/AssetManager.java
+private native final int readAsset(long asset, byte[] b, int off, int len);
+#+end_src
+与 Java 层对应的 Native 层的函数的名称是*andorid_content_AssetManager_readAsset*。这个
+函数的具体的实现如下：
+
+#+begin_src C++
+// frameworks/base/core/jni/android_util_AssetManager.cpp
+static jint android_content_AssetManager_readAsset(JNIEnv* env, jobject clazz,
+                                                jlong assetHandle, jbyteArray bArray,
+                                                jint off, jint len)
+{
+    // assetHandle 对应于 native 层的 Asset 类型。是否每个文件都对应于一个 assetHandle 呢？
+    Asset* a = reinterpret_cast<Asset*>(assetHandle);
+
+    if (a == NULL || bArray == NULL) {
+        jniThrowNullPointerException(env, "asset");
+        return -1;
+    }
+
+    if (len == 0) {
+        return 0;
+    }
+
+    jsize bLen = env->GetArrayLength(bArray);
+    if (off < 0 || off >= bLen || len < 0 || len > bLen || (off+len) > bLen) {
+        jniThrowException(env, "java/lang/IndexOutOfBoundsException", "");
+        return -1;
+    }
+
+    jbyte* b = env->GetByteArrayElements(bArray, NULL);
+    // 关键代码，调用 Asset 的 read 函数对APK 中的资源进行读取
+    ssize_t res = a->read(b+off, len);
+    env->ReleaseByteArrayElements(bArray, b, 0);
+
+    if (res > 0) return static_cast<jint>(res);
+
+    if (res < 0) {
+        jniThrowException(env, "java/io/IOException", "");
+    }
+    return -1;
+}
+#+end_src
+Asset类的 read 函数的实现如下：
+#+begin_src C++
+// frameworks/base/libs/androidfw/Asset.cpp
+/*
+ ,* Read data from a chunk of compressed data.
+ ,*
+ ,* [For now, that's just copying data out of a buffer.]
+ ,*/
+ssize_t _CompressedAsset::read(void* buf, size_t count)
+{
+    size_t maxLen;
+    size_t actual;
+
+    assert(mOffset >= 0 && mOffset <= mUncompressedLen);
+
+    /* If we're relying on a streaming inflater, go through that */
+    // 如果文件解压缩后的长度大于StreamingZipInflater::OUTPUT_CHUNK_SIZE（64*1024），mZipInflaget 的值就不会为空。
+    if (mZipInflater) {
+        actual = mZipInflater->read(buf, count);
+    } else {
+    // 如果文件解压缩后的长度小于 64*1024，就会走下面的流程
+        if (mBuf == NULL) {
+            if (getBuffer(false) == NULL)
+                return -1;
+        }
+        assert(mBuf != NULL);
+
+        /* adjust count if we're near EOF */
+        maxLen = mUncompressedLen - mOffset;
+        if (count > maxLen)
+            count = maxLen;
+
+        if (!count)
+            return 0;
+
+        /* copy from buffer */
+        //printf("comp buf read\n");
+        memcpy(buf, (char*)mBuf + mOffset, count);
+        actual = count;
+    }
+
+    mOffset += actual;
+    return actual;
+}
+
+#+end_src
+mZipInflater 的类型为 StreamingZipInflater，StreamZipInflater 中的 read 的定义如
+下：
+#+begin_src C++
+// frameworks/base/include/androidfw/StreamingZipInflater.h
+namespace android {
+
+class StreamingZipInflater {
+public:
+    static const size_t INPUT_CHUNK_SIZE = 64 * 1024;
+    static const size_t OUTPUT_CHUNK_SIZE = 64 * 1024;
+
+    // Flavor that pages in the compressed data from a fd
+    StreamingZipInflater(int fd, off64_t compDataStart, size_t uncompSize, size_t compSize);
+
+    // Flavor that gets the compressed data from an in-memory buffer
+    StreamingZipInflater(class FileMap* dataMap, size_t uncompSize);
+
+    ~StreamingZipInflater();
+
+    // read 'count' bytes of uncompressed data from the current position.  outBuf may
+    // be NULL, in which case the data is consumed and discarded.
+    ssize_t read(void* outBuf, size_t count);
+
+    // seeking backwards requires uncompressing fom the beginning, so is very
+    // expensive.  seeking forwards only requires uncompressing from the current
+    // position to the destination.
+    off64_t seekAbsolute(off64_t absoluteInputPosition);
+private:
+    //  StreamingZipInflater中定义的数据结构，这些数据结构用来
+    void initInflateState();
+    int readNextChunk();
+
+    // where to find the uncompressed data
+    int mFd;
+    off64_t mInFileStart;         // where the compressed data lives in the file
+    class FileMap* mDataMap;
+
+    z_stream mInflateState;
+    bool mStreamNeedsInit;
+
+    // output invariants for this asset
+    uint8_t* mOutBuf;           // output buf for decompressed bytes
+    size_t mOutBufSize;         // allocated size of mOutBuf
+    size_t mOutTotalSize;       // total uncompressed size of the blob
+
+    // current output state bookkeeping
+    off64_t mOutCurPosition;      // current position in total offset
+    size_t mOutLastDecoded;     // last decoded byte + 1 in mOutbuf
+    size_t mOutDeliverable;     // next undelivered byte of decoded output in mOutBuf
+
+    // input invariants
+    uint8_t* mInBuf;
+    size_t mInBufSize;          // allocated size of mInBuf;
+    size_t mInTotalSize;        // total size of compressed data for this blob
+
+    // input state bookkeeping
+    size_t mInNextChunkOffset;  // offset from start of blob at which the next input chunk lies
+    // the z_stream contains state about input block consumption
+};
+
+
+// frameworks/base/libs/androidfw/StreamingZipInflater.cpp
+/*
+ * Basic approach:
+ *
+ * 1. If we have undelivered uncompressed data, send it.  At this point
+ *    either we've satisfied the request, or we've exhausted the available
+ *    output data in mOutBuf.
+ *
+ * 2. While we haven't sent enough data to satisfy the request:
+ *    0. if the request is for more data than exists, bail.
+ *    a. if there is no input data to decode, read some into the input buffer
+ *       and readjust the z_stream input pointers
+ *    b. point the output to the start of the output buffer and decode what we can
+ *    c. deliver whatever output data we can
+ */
+ssize_t StreamingZipInflater::read(void* outBuf, size_t count) {
+    uint8_t* dest = (uint8_t*) outBuf;
+    size_t bytesRead = 0;
+    size_t toRead = min_of(count, size_t(mOutTotalSize - mOutCurPosition));
+    while (toRead > 0) {
+        // First, write from whatever we already have decoded and ready to go
+        size_t deliverable = min_of(toRead, mOutLastDecoded - mOutDeliverable);
+        if (deliverable > 0) {
+            // 第一次不执行，等到后面在执行，要先等后面 inflate 方法执行之后才会执行
+            if (outBuf != NULL) memcpy(dest, mOutBuf + mOutDeliverable, deliverable);
+            mOutDeliverable += deliverable;
+            mOutCurPosition += deliverable;
+            dest += deliverable;
+            bytesRead += deliverable;
+            toRead -= deliverable;
+        }
+
+        // need more data?  time to decode some.
+        if (toRead > 0) {
+            // if we don't have any data to decode, read some in.  If we're working
+            // from mmapped data this won't happen, because the clipping to total size
+            // will prevent reading off the end of the mapped input chunk.
+            if ((mInflateState.avail_in == 0) && (mDataMap == NULL)) {
+                int err = readNextChunk();
+                if (err < 0) {
+                    ALOGE("Unable to access asset data: %d", err);
+                    if (!mStreamNeedsInit) {
+                        ::inflateEnd(&mInflateState);
+                        initInflateState();
+                    }
+                    return -1;
+                }
+            }
+            // we know we've drained whatever is in the out buffer now, so just
+            // start from scratch there, reading all the input we have at present.
+            mInflateState.next_out = (Bytef*) mOutBuf;
+            mInflateState.avail_out = mOutBufSize;
+
+            /*
+            ALOGV("Inflating to outbuf: avail_in=%u avail_out=%u next_in=%p next_out=%p",
+                    mInflateState.avail_in, mInflateState.avail_out,
+                    mInflateState.next_in, mInflateState.next_out);
+            ,*/
+            int result = Z_OK;
+            if (mStreamNeedsInit) {
+                ALOGV("Initializing zlib to inflate");
+                result = inflateInit2(&mInflateState, -MAX_WBITS);
+                mStreamNeedsInit = false;
+            }
+            // 关键代码， Zlib 库中的函数，用来从 APK 中解压缩内存数据
+            // 第一次执行的时候，都会优先走到这一步中来
+            if (result == Z_OK) result = ::inflate(&mInflateState, Z_SYNC_FLUSH);
+            if (result < 0) {
+                // Whoops, inflation failed
+                ALOGE("Error inflating asset: %d", result);
+                ::inflateEnd(&mInflateState);
+                initInflateState();
+                return -1;
+            } else {
+                if (result == Z_STREAM_END) {
+                    // we know we have to have reached the target size here and will
+                    // not try to read any further, so just wind things up.
+                    ::inflateEnd(&mInflateState);
+                }
+
+                // Note how much data we got, and off we go
+                mOutDeliverable = 0;
+                mOutLastDecoded = mOutBufSize - mInflateState.avail_out;
+            }
+        }
+    }
+    return bytesRead;
+}
+#+end_src
+上面 read 方法实现了对资源文件的解压缩操作

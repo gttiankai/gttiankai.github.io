@@ -1,0 +1,585 @@
+---
+date: 2019-06-07
+tags: 
+- Android
+author: tiankai
+layout: post
+title: Android平台NDK开发知识汇总
+excerpt: Android NDK
+categories: 
+- Android
+---
+
+<div id="outline-container-orgc98f3d9" class="outline-2">
+<h2 id="orgc98f3d9">JNI定义的数据类型</h2>
+<div class="outline-text-2" id="text-orgc98f3d9">
+<p>
+JNI 中定义的数据类型和 Java 中定义的数据类型是一一对应的关系。JNI 中定义的数据类
+型分为基本数据类型和引用类型。基本数据类型见下表:
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">JNI 类型</th>
+<th scope="col" class="org-left">Java 类型</th>
+<th scope="col" class="org-left">描述</th>
+<th scope="col" class="org-left">&#xa0;</th>
+<th scope="col" class="org-left">&#xa0;</th>
+<th scope="col" class="org-left">&#xa0;</th>
+<th scope="col" class="org-left">&#xa0;</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">void</td>
+<td class="org-left">void</td>
+<td class="org-left">无类型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jboolean</td>
+<td class="org-left">boolean</td>
+<td class="org-left">布尔型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jbyte</td>
+<td class="org-left">byte</td>
+<td class="org-left">字节型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">jchar</td>
+<td class="org-left">char</td>
+<td class="org-left">字符型</td>
+</tr>
+
+<tr>
+<td class="org-left">jshort</td>
+<td class="org-left">short</td>
+<td class="org-left">短整型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jint</td>
+<td class="org-left">int</td>
+<td class="org-left">整型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jlong</td>
+<td class="org-left">long</td>
+<td class="org-left">长整型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jfloat</td>
+<td class="org-left">float</td>
+<td class="org-left">浮点型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jdouble</td>
+<td class="org-left">bouble</td>
+<td class="org-left">双精度浮点型</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+引用类型：
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> JNI 的引用类型</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">JNI 类型</th>
+<th scope="col" class="org-left">Java 类型</th>
+<th scope="col" class="org-left">描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">jobject</td>
+<td class="org-left">Object</td>
+<td class="org-left">任意 java 对象</td>
+</tr>
+
+<tr>
+<td class="org-left">jclass</td>
+<td class="org-left">class</td>
+<td class="org-left">Class 对象</td>
+</tr>
+
+<tr>
+<td class="org-left">jstring</td>
+<td class="org-left">String</td>
+<td class="org-left">字符串对象</td>
+</tr>
+
+<tr>
+<td class="org-left">jobjectArray</td>
+<td class="org-left">Object[]</td>
+<td class="org-left">对象数组</td>
+</tr>
+
+<tr>
+<td class="org-left">jbooleanArray</td>
+<td class="org-left">boolean[]</td>
+<td class="org-left">布尔型数组</td>
+</tr>
+
+<tr>
+<td class="org-left">jbyteArray</td>
+<td class="org-left">byte[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jcharArray</td>
+<td class="org-left">char[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jshortArray</td>
+<td class="org-left">sort[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jintArray</td>
+<td class="org-left">int[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jlongArray</td>
+<td class="org-left">long[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jfloatArray</td>
+<td class="org-left">float[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jdoubleArra</td>
+<td class="org-left">bouble[]</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="org-left">jthrowable</td>
+<td class="org-left">Throwable</td>
+<td class="org-left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+除了以上的类型之外,还有一点需要注意, Java 语言的中的数据类型的签名如下表所示:
+</p>
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 2:</span> 数据类型的签名</caption>
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">Java 类型</th>
+<th scope="col" class="org-left">signature</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">boolean</td>
+<td class="org-left">Z</td>
+</tr>
+
+<tr>
+<td class="org-left">byte</td>
+<td class="org-left">B</td>
+</tr>
+
+<tr>
+<td class="org-left">char</td>
+<td class="org-left">C</td>
+</tr>
+
+<tr>
+<td class="org-left">short</td>
+<td class="org-left">S</td>
+</tr>
+
+<tr>
+<td class="org-left">int</td>
+<td class="org-left">I</td>
+</tr>
+
+<tr>
+<td class="org-left">long</td>
+<td class="org-left">J</td>
+</tr>
+
+<tr>
+<td class="org-left">float</td>
+<td class="org-left">F</td>
+</tr>
+
+<tr>
+<td class="org-left">double</td>
+<td class="org-left">D</td>
+</tr>
+
+<tr>
+<td class="org-left">void</td>
+<td class="org-left">void</td>
+</tr>
+
+<tr>
+<td class="org-left">String</td>
+<td class="org-left">Ljava/lang/String;</td>
+</tr>
+
+<tr>
+<td class="org-left">Object</td>
+<td class="org-left">Ljava/lang/Object;</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+<div id="outline-container-org0327339" class="outline-3">
+<h3 id="org0327339">Gradle中配置 cmak</h3>
+<div class="outline-text-3" id="text-org0327339">
+<p>
+在 gradle 的配置文件中配置 cmake 的目的是为了让 gradle 在构建 APK 时能够自动的去
+构建 C/C++代码,也就是说要在 gradle 进行配置,以便让 Android Studio 能够识别 C/C++
+代码.要将下面的代码添加到 module 的 build.gradle 文件中.
+</p>
+<pre class="example">
+android {
+  ...
+  defaultConfig {
+    ...
+    // This block is different from the one you use to link Gradle
+    // to your CMake build script.
+    externalNativeBuild {
+      cmake {
+        ...
+        // Use the following syntax when passing arguments to variables:
+        // arguments "-DVAR_NAME=ARGUMENT".
+        arguments "-DANDROID_ARM_NEON=TRUE",
+        // If you're passing multiple arguments to a variable, pass them together:
+        // arguments "-DVAR_NAME=ARG_1 ARG_2"
+        // The following line passes 'rtti' and 'exceptions' to 'ANDROID_CPP_FEATURES'.
+                  "-DANDROID_CPP_FEATURES=rtti exceptions"
+       // add filter to api
+       adbFilters "armeabi-v7a", "armeabi-v8a", "x86", "x86-64"
+      }
+    }
+  }
+  buildTypes {...}
+
+  // Use this block to link Gradle to your CMake build script.
+  externalNativeBuild {
+    cmake {
+        path file('../CmakeLists.txt')
+    }
+  }
+}
+</pre>
+</div>
+</div>
+
+
+
+<div id="outline-container-orgcefd555" class="outline-3">
+<h3 id="orgcefd555">Cmake语法</h3>
+<div class="outline-text-3" id="text-orgcefd555">
+<p>
+从 Android studio2.2 开始支持Cmake编译 C/C++代码,而且目前最新版的 Android
+studio,使用 cmake 作为默认的构建工具.接下来我们看一下最简单的CmakeLists.txt.
+</p>
+<pre class="example">
+cmake_minimum_required(VERSION 3.4.1)
+add_library( # 生成的so库名称，此处生成的so文件名称是libnative-lib.so
+             native-lib
+             # SHARED是动态库，会被动态链接，在运行时被加载
+             # STATIC：静态库，是目标文件的归档文件，在链接其它目标的时候使用
+             # MODULE：模块库，是不会被链接到其它目标中的插件
+             SHARED
+             # 资源路径是相对路径，相对于本CMakeLists.txt所在目录
+             src/main/cpp/native-lib.cpp )
+# 从系统查找依赖库
+find_library( # android系统每个类型的库会存放一个特定的位置，而log库存放在log-lib中
+              log-lib
+              # android系统在c环境下打log到logcat的库
+              log )
+# 配置库的链接（依赖关系）
+target_link_libraries( # 目标库
+                       native-lib
+                       # 依赖于
+                       ${log-lib} )
+</pre>
+
+
+<p>
+如果想在CmakeList s.txt 中添加另一个 so 库的依赖, CmakeListts.txt 如下所示:
+</p>
+<pre class="example">
+cmake_minimum_required(VERSION 3.4.1)
+add_library( 
+            pre-build-lib
+            STATIC
+            src/main/cpp/pre-build-lib
+)
+add_library( native-lib
+             SHARED
+             src/main/cpp/native-lib.cpp 
+             src/main/cpp/native-lib2.cpp)
+# 从系统查找依赖库
+find_library( # android系统每个类型的库会存放一个特定的位置，而log库存放在log-lib中
+              log-lib
+              # android系统在c环境下打log到logcat的库
+              log )
+# 配置库的链接（依赖关系）
+target_link_libraries( # 目标库
+                       native-lib
+                       # 依赖于
+                       ${log-lib} 
+                       pre-build-lib
+                       )
+
+</pre>
+</div>
+</div>
+
+
+<div id="outline-container-org1b5f9f4" class="outline-3">
+<h3 id="org1b5f9f4">JNI注册的方式</h3>
+<div class="outline-text-3" id="text-org1b5f9f4">
+<p>
+java 要想调用 C/C++代码,java 必须找到相应的 C/C++代码,所以 C/C++代码需要进行注
+册,以便 java 代码能够找到相应的 C/C++代码.JNI 支持的注册方式有两种:静态注册方式
+和动态注册方式.先看静态的注册方式:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #4f97d7; font-weight: bold;">extern</span> <span style="color: #2d9574;">"C"</span>
+JNIEXPORT <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">JNICALL</span>
+Java_com_ndk_lingxiao_ndkproject_Hello_callJavaStaticMethod<span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span> *<span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">thiz</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">clazz</span> = <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #ce537a; font-weight: bold;">jmethodID</span> <span style="color: #7590db;">method_id</span> = <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #ce537a; font-weight: bold;">jstring</span> <span style="color: #7590db;">str_log</span> = <span style="color: #a45bad;">NULL</span>;
+
+    clazz = env-&gt;FindClass<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"com/pacakge/Hello"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>clazz == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">){</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+    <span style="color: #bc6ec5;">}</span>
+    method_id = env-&gt;GetStaticMethodID<span style="color: #bc6ec5;">(</span>clazz,<span style="color: #2d9574;">"staticMethod"</span>,<span style="color: #2d9574;">"(Ljava/lang/String;)V"</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>method_id == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">){</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span>;
+    <span style="color: #bc6ec5;">}</span>
+    str_log = env-&gt;NewStringUTF<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"c++ &#35843;&#29992;java&#30340;&#38745;&#24577;&#26041;&#27861;"</span><span style="color: #bc6ec5;">)</span>;
+    env-&gt;CallStaticVoidMethod<span style="color: #bc6ec5;">(</span>clazz,method_id,str_log<span style="color: #bc6ec5;">)</span>;
+
+    env-&gt;DeleteLocalRef<span style="color: #bc6ec5;">(</span>clazz<span style="color: #bc6ec5;">)</span>;
+    env-&gt;DeleteLocalRef<span style="color: #bc6ec5;">(</span>str_log<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> ;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+在静态注册的方式的函数定义部分是比较固定的写法,我们以此来解释一下: 
+</p>
+<ol class="org-ol">
+<li><b>extern "C"</b>:表示C++代码能够调用其他 C 代码,主要用来兼容 C 语言.</li>
+<li><p>
+<b>JNIEXPORT</b>: 这个宏的定义如下,这个宏表示这函数对外是可见的,以便于 java 代码能
+够找到这个函数.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #bc6ec5;">#define</span> <span style="color: #7590db;">JNIEXPORT</span>  <span style="color: #4f97d7; font-weight: bold;">__attribute__</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span>visibility <span style="color: #2d9574;">(</span><span style="color: #2d9574;">"default"</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+</pre>
+</div></li>
+<li><b>Java<sub>com</sub><sub>ndk</sub><sub>lingxiao</sub><sub>ndkproject</sub><sub>Hello</sub><sub>callJavaStaticMethod</sub></b>:函数的名称,这个
+函数名是有固定的格式的,格式为:</li>
+</ol>
+<pre class="example">
+Java_类的全路径名_方法名(在类的全路径名中要将"/"装换成"_", 这个类定义这个 native 方法所在的类)
+</pre>
+<ol class="org-ol">
+<li><b>JNIEnv</b> env*: JNI调用的运行环境的指针,每个函数的第一个参数都是一个 JNIEnv*类
+型.</li>
+<li><b>jclass</b> thiz: 如果注册的类是一个非静态类,这个thiz 指的的是调用这个方法的类实
+例化后的对象.如果注册的类是一个静态类,这个 thiz 指的是就是这个类.</li>
+</ol>
+
+
+<p>
+接下来我们看动态注册的方式,在动态注册的方式有又分为两种形式:C 形式 和 C++形式,接
+下来我们会分别对这两种形式作介绍.
+先看 C 语言版本的动态注册方式:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C"><span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">mainClass</span> = <span style="color: #2d9574;">"payegis/com/jstest/MainActivity"</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">path of Java file</span>
+
+<span style="color: #bc6ec5;">#define</span> <span style="color: #bc6ec5; font-weight: bold;">NELEM</span><span style="color: #4f97d7;">(</span><span style="color: #7590db;">x</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">int</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">sizeof</span><span style="color: #2d9574;">(</span>x<span style="color: #2d9574;">)</span> / <span style="color: #4f97d7; font-weight: bold;">sizeof</span><span style="color: #2d9574;">(</span><span style="color: #67b11d;">(</span>x<span style="color: #67b11d;">)[</span><span style="color: #a45bad;">0</span><span style="color: #67b11d;">]</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+JNIEXPORT jstring <span style="color: #ce537a; font-weight: bold;">JNICALL</span> <span style="color: #bc6ec5; font-weight: bold;">get_hello</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span> *<span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">clazz</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #bc6ec5;">(</span>*env<span style="color: #bc6ec5;">)</span>-&gt;NewStringUTF<span style="color: #bc6ec5;">(</span>env, <span style="color: #2d9574;">"hello from jni"</span><span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">JNINativeMethod</span> <span style="color: #7590db;">g_methods</span><span style="color: #4f97d7;">[]</span> = <span style="color: #4f97d7;">{</span>
+        <span style="color: #bc6ec5;">{</span><span style="color: #2d9574;">"getHello"</span>,     <span style="color: #2d9574;">"()Ljava/lang/String;"</span>, <span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">void</span> *<span style="color: #2d9574;">)</span> get_hello<span style="color: #bc6ec5;">}</span>,
+<span style="color: #4f97d7;">}</span>;
+
+JNIEXPORT <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #bc6ec5; font-weight: bold;">JNI_OnLoad</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JavaVM</span> *<span style="color: #7590db;">vm</span>, <span style="color: #ce537a; font-weight: bold;">void</span> *<span style="color: #7590db;">reserved</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">JNIEnv</span> *<span style="color: #7590db;">env</span> = <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #7590db;">result</span> = JNI_ERR;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">(</span>*vm<span style="color: #2d9574;">)</span>-&gt;GetEnv<span style="color: #2d9574;">(</span>vm, <span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">void</span> **<span style="color: #67b11d;">)</span> &amp;env, JNI_VERSION_1_6<span style="color: #2d9574;">)</span> != JNI_OK<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> JNI_ERR;
+    <span style="color: #bc6ec5;">}</span>
+
+    assert<span style="color: #bc6ec5;">(</span>env != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+
+    clazz = <span style="color: #bc6ec5;">(</span>*env<span style="color: #bc6ec5;">)</span>-&gt;FindClass<span style="color: #bc6ec5;">(</span>env, className<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>clazz == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> JNI_ERR;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">C &#19982; C++ &#19981;&#21516;&#20043;&#22788;,</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">(</span>*env<span style="color: #2d9574;">)</span>-&gt;RegisterNatives<span style="color: #2d9574;">(</span>env, clazz, gMethods, NELEM<span style="color: #67b11d;">(</span>gMethods<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span> &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> JNI_ERR;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20195;&#34920; JNI &#19981;&#21516;&#30340;&#29256;&#26412;.</span>
+    result = JNI_VERSION_1_6;
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> result;
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+
+
+<p>
+C++版本的动态注册如下所示：
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span> *<span style="color: #7590db;">mainClass</span> = <span style="color: #2d9574;">"payegis/com/jstest/MainActivity"</span>; <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">path of Java file</span>
+
+<span style="color: #bc6ec5;">#define</span> <span style="color: #bc6ec5; font-weight: bold;">NELEM</span><span style="color: #4f97d7;">(</span><span style="color: #7590db;">x</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">(</span><span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">int</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">sizeof</span><span style="color: #2d9574;">(</span>x<span style="color: #2d9574;">)</span> / <span style="color: #4f97d7; font-weight: bold;">sizeof</span><span style="color: #2d9574;">(</span><span style="color: #67b11d;">(</span>x<span style="color: #67b11d;">)[</span><span style="color: #a45bad;">0</span><span style="color: #67b11d;">]</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>
+
+
+
+JNIEXPORT jstring <span style="color: #ce537a; font-weight: bold;">JNICALL</span> <span style="color: #bc6ec5; font-weight: bold;">get_hello</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span> *<span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">clazz</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> env-&gt;NewStringUTF<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"hello from jni"</span><span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+
+
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">JNINativeMethod</span> <span style="color: #7590db;">g_methods</span><span style="color: #4f97d7;">[]</span> = <span style="color: #4f97d7;">{</span>
+        <span style="color: #bc6ec5;">{</span><span style="color: #2d9574;">"getHello"</span>,     <span style="color: #2d9574;">"()Ljava/lang/String;"</span>, <span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">void</span> *<span style="color: #2d9574;">)</span> get_hello<span style="color: #bc6ec5;">}</span>,
+<span style="color: #4f97d7;">}</span>;
+
+
+JNIEXPORT jint <span style="color: #ce537a; font-weight: bold;">JNICALL</span> <span style="color: #bc6ec5; font-weight: bold;">JNI_OnLoad</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JavaVM</span> *<span style="color: #7590db;">jvm</span>, <span style="color: #ce537a; font-weight: bold;">void</span> *<span style="color: #7590db;">reserved</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">JNIEnv</span> *<span style="color: #7590db;">env</span> = <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #7590db;">result</span> = JNI_FALSE;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">&#33719;&#21462;env&#25351;&#38024;</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>jvm-&gt;GetEnv<span style="color: #2d9574;">(</span><span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">void</span> **<span style="color: #67b11d;">)</span> &amp;env, JNI_VERSION_1_6<span style="color: #2d9574;">)</span> != JNI_OK<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> result;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>env == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> result;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">&#33719;&#21462;&#31867;&#24341;&#29992;&#65292;&#20889;&#31867;&#30340;&#20840;&#36335;&#24452;&#65288;&#21253;&#21517;+&#31867;&#21517;&#65289;&#12290;FindClass&#31561;JNI&#20989;&#25968;&#23558;&#22312;&#21518;&#38754;&#35762;&#35299;</span>
+    <span style="color: #ce537a; font-weight: bold;">jclass</span> <span style="color: #7590db;">clazz</span> = env-&gt;FindClass<span style="color: #bc6ec5;">(</span>mainClass<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>clazz == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> result;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">&#27880;&#20876;&#26041;&#27861;</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>env-&gt;RegisterNatives<span style="color: #2d9574;">(</span>clazz, g_methods, NELEM<span style="color: #67b11d;">(</span>g_methods<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span> &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> result;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">&#25104;&#21151;</span>
+    result = JNI_VERSION_1_6;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> result;
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-orgd078e7d" class="outline-3">
+<h3 id="orgd078e7d">参考链接</h3>
+<div class="outline-text-3" id="text-orgd078e7d">
+<ol class="org-ol">
+<li><a href="https://juejin.im/post/5b9879976fb9a05d330aa206">Android NDK 开发之必知必会</a></li>
+<li><a href="https://developer.android.com/ndk/guides/cmake">Android 官方 cmake 说明</a></li>
+</ol>
+</div>
+</div>
+</div>
