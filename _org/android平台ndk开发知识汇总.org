@@ -28,9 +28,7 @@ JNI 中定义的数据类型和 Java 中定义的数据类型是一一对应的�
 引用类型：
 #+CAPTION: JNI 的引用类型
 | JNI 类型      | Java 类型 | 描述           |
-|---------------+-----------+----------------|
-| jobject       | Object    | 任意 java 对象 |
-| jclass        | class     | Class 对象     |
+|---------------+-----------+----------------| | jobject       | Object    | 任意 java 对象 | | jclass        | class     | Class 对象     |
 | jstring       | String    | 字符串对象     |
 | jobjectArray  | Object[]  | 对象数组       |
 | jbooleanArray | boolean[] | 布尔型数组     |
@@ -289,7 +287,57 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *jvm, void *reserved) {
 
 #+end_src
 
- 
+
+** 垃圾回收
+在 Java 代码中的对象是有垃圾回收机制的,但是对于 Native 中的代码应该如何进行垃圾
+回收呢?以及如何同 Java 代码进行配合呢? 首先来看一段代码片段:
+#+begin_src C++
+void Java_package_name_className(JNIEnv* env, jobject thiz) {
+    ...
+    //将由 Java 层传入的对象保存下来,已备后期使用.
+    jboject save_thiz = thiz;
+    ...
+    return;
+}
+#+end_src
+查看上面的代码,我们能否在 native 方法的其他位置正常的使用 save_thiz 代表的对象呢?结论是在其他
+位置使用 save_thiz 会出现问题,因为由于 Java 层有垃圾回收机制,当在 native 层使用
+save_thiz 对象时,有可能 Java 已经把 save_thiz 指向的对象回收了,所以不能正常的使
+用 save_thiz.造成这个问题的核心原因是:thiz 对 save_thiz的赋值操作*没有触发对象的
+引用计数*.
+
+如何处理上面的情况呢?
+
+JNI 提供了三种类型的应用解决上面的问题:
+1. Local Reference: 本地引用,在 JNI 层的函数中使用的*非全局*引用对象都是 Local
+   Reference, 它包含函数调用时传入的 jobject 和在 JNI 层中创建的 jobject.上面的
+   例子中的 thiz 和 save_thiz 都是 Local Reference.它最大的特点是*一旦 JNI 层函
+   数返回,这些 jobject 就可能会被垃圾回收*.
+2. Global Reference: 全局引用,这种对象如果不主动的去释放,它永远不会被垃圾回收.
+3. Weak Global Reference: 弱全局引用,一种特殊的 Global Reference,在运行过程中有
+   可能被垃圾回收,所以在使用它之前要调用 JNIEnv 的 isSameObject 来判断它是否被回
+   收了.
+
+我们看下面的例子:
+#+begin_src C++
+MyMediaScannerClient(JNIEnv* env, jobject, client)
+: mEnv(env),
+// 调用 NewGlobalRef 创建一个 Global Reference
+mClient(env->NewGlobalRef(client)),
+mScanFileMethodID(0),
+...
+{
+....
+}
+
+// 析构函数
+virtual ~MyMediaScannerClient(){
+    // 调用 DeleteGlobalRef 是否对这个对象的全局引用.
+    mEvn->DeleteGlobalRef(mClient);
+}
+#+end_src
+
 ** 参考链接
 1. [[https://juejin.im/post/5b9879976fb9a05d330aa206][Android NDK 开发之必知必会]]
 2. [[https://developer.android.com/ndk/guides/cmake][Android 官方 cmake 说明]]
+3. <<深入理解 Android>>(卷一), 孟凡平

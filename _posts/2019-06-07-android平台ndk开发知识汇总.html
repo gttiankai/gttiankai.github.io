@@ -151,18 +151,6 @@ JNI 中定义的数据类型和 Java 中定义的数据类型是一一对应的�
 </thead>
 <tbody>
 <tr>
-<td class="org-left">jobject</td>
-<td class="org-left">Object</td>
-<td class="org-left">任意 java 对象</td>
-</tr>
-
-<tr>
-<td class="org-left">jclass</td>
-<td class="org-left">class</td>
-<td class="org-left">Class 对象</td>
-</tr>
-
-<tr>
 <td class="org-left">jstring</td>
 <td class="org-left">String</td>
 <td class="org-left">字符串对象</td>
@@ -573,12 +561,80 @@ JNIEXPORT jint <span style="color: #ce537a; font-weight: bold;">JNICALL</span> <
 </div>
 
 
+<div id="outline-container-org533a847" class="outline-3">
+<h3 id="org533a847">垃圾回收</h3>
+<div class="outline-text-3" id="text-org533a847">
+<p>
+在 Java 代码中的对象是有垃圾回收机制的,但是对于 Native 中的代码应该如何进行垃圾
+回收呢?以及如何同 Java 代码进行配合呢? 首先来看一段代码片段:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">Java_package_name_className</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jobject</span> <span style="color: #7590db;">thiz</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    ...
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">&#23558;&#30001; Java &#23618;&#20256;&#20837;&#30340;&#23545;&#35937;&#20445;&#23384;&#19979;&#26469;,&#24050;&#22791;&#21518;&#26399;&#20351;&#29992;.</span>
+    jboject save_thiz = thiz;
+    ...
+    <span style="color: #4f97d7; font-weight: bold;">return</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+查看上面的代码,我们能否在 native 方法的其他位置正常的使用 save<sub>thiz</sub> 代表的对象呢?结论是在其他
+位置使用 save<sub>thiz</sub> 会出现问题,因为由于 Java 层有垃圾回收机制,当在 native 层使用
+save<sub>thiz</sub> 对象时,有可能 Java 已经把 save<sub>thiz</sub> 指向的对象回收了,所以不能正常的使
+用 save<sub>thiz.造成这个问题的核心原因是</sub>:thiz 对 save<sub>thiz的赋值操作</sub>*没有触发对象的
+引用计数*.
+</p>
+
+<p>
+如何处理上面的情况呢?
+</p>
+
+<p>
+JNI 提供了三种类型的应用解决上面的问题:
+</p>
+<ol class="org-ol">
+<li>Local Reference: 本地引用,在 JNI 层的函数中使用的*非全局*引用对象都是 Local
+Reference, 它包含函数调用时传入的 jobject 和在 JNI 层中创建的 jobject.上面的
+例子中的 thiz 和 save<sub>thiz</sub> 都是 Local Reference.它最大的特点是*一旦 JNI 层函
+数返回,这些 jobject 就可能会被垃圾回收*.</li>
+<li>Global Reference: 全局引用,这种对象如果不主动的去释放,它永远不会被垃圾回收.</li>
+<li>Weak Global Reference: 弱全局引用,一种特殊的 Global Reference,在运行过程中有
+可能被垃圾回收,所以在使用它之前要调用 JNIEnv 的 isSameObject 来判断它是否被回
+收了.</li>
+</ol>
+
+<p>
+我们看下面的例子:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #bc6ec5; font-weight: bold;">MyMediaScannerClient</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span>, jobject, client<span style="color: #4f97d7;">)</span>
+: mEnv<span style="color: #4f97d7;">(</span>env<span style="color: #4f97d7;">)</span>,
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#35843;&#29992; NewGlobalRef &#21019;&#24314;&#19968;&#20010; Global Reference</span>
+mClient<span style="color: #4f97d7;">(</span>env-&gt;NewGlobalRef<span style="color: #bc6ec5;">(</span>client<span style="color: #bc6ec5;">)</span><span style="color: #4f97d7;">)</span>,
+mScanFileMethodID<span style="color: #4f97d7;">(</span><span style="color: #a45bad;">0</span><span style="color: #4f97d7;">)</span>,
+...
+<span style="color: #4f97d7;">{</span>
+....
+<span style="color: #4f97d7;">}</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#26512;&#26500;&#20989;&#25968;</span>
+<span style="color: #4f97d7; font-weight: bold;">virtual</span> ~<span style="color: #bc6ec5; font-weight: bold;">MyMediaScannerClient</span><span style="color: #4f97d7;">(){</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#35843;&#29992; DeleteGlobalRef &#26159;&#21542;&#23545;&#36825;&#20010;&#23545;&#35937;&#30340;&#20840;&#23616;&#24341;&#29992;.</span>
+    mEvn-&gt;DeleteGlobalRef<span style="color: #bc6ec5;">(</span>mClient<span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</div>
+</div>
+
 <div id="outline-container-orgd078e7d" class="outline-3">
 <h3 id="orgd078e7d">参考链接</h3>
 <div class="outline-text-3" id="text-orgd078e7d">
 <ol class="org-ol">
 <li><a href="https://juejin.im/post/5b9879976fb9a05d330aa206">Android NDK 开发之必知必会</a></li>
 <li><a href="https://developer.android.com/ndk/guides/cmake">Android 官方 cmake 说明</a></li>
+<li><a id="orgf5c6486"></a>(卷一), 孟凡平</li>
 </ol>
 </div>
 </div>
