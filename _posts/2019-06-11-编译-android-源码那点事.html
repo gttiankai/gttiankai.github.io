@@ -1,0 +1,239 @@
+---
+date: 2019-06-11
+tags: 
+- Android
+author: tiankai
+layout: post
+title: 编译 Android 源码那点事
+excerpt: Android source code 编译
+categories: 
+- Android
+---
+
+<div id="outline-container-org2bf6f3d" class="outline-2">
+<h2 id="org2bf6f3d">repo 操作</h2>
+<div class="outline-text-2" id="text-org2bf6f3d">
+<ol class="org-ol">
+<li>只 sync 部分源码
+ 在.repo/manifest.xml 查找所需要的同步的部分模块名称,例如 manifest.xml 文件如
+下:</li>
+</ol>
+<pre class="example">
+&lt;project path="bionic" name="platform/bionic" /&gt;
+&lt;project path="bootable/bootloader/legacy" name="platform/bootable/bootloader/legacy" /&gt;
+&lt;project path="bootable/diskinstaller" name="platform/bootable/diskinstaller" /&gt;
+&lt;project path="bootable/recovery" name="platform/bootable/recovery" /&gt;
+&lt;project path="cts" name="platform/cts" /&gt;
+&lt;project path="dalvik" name="platform/dalvik" /&gt;
+&lt;project path="development" name="platform/development" /&gt;
+&lt;project path="device/common" name="device/common" /&gt;
+</pre>
+<p>
+其中 path 所指向的就是需要 sync 的模块名称.例如只 sync dalvik 模块,直接输入:
+</p>
+<div class="org-src-container">
+<pre class="src src-shell">repo sync dalvik
+</pre>
+</div>
+<ol class="org-ol">
+<li><p>
+放弃所有的本地修改
+</p>
+<div class="org-src-container">
+<pre class="src src-shell">repo forall -vc <span style="color: #2d9574;">"git reset --hard"</span>
+</pre>
+</div></li>
+</ol>
+</div>
+</div>
+
+
+<div id="outline-container-org579b005" class="outline-2">
+<h2 id="org579b005">Android 源码提供的命令</h2>
+<div class="outline-text-2" id="text-org579b005">
+<p>
+当需要编译 Android 的源码时,第一步的操作:
+</p>
+<div class="org-src-container">
+<pre class="src src-shell"><span style="color: #4f97d7;">source</span> build/envstartup.sh
+</pre>
+</div>
+<p>
+上面的命令是使 Android 源码中带有的一些命令生效,而 Android 源码中提供的这些命令
+在我们操作 Android 源码时会给我们提供很多的帮助.我们不在详细的分析
+build/envstartup.sh 源码,只挑几个重要的命令说下.
+</p>
+<pre class="example">
+- croot:   Changes directory to the top of the tree.  #切换工作目录为android源码目录的顶层目录
+- make:    builds all of the modules in the root directory. #编译整个 android 系统.
+- m:       Makes from the top of the tree.  #从android源码树的顶部开始编译
+- mm:      Builds all of the modules in the current directory.  #编译当前目录下的所有模块,但不包含依赖
+- mma:     #编译当前目录下面的所有模块,包含依赖
+- mmm:     Builds all of the modules in the supplied directories.  #编译指定目录下的所有模块,但不包含依赖
+- mmma:    #编译指定目录下的所有模块,包含依赖
+- cgrep:   Greps on all local C/C++ files.
+- jgrep:   Greps on all local Java files.
+- resgrep: Greps on all local res/*.xml files.
+- godir:   Go to the directory containing a file.  #搜索出指定文件所在目录提供给用户来选择进入
+</pre>
+</div>
+</div>
+
+
+
+<div id="outline-container-org4250f2a" class="outline-2">
+<h2 id="org4250f2a">如何编译 Android 源码的部分模块</h2>
+<div class="outline-text-2" id="text-org4250f2a">
+<p>
+当研究 Android 的源码时,避不可免的需要修改 Android 的源码,但是每次整体编译
+Android 的源码实在是太耗时了,所以需要只编译修改的部分就可以了.编译部分模块的方法
+如下:
+</p>
+<ol class="org-ol">
+<li>在修改文件所在目录或者是修改文件父辈目录中包含 Android.mk 文件夹.</li>
+<li>在包含 Android.mk 的文件夹下面执行</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-shell">mm .
+</pre>
+</div>
+<p>
+当然了也可以在 android 源码的根目录使用
+</p>
+<div class="org-src-container">
+<pre class="src src-shell">mmm /frameworks/base/libs/androidfw/   <span style="color: #2aa1ae; background-color: #292e34;"># </span><span style="color: #2aa1ae; background-color: #292e34;">&#20854;&#20013; andoridfw &#30446;&#24405;&#19979;&#26159;&#26377; Android.mk &#25991;&#20214;&#30340;</span>
+</pre>
+</div>
+<p>
+还有其他的方式编译 Android 系统的部分模块,具体的命令如下所示:
+</p>
+
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="org-left" />
+
+<col  class="org-left" />
+
+<col  class="org-left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="org-left">模块</th>
+<th scope="col" class="org-left">make 命令</th>
+<th scope="col" class="org-left">mmm 命令</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="org-left">init</td>
+<td class="org-left">make init</td>
+<td class="org-left">mmm system/core/init</td>
+</tr>
+
+<tr>
+<td class="org-left">zygot</td>
+<td class="org-left">make app<sub>process</sub></td>
+<td class="org-left">mmm frameworks/base/cmds/app<sub>process</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">system<sub>server</sub></td>
+<td class="org-left">make services</td>
+<td class="org-left">mmm frameworks/base/services</td>
+</tr>
+
+<tr>
+<td class="org-left">java framwork</td>
+<td class="org-left">make framwork</td>
+<td class="org-left">mmm frameworks/base</td>
+</tr>
+
+<tr>
+<td class="org-left">framework res</td>
+<td class="org-left">make framwork-res</td>
+<td class="org-left">mmm frameworks/base/core/res</td>
+</tr>
+
+<tr>
+<td class="org-left">framework jni</td>
+<td class="org-left">make libandroid<sub>runtime</sub></td>
+<td class="org-left">mmm frameworks/base/core<sub>jni</sub></td>
+</tr>
+
+<tr>
+<td class="org-left">binder</td>
+<td class="org-left">make libbinder</td>
+<td class="org-left">mmm frameworks/base/libs/binder</td>
+</tr>
+</tbody>
+</table>
+
+<p>
+对于 make 命令来说,模块名称未确定时,到相应目录下的 Android.mk 文件中查找 <b>LOCAL<sub>PACKAGE</sub><sub>NAME</sub></b>
+</p>
+
+<ol class="org-ol">
+<li>如果修改的代码没有问题, 然后就可以使用命令,将更新后的模块重新打包到 Android</li>
+</ol>
+<p>
+源码编译后的镜像中.
+</p>
+<div class="org-src-container">
+<pre class="src src-shell">make snod
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orgd886381" class="outline-2">
+<h2 id="orgd886381">如何编译 Framework 的单独模块</h2>
+<div class="outline-text-2" id="text-orgd886381">
+<p>
+Android 源码中的大部分模块都是可以通过上面的方式进行模块化编译的,但是针对
+framework 中的代码,则不能使用上面的方式进行编译.针对 framework 的编译方式如下所
+示:
+</p>
+<ol class="org-ol">
+<li>修改了 framework/base/core/res 下的资源文件</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-shell">mmm framework/base/core/res 
+</pre>
+</div>
+<p>
+上面的命令会在 out 目录下的相应位置生成 framework-res.jar 文件.
+当然了也可以使用 make 命令,上面已经详细讲了 make 如何使用.
+</p>
+<ol class="org-ol">
+<li>将生成的 frameworks.jar 等文件 push 到 Android 系统中.</li>
+</ol>
+<div class="org-src-container">
+<pre class="src src-shell">adb remount
+adb push framework-res.apk /system/framework/
+adb push framework.jar /system/framework/
+adb push services.jar /system/framework/
+adb reboot
+</pre>
+</div>
+<p>
+将 framework-res.apk framework.jar 或者 services. jar是否 push 到系统中,取决于是
+否需改了相应的代码.
+</p>
+
+<p>
+<b>以上的办法只适用于 android 6.0 以下的版本</b>
+</p>
+</div>
+</div>
+
+<div id="outline-container-org1953cd3" class="outline-2">
+<h2 id="org1953cd3">参考链接</h2>
+<div class="outline-text-2" id="text-org1953cd3">
+<ol class="org-ol">
+<li><a href="https://www.cnblogs.com/daemon369/p/3276508.html">编译Android源码中的单独模块</a></li>
+<li><a href="https://blog.csdn.net/ziyexiuxiu/article/details/79761712">Android Framework 模块编译</a></li>
+</ol>
+</div>
+</div>

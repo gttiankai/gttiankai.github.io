@@ -14,32 +14,33 @@ JNI 中定义的数据类型和 Java 中定义的数据类型是一一对应的�
 型分为基本数据类型和引用类型。基本数据类型见下表:
 #+CAPTION:  JNI 基本数据类型
 #+STARTUP: align shrink
-| JNI 类型 | Java 类型 | 描述         |   |       |      |        |
-|----------+-----------+--------------+---+-------+------+--------|
-| void     | void      | 无类型       |   |       |      |        |
-| jboolean | boolean   | 布尔型       |   |       |      |        |
-| jbyte    | byte      | 字节型       |   | jchar | char | 字符型 |
-| jshort   | short     | 短整型       |   |       |      |        |
-| jint     | int       | 整型         |   |       |      |        |
-| jlong    | long      | 长整型       |   |       |      |        |
-| jfloat   | float     | 浮点型       |   |       |      |        |
-| jdouble  | bouble    | 双精度浮点型 |   |       |      |        |
+| JNI 类型 | Java 类型 | 描述         |
+|----------+-----------+--------------|
+| void     | void      | 无类型       |
+| jboolean | boolean   | 布尔型       |
+| jbyte    | byte      | 字节型       |
+| jchar    | char      | 字符型       |
+| jshort   | short     | 短整型       |
+| jint     | int       | 整型         |
+| jlong    | long      | 长整型       |
+| jfloat   | float     | 浮点型       |
+| jdouble  | bouble    | 双精度浮点型 |
 
 引用类型：
 #+CAPTION: JNI 的引用类型
-| JNI 类型      | Java 类型 | 描述           |
-|---------------+-----------+----------------| | jobject       | Object    | 任意 java 对象 | | jclass        | class     | Class 对象     |
-| jstring       | String    | 字符串对象     |
-| jobjectArray  | Object[]  | 对象数组       |
-| jbooleanArray | boolean[] | 布尔型数组     |
-| jbyteArray    | byte[]    |                |
-| jcharArray    | char[]    |                |
-| jshortArray   | sort[]    |                |
-| jintArray     | int[]     |                |
-| jlongArray    | long[]    |                |
-| jfloatArray   | float[]   |                |
-| jdoubleArra   | bouble[]  |                |
-| jthrowable    | Throwable |                |
+| JNI 类型      | Java 类型 | 描述       |
+|---------------+-----------+------------|
+| jstring       | String    | 字符串对象 |
+| jobjectArray  | Object[]  | 对象数组   |
+| jbooleanArray | boolean[] | 布尔型数组 |
+| jbyteArray    | byte[]    |            |
+| jcharArray    | char[]    |            |
+| jshortArray   | sort[]    |            |
+| jintArray     | int[]     |            |
+| jlongArray    | long[]    |            |
+| jfloatArray   | float[]   |            |
+| jdoubleArra   | bouble[]  |            |
+| jthrowable    | Throwable |            |
 
 除了以上的类型之外,还有一点需要注意, Java 语言的中的数据类型的签名如下表所示:
 #+CAPTION: 数据类型的签名
