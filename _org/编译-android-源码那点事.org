@@ -10,9 +10,8 @@
 #+CATEGORIES: Android
 
 * repo 操作
-1. 只 sync 部分源码
-    在.repo/manifest.xml 查找所需要的同步的部分模块名称,例如 manifest.xml 文件如
-   下:
+1.只 sync 部分源码
+  在.repo/manifest.xml 查找所需要的同步的部分模块名称,例如 manifest.xml 文件如下:
 #+begin_example
   <project path="bionic" name="platform/bionic" />
   <project path="bootable/bootloader/legacy" name="platform/bootable/bootloader/legacy" />
@@ -27,7 +26,7 @@
 #+begin_src shell
 repo sync dalvik
 #+end_src
-2. 放弃所有的本地修改
+2.放弃所有的本地修改
  #+begin_src shell
 repo forall -vc "git reset --hard"
  #+end_src
@@ -61,17 +60,17 @@ build/envstartup.sh 源码,只挑几个重要的命令说下.
 当研究 Android 的源码时,避不可免的需要修改 Android 的源码,但是每次整体编译
 Android 的源码实在是太耗时了,所以需要只编译修改的部分就可以了.编译部分模块的方法
 如下:
-1. 在修改文件所在目录或者是修改文件父辈目录中包含 Android.mk 文件夹.
-2. 在包含 Android.mk 的文件夹下面执行
+1.在修改文件所在目录或者是修改文件父辈目录中包含 Android.mk 文件夹.
+2.在包含 Android.mk 的文件夹下面执行
 #+begin_src shell
-mm .
+  mm .
 #+end_src
-当然了也可以在 android 源码的根目录使用
+  当然了也可以在 android 源码的根目录使用
 #+begin_src shell
-mmm /frameworks/base/libs/androidfw/   # 其中 andoridfw 目录下是有 Android.mk 文件的
+  mmm /frameworks/base/libs/androidfw/   # 其中 andoridfw 目录下是有 Android.mk 文件的
 #+end_src
-还有其他的方式编译 Android 系统的部分模块,具体的命令如下所示:
-
+  还有其他的方式编译 Android 系统的部分模块,具体的命令如下所示:
+#+OPTIONS: ^:nil
 | 模块          | make 命令               | mmm 命令                             |
 |---------------+-------------------------+--------------------------------------|
 | init          | make init               | mmm system/core/init                 |
@@ -82,10 +81,10 @@ mmm /frameworks/base/libs/androidfw/   # 其中 andoridfw 目录下是有 Androi
 | framework jni | make libandroid_runtime | mmm frameworks/base/core_jni         |
 | binder        | make libbinder          | mmm frameworks/base/libs/binder      |
 
-对于 make 命令来说,模块名称未确定时,到相应目录下的 Android.mk 文件中查找 *LOCAL_PACKAGE_NAME*
+  对于 make 命令来说,模块名称未确定时,到相应目录下的 Android.mk 文件中查找 *LOCAL_PACKAGE_NAME*
 
-3. 如果修改的代码没有问题, 然后就可以使用命令,将更新后的模块重新打包到 Android
-源码编译后的镜像中.
+3.如果修改的代码没有问题, 然后就可以使用命令,将更新后的模块重新打包到 Android
+  源码编译后的镜像中.
 #+begin_src shell
 make snod
 #+end_src
@@ -95,13 +94,13 @@ make snod
 Android 源码中的大部分模块都是可以通过上面的方式进行模块化编译的,但是针对
 framework 中的代码,则不能使用上面的方式进行编译.针对 framework 的编译方式如下所
 示:
-1. 修改了 framework/base/core/res 下的资源文件
+1.修改了 framework/base/core/res 下的资源文件
 #+begin_src shell
 mmm framework/base/core/res 
 #+end_src
 上面的命令会在 out 目录下的相应位置生成 framework-res.jar 文件.
 当然了也可以使用 make 命令,上面已经详细讲了 make 如何使用.
-2. 将生成的 frameworks.jar 等文件 push 到 Android 系统中.
+2.将生成的 frameworks.jar 等文件 push 到 Android 系统中.
 #+begin_src shell
 adb remount
 adb push framework-res.apk /system/framework/
@@ -115,6 +114,6 @@ adb reboot
 *以上的办法只适用于 android 6.0 以下的版本*
  
 * 参考链接
- 1. [[https://www.cnblogs.com/daemon369/p/3276508.html][编译Android源码中的单独模块]]
- 2. [[https://blog.csdn.net/ziyexiuxiu/article/details/79761712][Android Framework 模块编译]]
+ 1.[[https://www.cnblogs.com/daemon369/p/3276508.html][编译Android源码中的单独模块]]
+ 2.[[https://blog.csdn.net/ziyexiuxiu/article/details/79761712][Android Framework 模块编译]]
 

@@ -13,11 +13,10 @@ categories:
 <div id="outline-container-org2bf6f3d" class="outline-2">
 <h2 id="org2bf6f3d">repo 操作</h2>
 <div class="outline-text-2" id="text-org2bf6f3d">
-<ol class="org-ol">
-<li>只 sync 部分源码
- 在.repo/manifest.xml 查找所需要的同步的部分模块名称,例如 manifest.xml 文件如
-下:</li>
-</ol>
+<p>
+1.只 sync 部分源码
+  在.repo/manifest.xml 查找所需要的同步的部分模块名称,例如 manifest.xml 文件如下:
+</p>
 <pre class="example">
 &lt;project path="bionic" name="platform/bionic" /&gt;
 &lt;project path="bootable/bootloader/legacy" name="platform/bootable/bootloader/legacy" /&gt;
@@ -35,15 +34,13 @@ categories:
 <pre class="src src-shell">repo sync dalvik
 </pre>
 </div>
-<ol class="org-ol">
-<li><p>
-放弃所有的本地修改
+<p>
+2.放弃所有的本地修改
 </p>
 <div class="org-src-container">
 <pre class="src src-shell">repo forall -vc <span style="color: #2d9574;">"git reset --hard"</span>
 </pre>
-</div></li>
-</ol>
+</div>
 </div>
 </div>
 
@@ -88,11 +85,9 @@ build/envstartup.sh 源码,只挑几个重要的命令说下.
 当研究 Android 的源码时,避不可免的需要修改 Android 的源码,但是每次整体编译
 Android 的源码实在是太耗时了,所以需要只编译修改的部分就可以了.编译部分模块的方法
 如下:
+1.在修改文件所在目录或者是修改文件父辈目录中包含 Android.mk 文件夹.
+2.在包含 Android.mk 的文件夹下面执行
 </p>
-<ol class="org-ol">
-<li>在修改文件所在目录或者是修改文件父辈目录中包含 Android.mk 文件夹.</li>
-<li>在包含 Android.mk 的文件夹下面执行</li>
-</ol>
 <div class="org-src-container">
 <pre class="src src-shell">mm .
 </pre>
@@ -107,7 +102,6 @@ Android 的源码实在是太耗时了,所以需要只编译修改的部分就�
 <p>
 还有其他的方式编译 Android 系统的部分模块,具体的命令如下所示:
 </p>
-
 <table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
 
 
@@ -134,12 +128,12 @@ Android 的源码实在是太耗时了,所以需要只编译修改的部分就�
 
 <tr>
 <td class="org-left">zygot</td>
-<td class="org-left">make app<sub>process</sub></td>
-<td class="org-left">mmm frameworks/base/cmds/app<sub>process</sub></td>
+<td class="org-left">make app_process</td>
+<td class="org-left">mmm frameworks/base/cmds/app_process</td>
 </tr>
 
 <tr>
-<td class="org-left">system<sub>server</sub></td>
+<td class="org-left">system_server</td>
 <td class="org-left">make services</td>
 <td class="org-left">mmm frameworks/base/services</td>
 </tr>
@@ -158,8 +152,8 @@ Android 的源码实在是太耗时了,所以需要只编译修改的部分就�
 
 <tr>
 <td class="org-left">framework jni</td>
-<td class="org-left">make libandroid<sub>runtime</sub></td>
-<td class="org-left">mmm frameworks/base/core<sub>jni</sub></td>
+<td class="org-left">make libandroid_runtime</td>
+<td class="org-left">mmm frameworks/base/core_jni</td>
 </tr>
 
 <tr>
@@ -171,14 +165,12 @@ Android 的源码实在是太耗时了,所以需要只编译修改的部分就�
 </table>
 
 <p>
-对于 make 命令来说,模块名称未确定时,到相应目录下的 Android.mk 文件中查找 <b>LOCAL<sub>PACKAGE</sub><sub>NAME</sub></b>
+对于 make 命令来说,模块名称未确定时,到相应目录下的 Android.mk 文件中查找 <b>LOCAL_PACKAGE_NAME</b>
 </p>
 
-<ol class="org-ol">
-<li>如果修改的代码没有问题, 然后就可以使用命令,将更新后的模块重新打包到 Android</li>
-</ol>
 <p>
-源码编译后的镜像中.
+3.如果修改的代码没有问题, 然后就可以使用命令,将更新后的模块重新打包到 Android
+  源码编译后的镜像中.
 </p>
 <div class="org-src-container">
 <pre class="src src-shell">make snod
@@ -194,10 +186,8 @@ Android 的源码实在是太耗时了,所以需要只编译修改的部分就�
 Android 源码中的大部分模块都是可以通过上面的方式进行模块化编译的,但是针对
 framework 中的代码,则不能使用上面的方式进行编译.针对 framework 的编译方式如下所
 示:
+1.修改了 framework/base/core/res 下的资源文件
 </p>
-<ol class="org-ol">
-<li>修改了 framework/base/core/res 下的资源文件</li>
-</ol>
 <div class="org-src-container">
 <pre class="src src-shell">mmm framework/base/core/res 
 </pre>
@@ -205,10 +195,8 @@ framework 中的代码,则不能使用上面的方式进行编译.针对 framewo
 <p>
 上面的命令会在 out 目录下的相应位置生成 framework-res.jar 文件.
 当然了也可以使用 make 命令,上面已经详细讲了 make 如何使用.
+2.将生成的 frameworks.jar 等文件 push 到 Android 系统中.
 </p>
-<ol class="org-ol">
-<li>将生成的 frameworks.jar 等文件 push 到 Android 系统中.</li>
-</ol>
 <div class="org-src-container">
 <pre class="src src-shell">adb remount
 adb push framework-res.apk /system/framework/
@@ -231,9 +219,9 @@ adb reboot
 <div id="outline-container-org1953cd3" class="outline-2">
 <h2 id="org1953cd3">参考链接</h2>
 <div class="outline-text-2" id="text-org1953cd3">
-<ol class="org-ol">
-<li><a href="https://www.cnblogs.com/daemon369/p/3276508.html">编译Android源码中的单独模块</a></li>
-<li><a href="https://blog.csdn.net/ziyexiuxiu/article/details/79761712">Android Framework 模块编译</a></li>
-</ol>
+<p>
+1.<a href="https://www.cnblogs.com/daemon369/p/3276508.html">编译Android源码中的单独模块</a>
+2.<a href="https://blog.csdn.net/ziyexiuxiu/article/details/79761712">Android Framework 模块编译</a>
+</p>
 </div>
 </div>
