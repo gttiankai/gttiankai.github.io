@@ -1,0 +1,50 @@
+#+STARTUP: showall
+#+STARTUP: hidestars
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+LAYOUT: post
+#+AUTHOR: tiankai
+#+DATE: 2019-06-28 五 23:27
+#+TITLE: Flask踩坑记录
+#+DESCRIPTION: Flask
+#+TAGS: 
+#+CATEGORIES: Python
+
+* Pycham 中开发 Flask 打不开调试调试模式
+使用 Pycharm 进行 Flask 开发时遇到一个诡异的问题,就是及时在代码中设置了
+*app.debug=True*, 但是当运行的时候还是不能调试模式,在 pycharm 中需要在 
+Run 中的 Edit configurations 进行配置,具体的配置如下图所示:
+ [file:https://github.com/gttiankai/gttiankai.github.io/blob/master/public/img/flask-debug.png]
+
+* 同步方式下载文件
+一般下载文件都是使用异步的方式进行下载的,但是在我自己的业务场景中,需要进行同步的
+等待文件下载完成之后,再进行下面的操作,所以需要使用同步的方式对文件进行下载,实例
+代码如下:
+#+begin_src python
+import requests
+
+try:
+    response = requests.get(URL, stream=True) # 使用文件流的方式进行下载
+    file = open(file_name, "wb")
+    for chunk in response.iter_content(chunk_size=1024):
+        if chunk:
+            file.write(chunk)
+    file.close()
+except Exception as e:
+    print("download failed!")
+print("download succeed!")
+#+end_src
+
+以上的方式,会通过同步的方式对文件流进行下载.
+
+* Flask 允许局域网链接
+一般网上的方式都是通过如下的代码允许局域网进行访问:
+#+begin_src python
+
+if __name__ == '__main__':
+    host_ip= '0.0.0.0'
+    app.run(host=host_ip, port=8081)
+
+#+end_src
+如果是在命令行中运行上面的命令, 是可以有效的, 但是如果在 pycharm 中是不行的, 固然使用 Pycharm 开发 Flask 还是挺坑的.
+具体的做法要在 Pycharm 中*run*中的*Edit configurations* 中进行设置,具体的设置如下图所示:
+[file:https://github.com/gttiankai/gttiankai.github.io/blob/master/public/img/pychamr-flask-ip.png]
