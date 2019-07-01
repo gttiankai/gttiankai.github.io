@@ -1,0 +1,105 @@
+---
+date: 2019-06-30
+tags: 
+- 技术
+author: tiankai
+layout: post
+title: HTTPS介绍
+excerpt: Https
+categories: 
+- 技术
+---
+
+<div id="outline-container-orgec6f4bc" class="outline-2">
+<h2 id="orgec6f4bc">HTTPS 的定义</h2>
+<div class="outline-text-2" id="text-orgec6f4bc">
+<p>
+HTTPS(Secure Hypertext Transfer Protocol)安全超文本传输协议,它是一个安全通信通
+道.HTTPS 并非是应用层的一种新协议.只是 HTTP 通信接口部分用 SSL 和 TLS 协议代替而
+已.通常,HTTP 直接和 TCP 通信,当时用 SSL 时,则演变成了先和 SSL 通信,再由 SSL 和
+TCP 进行通信.简言之,HTTPS 就是身披 SSL 协议这层外壳的 HTTP.
+</p>
+<pre class="example">
+HTTP + 加密 + 认证 + 完整性保护 = HTTPS
+</pre>
+<p>
+上面的公式,我认为是介绍 HTTPS最好的表达方式了. 
+</p>
+</div>
+</div>
+
+<div id="outline-container-orga4a10a2" class="outline-2">
+<h2 id="orga4a10a2">加密</h2>
+<div class="outline-text-2" id="text-orga4a10a2">
+<p>
+HTTPS 采用对称加密和非对称加密两者并用的混合加密机制,在交换密钥的环节使用非对称
+加密,之后的建立通信交换报文阶段则使用对称加密.这样做的具体的原因是因为非对称加密
+的效率较低,如果一直使用非对称加密会严重的拖累通信的速度.HTTPS 使用的混合加密机制
+如下所示:
+</p>
+
+<div class="figure">
+<p><img src="https://github.com/gttiankai/gttiankai.github.io/blob/master/public/img/https-encrypt.png" alt="https-encrypt.png" />
+</p>
+<p><span class="figure-number">Figure 1: </span>混合加密机制</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org754e38f" class="outline-2">
+<h2 id="org754e38f">认证</h2>
+<div class="outline-text-2" id="text-org754e38f">
+<p>
+使用非对称加密再进行密钥交换时存在一个问题,就是如何证明收到的公开密钥就是原本预
+想的那台服务器发行的公开密钥.也许在公开密钥传输过程中,真正的公开密钥已经被攻击者
+替换掉了.
+</p>
+
+<p>
+为了解决上面的问题,可以使用使用由数字认证机构(CA, Certificate Authority) 和其他
+机关颁发的公开密钥证书.CA 认证机构的的业务流程以及通信的流程:
+1.服务器的运营人员向数字证书认证机构提出公开密钥的申请.
+2.CA 在对申请者的身份进行认证,然后对申请者的公开密钥做数字签名,然后分配这个已签
+  名的公开密钥,并将该公开密钥放入公钥证书后绑定在一起.
+3.服务器会将这份由 CA 机构颁发的公钥证书发送给客户端,以进行非对称加密通信.
+4.接到证书的客户端可使用数字证书认证机构的公开密钥,对收到的证书上的数字签名进行
+  验证,一旦验证成功,客户端可以明确两件事:一,认证服务器器的公开密钥是真是有效的数
+  字证书认证机构.二,服务器的公开密钥是值得信赖的.
+5.得到服务器端的公开密钥之后,就可以进行下面的通信了.
+</p>
+
+<p>
+为了保证数字证书认证机构的公开密钥的安全性,当通信时,如何安全移交是一件非常困难的
+事情.因此,多数浏览器开发商发布版本时,会*事先在内部植入常用认证机关的公开密钥*.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-org1bd9b2d" class="outline-2">
+<h2 id="org1bd9b2d">完整性保护</h2>
+<div class="outline-text-2" id="text-org1bd9b2d">
+<p>
+基于上面的通信加密的部分,客户端和服务端进行通信时,交换的报文都是经过加密的.中间
+人无伦实在会话发起时,还是会话进行时,都无法进行中间人攻击.并且在通信时,每部分数据
+均有mac验证，验证时计算数据的mac然后与接收到的mac比较，即可确定数据是否完整。
+如下图:
+</p>
+
+<div class="figure">
+<p><img src="https://github.com/gttiankai/gttiankai.github.io/blob/master/public/img/intergrity-check.png" alt="intergrity-check.png" />
+</p>
+<p><span class="figure-number">Figure 2: </span>完整性保护</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-orga71e956" class="outline-2">
+<h2 id="orga71e956">参考资料</h2>
+<div class="outline-text-2" id="text-orga71e956">
+<p>
+1.《图解HTTP》&#x2013;上野宣
+2.<a href="https://segmentfault.com/q/1010000000192807">HTTPS 的保密性,真实性,完整性和不可否认性是如何实现的</a>
+</p>
+</div>
+</div>
