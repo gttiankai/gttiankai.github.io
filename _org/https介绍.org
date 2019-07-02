@@ -25,7 +25,7 @@ HTTPS 采用对称加密和非对称加密两者并用的混合加密机制,在�
 的效率较低,如果一直使用非对称加密会严重的拖累通信的速度.HTTPS 使用的混合加密机制
 如下所示:
 #+caption: 混合加密机制
-[[https://github.com/gttiankai/gttiankai.github.io/blob/master/public/img/https-encrypt.png]]
+[[https://gttiankai.github.io/public/img/https-encrypt.png]]
 
 * 认证
 使用非对称加密再进行密钥交换时存在一个问题,就是如何证明收到的公开密钥就是原本预
@@ -53,7 +53,7 @@ HTTPS 采用对称加密和非对称加密两者并用的混合加密机制,在�
 均有mac验证，验证时计算数据的mac然后与接收到的mac比较，即可确定数据是否完整。
 如下图:
 #+caption: 完整性保护
-[[https://github.com/gttiankai/gttiankai.github.io/blob/master/public/img/intergrity-check.png]]
+[[https:/gttiankai.github.io/public/img/intergrity-check.png]]
 
 * 参考资料
 1.《图解HTTP》--上野宣
