@@ -1,0 +1,971 @@
+---
+date: 2019-06-02
+tags: 
+- Android
+author: tiankai
+layout: post
+title: Android系统加载资源文件源码分析
+excerpt: Android
+categories: 
+- Android
+---
+
+<div id="outline-container-org3ae92b0" class="outline-2">
+<h2 id="org3ae92b0">大纲</h2>
+<div class="outline-text-2" id="text-org3ae92b0">
+<ol class="org-ol">
+<li>大体上讲解一下 Android 系统加载资源文件的过程。</li>
+<li>讲解一下 Java 层的加载流程</li>
+<li>讲解一下 native 层的加载流程</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org848faae" class="outline-2">
+<h2 id="org848faae">Android 如何加载 asset 中的资源文件</h2>
+<div class="outline-text-2" id="text-org848faae">
+<p>
+在 Android 开发时, 如果想要加载 assets 文件夹下面的文件, 可以使用如下的方式对文
+件进行加载
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold;">private</span> <span style="color: #ce537a; font-weight: bold;">Bitmap</span> <span style="color: #bc6ec5; font-weight: bold;">getImageFromAssetsFile</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">fileName</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">Bitmap</span> <span style="color: #7590db;">image</span> = <span style="color: #a45bad;">null</span>;
+    <span style="color: #ce537a; font-weight: bold;">AssetManager</span> <span style="color: #7590db;">am</span> = getResources<span style="color: #bc6ec5;">()</span>.getAssets<span style="color: #bc6ec5;">()</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>am == <span style="color: #a45bad;">null</span><span style="color: #bc6ec5;">)</span>
+    <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">null</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">try</span>
+    <span style="color: #bc6ec5;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">InputStream</span> <span style="color: #7590db;">is</span> = am.open<span style="color: #2d9574;">(</span>fileName<span style="color: #2d9574;">)</span>;
+        image = BitmapFactory.decodeStream<span style="color: #2d9574;">(</span>is<span style="color: #2d9574;">)</span>;
+        is.close<span style="color: #2d9574;">()</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">catch</span> <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">IOException</span> <span style="color: #7590db;">e</span><span style="color: #bc6ec5;">)</span>
+    <span style="color: #bc6ec5;">{</span>
+        e.printStackTrace<span style="color: #2d9574;">()</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> image;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+首先获取到 AssetManager 对象,然后使用 AssetManager对象对文件进行 open,获取到
+InputStream 了,接下来就可以对得到的数据进行读取了.
+</p>
+
+<p>
+总结下来 Android 系统对资源文件的处理,主要氛围三步:
+1.创建/获取 AssetManager
+2.使用 AssetManager 打开需要加载的资源文件
+3.读取资源文件的内容,然后按照自己的要求进行处理
+在上面的三个步骤中,第二和第二步是最重要的, 这两个操作在源码时如何实现的呢?接下来
+我们会分别对上面的两步进行分析
+</p>
+</div>
+</div>
+<div id="outline-container-org8174456" class="outline-2">
+<h2 id="org8174456">Android 加载资源文件并创建 InputStream 的过程</h2>
+<div class="outline-text-2" id="text-org8174456">
+<p>
+Android 系统加载资源文件主要使用的系统方法是 AssetManager 类, 这个类定义在*
+/frameworks/base/core/java/android/content/res/AssetManager.java *这个类中定义
+了加载资源文件的操作.其中比较重要的函数 open 的定义如下:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #9f8766;">/**</span>
+<span style="color: #9f8766;">     * Open an asset using ACCESS_STREAMING mode.  This provides access to</span>
+<span style="color: #9f8766;">     * files that have been bundled with an application as assets -- that is,</span>
+<span style="color: #9f8766;">     * files placed in to the "assets" directory.</span>
+<span style="color: #9f8766;">     *</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@param</span><span style="color: #9f8766;"> fileName The name of the asset to open.  This name can be</span>
+<span style="color: #9f8766;">     *                 hierarchical.</span>
+<span style="color: #9f8766;">     *</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #open(String, int)</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #list</span>
+<span style="color: #9f8766;">     */</span>
+    <span style="color: #4f97d7; font-weight: bold;">public</span> <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">InputStream</span> <span style="color: #bc6ec5; font-weight: bold;">open</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">fileName</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">throws</span> <span style="color: #ce537a; font-weight: bold;">IOException</span> <span style="color: #4f97d7;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> open<span style="color: #bc6ec5;">(</span>fileName, ACCESS_STREAMING<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7;">}</span>
+
+    <span style="color: #9f8766;">/**</span>
+<span style="color: #9f8766;">     * Open an asset using an explicit access mode, returning an InputStream to</span>
+<span style="color: #9f8766;">     * read its contents.  This provides access to files that have been bundled</span>
+<span style="color: #9f8766;">     * with an application as assets -- that is, files placed in to the</span>
+<span style="color: #9f8766;">     * "assets" directory.</span>
+<span style="color: #9f8766;">     *</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@param</span><span style="color: #9f8766;"> fileName The name of the asset to open.  This name can be</span>
+<span style="color: #9f8766;">     *                 hierarchical.</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@param</span><span style="color: #9f8766;"> accessMode Desired access mode for retrieving the data.</span>
+<span style="color: #9f8766;">     *</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #ACCESS_UNKNOWN</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #ACCESS_STREAMING</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #ACCESS_RANDOM</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #ACCESS_BUFFER</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #open(String)</span>
+<span style="color: #9f8766;">     * </span><span style="color: #a45bad;">@see</span><span style="color: #9f8766;"> #list</span>
+<span style="color: #9f8766;">     */</span>
+    <span style="color: #4f97d7; font-weight: bold;">public</span> <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">InputStream</span> <span style="color: #bc6ec5; font-weight: bold;">open</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">fileName</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">accessMode</span><span style="color: #4f97d7;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">throws</span> <span style="color: #ce537a; font-weight: bold;">IOException</span> <span style="color: #4f97d7;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">synchronized</span> <span style="color: #bc6ec5;">(</span><span style="color: #4f97d7; font-weight: bold;">this</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span><span style="color: #a45bad;">!</span>mOpen<span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+                <span style="color: #4f97d7; font-weight: bold;">throw</span> <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">RuntimeException</span><span style="color: #67b11d;">(</span><span style="color: #2d9574;">"Assetmanager has been closed"</span><span style="color: #67b11d;">)</span>;
+            <span style="color: #2d9574;">}</span>
+            <span style="color: #ce537a; font-weight: bold;">long</span> <span style="color: #7590db;">asset</span> = openAsset<span style="color: #2d9574;">(</span>fileName, accessMode<span style="color: #2d9574;">)</span>;
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>asset != <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+                <span style="color: #ce537a; font-weight: bold;">AssetInputStream</span> <span style="color: #7590db;">res</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">AssetInputStream</span><span style="color: #67b11d;">(</span>asset<span style="color: #67b11d;">)</span>;
+                incRefsLocked<span style="color: #67b11d;">(</span>res.hashCode<span style="color: #b1951d;">()</span><span style="color: #67b11d;">)</span>;
+                <span style="color: #4f97d7; font-weight: bold;">return</span> res;
+            <span style="color: #2d9574;">}</span>
+        <span style="color: #bc6ec5;">}</span>
+        <span style="color: #4f97d7; font-weight: bold;">throw</span> <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">FileNotFoundException</span><span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"Asset file: "</span> + fileName<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+<p>
+其中 openAsset 的源码如下:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold;">private</span> <span style="color: #4f97d7; font-weight: bold;">native</span> <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">long</span> <span style="color: #bc6ec5; font-weight: bold;">openAsset</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">fileName</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">accessMode</span><span style="color: #4f97d7;">)</span>;
+</pre>
+</div>
+<p>
+通过上面的定义,发现 openAsset 是一个 native 方法,所以需要对这个方法在 native 层
+对应的方法进行追踪.通过查找源码发现 openAsset 的定义在*/frameworks/base/core/jni/android_util_AssetManager.cpp*
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">location: /frameworks/base/core/jni/android_util_AssetManager.cpp</span>
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">jlong</span> <span style="color: #bc6ec5; font-weight: bold;">android_content_AssetManager_openAsset</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jobject</span> <span style="color: #7590db;">clazz</span>,
+                                                <span style="color: #ce537a; font-weight: bold;">jstring</span> <span style="color: #7590db;">fileName</span>, <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #7590db;">mode</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">AssetManager</span>* <span style="color: #7590db;">am</span> = assetManagerForJavaObject<span style="color: #bc6ec5;">(</span>env, clazz<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>am == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    ALOGV<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"openAsset in %p (Java object %p)\n"</span>, am, clazz<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">ScopedUtfChars</span> <span style="color: #7590db;">fileName8</span><span style="color: #bc6ec5;">(</span>env, fileName<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>fileName8.c_str<span style="color: #2d9574;">()</span> == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        jniThrowException<span style="color: #2d9574;">(</span>env, <span style="color: #2d9574;">"java/lang/IllegalArgumentException"</span>, <span style="color: #2d9574;">"Empty file name"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mode != <span style="color: #a45bad;">Asset</span>::ACCESS_UNKNOWN &amp;&amp; mode != <span style="color: #a45bad;">Asset</span>::ACCESS_RANDOM
+        &amp;&amp; mode != <span style="color: #a45bad;">Asset</span>::ACCESS_STREAMING &amp;&amp; mode != <span style="color: #a45bad;">Asset</span>::ACCESS_BUFFER<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        jniThrowException<span style="color: #2d9574;">(</span>env, <span style="color: #2d9574;">"java/lang/IllegalArgumentException"</span>, <span style="color: #2d9574;">"Bad access mode"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #7590db;">a</span> = am-&gt;open<span style="color: #bc6ec5;">(</span>fileName8.c_str<span style="color: #2d9574;">()</span>, <span style="color: #2d9574;">(</span><span style="color: #a45bad;">Asset</span>::<span style="color: #ce537a; font-weight: bold;">AccessMode</span><span style="color: #2d9574;">)</span>mode<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>a == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        jniThrowException<span style="color: #2d9574;">(</span>env, <span style="color: #2d9574;">"java/io/FileNotFoundException"</span>, fileName8.c_str<span style="color: #67b11d;">()</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">printf("Created Asset Stream: %p\n", a);</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">jlong</span><span style="color: #bc6ec5;">&gt;(</span>a<span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+<p>
+从上面的代码中可以看到,核心的逻辑实在 native 层的 AssetManager 的 open 函数,也就
+是说 Java 层和 Native 层分别都有 AssetManager 类的定义.native 层的 AssetManager
+中的 open 的定义如下:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">location: /frameworks/base/libs/androidfw/AssetManager.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Open an asset.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * The data could be;</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *  - In a file on disk (assetBase + fileName).</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *  - In a compressed file on disk (assetBase + fileName.gz).</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *  - In a Zip archive, uncompressed or compressed.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * It can be in a number of different directories and Zip archives.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * The search order is:</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *  - [appname]</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    - locale + vendor</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    - "default" + vendor</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    - locale + "default"</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    - "default + "default"</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *  - "common"</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    - (same as above)</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * To find a particular file, we have to try up to eight paths with</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * all three forms of data.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * We should probably reject requests for "illegal" filenames, e.g. those</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * with illegal characters or "../" backward relative paths.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #a45bad;">AssetManager</span>::<span style="color: #bc6ec5; font-weight: bold;">open</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">fileName</span>, <span style="color: #ce537a; font-weight: bold;">AccessMode</span> <span style="color: #7590db;">mode</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">AutoMutex</span> <span style="color: #7590db;">_l</span><span style="color: #bc6ec5;">(</span>mLock<span style="color: #bc6ec5;">)</span>;
+
+    LOG_FATAL_IF<span style="color: #bc6ec5;">(</span>mAssetPaths.size<span style="color: #2d9574;">()</span> == <span style="color: #a45bad;">0</span>, <span style="color: #2d9574;">"No assets added to AssetManager"</span><span style="color: #bc6ec5;">)</span>;
+
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mCacheMode != CACHE_OFF &amp;&amp; <span style="color: #a45bad;">!</span>mCacheValid<span style="color: #bc6ec5;">)</span>
+        loadFileNameCacheLocked<span style="color: #bc6ec5;">()</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">String8</span> <span style="color: #7590db;">assetName</span><span style="color: #bc6ec5;">(</span>kAssetsRoot<span style="color: #bc6ec5;">)</span>;
+    assetName.appendPath<span style="color: #bc6ec5;">(</span>fileName<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * For each top-level asset path, search for the asset.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">i</span> = mAssetPaths.size<span style="color: #bc6ec5;">()</span>;
+    <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #bc6ec5;">(</span>i &gt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        i--;
+        ALOGV<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Looking for asset '%s' in '%s'\n"</span>,
+                assetName.string<span style="color: #67b11d;">()</span>, mAssetPaths.itemAt<span style="color: #67b11d;">(</span>i<span style="color: #67b11d;">)</span>.path.string<span style="color: #67b11d;">()</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #7590db;">pAsset</span> = openNonAssetInPathLocked<span style="color: #2d9574;">(</span>assetName.string<span style="color: #67b11d;">()</span>, mode, mAssetPaths.itemAt<span style="color: #67b11d;">(</span>i<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pAsset != <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #4f97d7; font-weight: bold;">return</span> pAsset != kExcludedAsset ? pAsset : <span style="color: #a45bad;">NULL</span>;
+        <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">NULL</span>;
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+<p>
+接下来的关键的函数是openNonAssetInPathLocked, 其中assetName为需要加载的资源文件
+的名称, mode 是加载资源文件的模式, mAssetPaths 是一个 vector,里面包含当前 APK 能
+够进行资源加载的路径.
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">location: /frameworks/base/libs/androidfw/AssetManager.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Open a non-asset file as if it were an asset, searching for it in the</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * specified app.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Pass in a NULL values for "appName" if the common app directory should</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * be used.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #a45bad;">AssetManager</span>::<span style="color: #bc6ec5; font-weight: bold;">openNonAssetInPathLocked</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">fileName</span>, <span style="color: #ce537a; font-weight: bold;">AccessMode</span> <span style="color: #7590db;">mode</span>,
+    <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">asset_path</span>&amp; <span style="color: #7590db;">ap</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #7590db;">pAsset</span> = <span style="color: #a45bad;">NULL</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">look at the filesystem on disk */</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>ap.type == kFileTypeDirectory<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">String8</span> <span style="color: #7590db;">path</span><span style="color: #2d9574;">(</span>ap.path<span style="color: #2d9574;">)</span>;
+        path.appendPath<span style="color: #2d9574;">(</span>fileName<span style="color: #2d9574;">)</span>;
+
+        pAsset = openAssetFromFileLocked<span style="color: #2d9574;">(</span>path, mode<span style="color: #2d9574;">)</span>;
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pAsset == <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">try again, this time with ".gz" */</span>
+            path.append<span style="color: #67b11d;">(</span><span style="color: #2d9574;">".gz"</span><span style="color: #67b11d;">)</span>;
+            pAsset = openAssetFromFileLocked<span style="color: #67b11d;">(</span>path, mode<span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pAsset != <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">printf("FOUND NA '%s' on disk\n", fileName);</span>
+            pAsset-&gt;setAssetSource<span style="color: #67b11d;">(</span>path<span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">look inside the zip file */</span>
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">String8</span> <span style="color: #7590db;">path</span><span style="color: #2d9574;">(</span>fileName<span style="color: #2d9574;">)</span>;
+
+        <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">check the appropriate Zip file */</span>
+        <span style="color: #ce537a; font-weight: bold;">ZipFileRO</span>* <span style="color: #7590db;">pZip</span> = getZipFileLocked<span style="color: #2d9574;">(</span>ap<span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pZip != <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">printf("GOT zip, checking NA '%s'\n", (const char*) path);</span>
+            <span style="color: #ce537a; font-weight: bold;">ZipEntryRO</span> <span style="color: #7590db;">entry</span> = pZip-&gt;findEntryByName<span style="color: #67b11d;">(</span>path.string<span style="color: #b1951d;">()</span><span style="color: #67b11d;">)</span>;
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>entry != <span style="color: #a45bad;">NULL</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+                <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">printf("FOUND NA in Zip file for %s\n", appName ? appName : kAppCommon);</span>
+                pAsset = openAssetFromZipLocked<span style="color: #b1951d;">(</span>pZip, entry, mode, path<span style="color: #b1951d;">)</span>;
+                pZip-&gt;releaseEntry<span style="color: #b1951d;">(</span>entry<span style="color: #b1951d;">)</span>;
+            <span style="color: #67b11d;">}</span>
+        <span style="color: #2d9574;">}</span>
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>pAsset != <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">create a "source" name, for debug/display */</span>
+            pAsset-&gt;setAssetSource<span style="color: #67b11d;">(</span>
+                    createZipSourceNameLocked<span style="color: #b1951d;">(</span><span style="color: #a45bad;">ZipSet</span>::getPathName<span style="color: #4f97d7;">(</span>ap.path.string<span style="color: #bc6ec5;">()</span><span style="color: #4f97d7;">)</span>, String8<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">""</span><span style="color: #4f97d7;">)</span>,
+                                                String8<span style="color: #4f97d7;">(</span>fileName<span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span>;
+        <span style="color: #2d9574;">}</span>
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> pAsset;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+因为我们的资源文件是在 apk 中,所以我们是走下面的分支, 首先创建 ZipEntryRO 对象,
+然后通过需要加载的资源文件的名称获取到需要加载的 entry,然后调用
+openAssetFromZipLocked 进行加载.
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">location: /frameworks/base/libs/androidfw/AssetManager.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Given an entry in a Zip archive, create a new Asset object.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * If the entry is uncompressed, we may want to create or share a</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * slice of shared memory.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #a45bad;">AssetManager</span>::<span style="color: #bc6ec5; font-weight: bold;">openAssetFromZipLocked</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">ZipFileRO</span>* <span style="color: #7590db;">pZipFile</span>,
+    <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">ZipEntryRO</span> <span style="color: #7590db;">entry</span>, <span style="color: #ce537a; font-weight: bold;">AccessMode</span> <span style="color: #7590db;">mode</span>, <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">String8</span>&amp; <span style="color: #7590db;">entryName</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #7590db;">pAsset</span> = <span style="color: #a45bad;">NULL</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #dc752f;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: look for previously-created shared memory slice?</span>
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">method</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">uncompressedLen</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">printf("USING Zip '%s'\n", pEntry-&gt;getFileName());</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">pZipFile-&gt;getEntryInfo(entry, &amp;method, &amp;uncompressedLen, &amp;compressedLen,</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">//    </span><span style="color: #2aa1ae; background-color: #292e34;">&amp;offset);</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>pZipFile-&gt;getEntryInfo<span style="color: #2d9574;">(</span>entry, &amp;method, &amp;uncompressedLen, <span style="color: #a45bad;">NULL</span>, <span style="color: #a45bad;">NULL</span>,
+            <span style="color: #a45bad;">NULL</span>, <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span>
+    <span style="color: #bc6ec5;">{</span>
+        ALOGW<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"getEntryInfo failed\n"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #7590db;">dataMap</span> = pZipFile-&gt;createEntryFileMap<span style="color: #bc6ec5;">(</span>entry<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>dataMap == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGW<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"create map from entry failed\n"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>method == <span style="color: #a45bad;">ZipFileRO</span>::kCompressStored<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">&#25991;&#20214;&#20197;&#23384;&#20648;&#26041;&#24335;&#22312; apk &#20013;&#23384;&#22312;</span>
+        pAsset = <span style="color: #a45bad;">Asset</span>::createFromUncompressedMap<span style="color: #2d9574;">(</span>dataMap, mode<span style="color: #2d9574;">)</span>;
+        ALOGV<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Opened uncompressed entry %s in zip %s mode %d: %p"</span>, entryName.string<span style="color: #67b11d;">()</span>,
+                dataMap-&gt;getFileName<span style="color: #67b11d;">()</span>, mode, pAsset<span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#25991;&#20214;&#20197;&#21387;&#32553;&#26041;&#24335;&#22312; apk &#20013;&#23384;&#22312;</span>
+        pAsset = <span style="color: #a45bad;">Asset</span>::createFromCompressedMap<span style="color: #2d9574;">(</span>dataMap, method,
+            uncompressedLen, mode<span style="color: #2d9574;">)</span>;
+        ALOGV<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"Opened compressed entry %s in zip %s mode %d: %p"</span>, entryName.string<span style="color: #67b11d;">()</span>,
+                dataMap-&gt;getFileName<span style="color: #67b11d;">()</span>, mode, pAsset<span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>pAsset == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">unexpected */</span>
+        ALOGW<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"create from segment failed\n"</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> pAsset;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+该函数使用 pZipFile-&gt;createEntryFileMap 函数将资源文件数据加载到内存中, 并创建了
+FileMap 的对象
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Create a new FileMap object that spans the data in "entry".</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #a45bad;">ZipFileRO</span>::<span style="color: #bc6ec5; font-weight: bold;">createEntryFileMap</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">ZipEntryRO</span> <span style="color: #7590db;">entry</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">const</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">_ZipEntryRO</span> *<span style="color: #7590db;">zipEntry</span> = <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">_ZipEntryRO</span>*<span style="color: #bc6ec5;">&gt;(</span>entry<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">ZipEntry</span>&amp; <span style="color: #7590db;">ze</span> = zipEntry-&gt;entry;
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">fd</span> = GetFileDescriptor<span style="color: #bc6ec5;">(</span>mHandle<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">actualLen</span> = <span style="color: #a45bad;">0</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>ze.method == kCompressStored<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        actualLen = ze.uncompressed_length;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+        actualLen = ze.compressed_length;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #7590db;">newMap</span> = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">FileMap</span><span style="color: #bc6ec5;">()</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>newMap-&gt;create<span style="color: #2d9574;">(</span>mFileName, fd, ze.offset, actualLen, <span style="color: #a45bad;">true</span><span style="color: #2d9574;">)</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        newMap-&gt;release<span style="color: #2d9574;">()</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">NULL</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> newMap;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+从上面的代码中可以看到最终使用 FileMap 的 create 对文件进行创建,接下来就要简单了
+解一下FileMap了.FileMap 是什么样的类呢? 我们直接看源码中的解释:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++">/system/core/include/utils/FileMap.h
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * This represents a memory-mapped file.  It might be the entire file or</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * only part of it.  This requires a little bookkeeping because the mapping</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * needs to be aligned on page boundaries, and in some cases we'd like to</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * have multiple references to the mapped area without creating additional</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * maps.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * This always uses MAP_SHARED.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * </span><span style="color: #dc752f;">TODO</span><span style="color: #2aa1ae; background-color: #292e34;">: we should be able to create a new FileMap that is a subset of</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * an existing FileMap and shares the underlying mapped pages.  Requires</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * completing the refcounting stuff and possibly introducing the notion</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * of a FileMap hierarchy.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+</pre>
+</div>
+<p>
+接下来我们看 FileMap 中的 create 方法的定义:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Create a new mapping on an open file.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">//</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Closing the file descriptor does not unmap the pages, so we don't</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">claim ownership of the fd.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">//</span>
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Returns "false" on failure.</span>
+<span style="color: #ce537a; font-weight: bold;">bool</span> <span style="color: #a45bad;">FileMap</span>::<span style="color: #bc6ec5; font-weight: bold;">create</span><span style="color: #4f97d7;">(</span><span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">origFileName</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">fd</span>, <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">offset</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">length</span>,
+        <span style="color: #ce537a; font-weight: bold;">bool</span> <span style="color: #7590db;">readOnly</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+<span style="color: #bc6ec5;">#ifdef</span> HAVE_WIN32_FILEMAP
+    <span style="color: #ce537a; font-weight: bold;">int</span>     <span style="color: #7590db;">adjust</span>;
+    <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">adjOffset</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span>  <span style="color: #7590db;">adjLength</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mPageSize == -<span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #ce537a; font-weight: bold;">SYSTEM_INFO</span>  <span style="color: #7590db;">si</span>;
+
+        GetSystemInfo<span style="color: #2d9574;">(</span> &amp;si <span style="color: #2d9574;">)</span>;
+        mPageSize = si.dwAllocationGranularity;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #ce537a; font-weight: bold;">DWORD</span>  <span style="color: #7590db;">protect</span> = readOnly ? PAGE_READONLY : PAGE_READWRITE;
+
+    mFileHandle  = <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">HANDLE</span><span style="color: #bc6ec5;">)</span> _get_osfhandle<span style="color: #bc6ec5;">(</span>fd<span style="color: #bc6ec5;">)</span>;
+    mFileMapping = CreateFileMapping<span style="color: #bc6ec5;">(</span> mFileHandle, <span style="color: #a45bad;">NULL</span>, protect, <span style="color: #a45bad;">0</span>, <span style="color: #a45bad;">0</span>, <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mFileMapping == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"CreateFileMapping(%p, %"</span> PRIx32 <span style="color: #2d9574;">") failed with error %"</span> PRId32 <span style="color: #2d9574;">"\n"</span>,
+              mFileHandle, protect, GetLastError<span style="color: #67b11d;">()</span> <span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    adjust    = offset % mPageSize;
+    adjOffset = offset - adjust;
+    adjLength = length + adjust;
+
+    mBasePtr = MapViewOfFile<span style="color: #bc6ec5;">(</span> mFileMapping,
+                              readOnly ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS,
+                              <span style="color: #a45bad;">0</span>,
+                              <span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">DWORD</span><span style="color: #2d9574;">)(</span>adjOffset<span style="color: #2d9574;">)</span>,
+                              adjLength <span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mBasePtr == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"MapViewOfFile(%"</span> PRId64 <span style="color: #2d9574;">", %zu) failed with error %"</span> PRId32 <span style="color: #2d9574;">"\n"</span>,
+              adjOffset, adjLength, GetLastError<span style="color: #67b11d;">()</span> <span style="color: #2d9574;">)</span>;
+        CloseHandle<span style="color: #2d9574;">(</span>mFileMapping<span style="color: #2d9574;">)</span>;
+        mFileMapping = INVALID_HANDLE_VALUE;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+<span style="color: #bc6ec5;">#endif</span>
+
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#22240;&#20026;&#19981;&#26159; window &#31995;&#32479;,&#25152;&#20197;&#36208;&#19979;&#38754;&#30340;&#27969;&#31243;</span>
+<span style="color: #bc6ec5;">#ifdef</span> HAVE_POSIX_FILEMAP
+    <span style="color: #ce537a; font-weight: bold;">int</span>     <span style="color: #7590db;">prot</span>, <span style="color: #7590db;">flags</span>, <span style="color: #7590db;">adjust</span>;
+    <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">adjOffset</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span>  <span style="color: #7590db;">adjLength</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">void</span>* <span style="color: #7590db;">ptr</span>;
+
+    assert<span style="color: #bc6ec5;">(</span>mRefCount == <span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>fd &gt;= <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>offset &gt;= <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>length &gt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">init on first use</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mPageSize == -<span style="color: #a45bad;">1</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+<span style="color: #bc6ec5;">#if</span> NOT_USING_KLIBC
+        mPageSize = sysconf<span style="color: #2d9574;">(</span>_SC_PAGESIZE<span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>mPageSize == -<span style="color: #a45bad;">1</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            ALOGE<span style="color: #67b11d;">(</span><span style="color: #2d9574;">"could not get _SC_PAGESIZE\n"</span><span style="color: #67b11d;">)</span>;
+            <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+        <span style="color: #2d9574;">}</span>
+<span style="color: #bc6ec5;">#else</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">this holds for Linux, Darwin, Cygwin, and doesn't pain the ARM</span>
+        mPageSize = <span style="color: #a45bad;">4096</span>;
+<span style="color: #bc6ec5;">#endif</span>
+    <span style="color: #bc6ec5;">}</span>
+
+    adjust   = offset % mPageSize;
+<span style="color: #a45bad;">try_again</span>:
+    adjOffset = offset - adjust;
+    adjLength = length + adjust;
+
+    flags = MAP_SHARED;
+    prot = PROT_READ;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>readOnly<span style="color: #bc6ec5;">)</span>
+        prot |= PROT_WRITE;
+
+    ptr = mmap<span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">NULL</span>, adjLength, prot, flags, fd, adjOffset<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>ptr == MAP_FAILED<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Cygwin does not seem to like file mapping files from an offset.</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">So if we fail, try again with offset zero</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>adjOffset &gt; <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            adjust = offset;
+            <span style="color: #4f97d7; font-weight: bold;">goto</span> <span style="color: #a45bad;">try_again</span>;
+        <span style="color: #2d9574;">}</span>
+
+        ALOGE<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"mmap(%lld,%zu) failed: %s\n"</span>,
+            <span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">long</span> <span style="color: #ce537a; font-weight: bold;">long</span><span style="color: #67b11d;">)</span>adjOffset, adjLength, strerror<span style="color: #67b11d;">(</span>errno<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">false</span>;
+    <span style="color: #bc6ec5;">}</span>
+    mBasePtr = ptr;
+<span style="color: #bc6ec5;">#endif</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">HAVE_POSIX_FILEMAP</span>
+
+    mFileName = origFileName != <span style="color: #a45bad;">NULL</span> ? strdup<span style="color: #bc6ec5;">(</span>origFileName<span style="color: #bc6ec5;">)</span> : <span style="color: #a45bad;">NULL</span>;
+    mBaseLength = adjLength;
+    mDataOffset = offset;
+    mDataPtr = <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">char</span>*<span style="color: #bc6ec5;">)</span> mBasePtr + adjust;
+    mDataLength = length;
+
+    assert<span style="color: #bc6ec5;">(</span>mBasePtr != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+
+    ALOGV<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"MAP: base %p/%zu data %p/%zu\n"</span>,
+        mBasePtr, mBaseLength, mDataPtr, mDataLength<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">true</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+通过上面的代码创建完成 FileMap 对象之后,就要返回到openAssetFromZipLocked 方法中,
+使用创建的 FileMap 对象创建 Asset 对象,在 openAssetFromFileLocked 中创建 Asset
+对象的方法是: Asset::createFromCompressedMap
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/frameworks/base/libs/androidfw/Asset.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">*/</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Create a new Asset from compressed data in a memory mapping.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span><span style="color: #2aa1ae; background-color: #292e34;">static*/</span> <span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #a45bad;">Asset</span>::<span style="color: #bc6ec5; font-weight: bold;">createFromCompressedMap</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #7590db;">dataMap</span>,
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">method</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">uncompressedLen</span>, <span style="color: #ce537a; font-weight: bold;">AccessMode</span> <span style="color: #7590db;">mode</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">_CompressedAsset</span>* <span style="color: #7590db;">pAsset</span>;
+    <span style="color: #ce537a; font-weight: bold;">status_t</span> <span style="color: #7590db;">result</span>;
+
+    pAsset = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">_CompressedAsset</span>;
+    result = pAsset-&gt;openChunk<span style="color: #bc6ec5;">(</span>dataMap, method, uncompressedLen<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>result != NO_ERROR<span style="color: #bc6ec5;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">NULL</span>;
+
+    pAsset-&gt;mAccessMode = mode;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> pAsset;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/frameworks/base/libs/androidfw/Asset.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">*/</span>
+<span style="color: #ce537a; font-weight: bold;">status_t</span> <span style="color: #a45bad;">_CompressedAsset</span>::<span style="color: #bc6ec5; font-weight: bold;">openChunk</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #7590db;">dataMap</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">compressionMethod</span>,
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">uncompressedLen</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    assert<span style="color: #bc6ec5;">(</span>mFd &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">no re-open</span>
+    assert<span style="color: #bc6ec5;">(</span>mMap == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    assert<span style="color: #bc6ec5;">(</span>dataMap != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>compressionMethod != <span style="color: #a45bad;">ZipFileRO</span>::kCompressDeflated<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        assert<span style="color: #2d9574;">(</span><span style="color: #a45bad;">false</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> UNKNOWN_ERROR;
+    <span style="color: #bc6ec5;">}</span>
+
+    mMap = dataMap;
+    mStart = -<span style="color: #a45bad;">1</span>;        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">not used</span>
+    mCompressedLen = dataMap-&gt;getDataLength<span style="color: #bc6ec5;">()</span>;
+    mUncompressedLen = uncompressedLen;
+    assert<span style="color: #bc6ec5;">(</span>mOffset == <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20851;&#38190;&#28857;:</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#22914;&#26524;&#38271;&#24230;&#22823;&#20110;64*1024, &#21017;&#21021;&#22987;&#21270; StreamingZipInflater</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>uncompressedLen &gt; <span style="color: #a45bad;">StreamingZipInflater</span>::OUTPUT_CHUNK_SIZE<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        mZipInflater = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">StreamingZipInflater</span><span style="color: #2d9574;">(</span>dataMap, uncompressedLen<span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> NO_ERROR;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+
+<p>
+截止到这里,Android 系统已经完成了对资源文件的加载的过程,总结下来就是根据需要加载
+的文件的名称,在 APK 中进行创建 zipEntry 进行记载,并构建 Asset 对象.注意如果加载
+的文件是以压缩格式存储的(ps:大部分在 apk 中的文件,都是以压缩文件格式存储的),
+Asset 对象指向的只是内存中 APK 中的相应的压缩文件的偏移量,长度,压缩后大小以及压
+缩前大小等信息,此时*并没有对压缩的数据进行解压缩操作*,这一点尤其需要注意.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-orga636098" class="outline-2">
+<h2 id="orga636098">Android 读取资源文件过程分析</h2>
+<div class="outline-text-2" id="text-orga636098">
+<p>
+Android 系统在 AssetManager 类中的 open 等函数返回的是 InputStream,这个
+InputStream 其实是 AssetManager 中定义的一个内部类AssetInputStream,这个子类继承了
+InputStream 类,并实现了其中的reade 等方法.AssetInputStream中定义的 read 方法的
+定义如下:
+</p>
+
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">frameworks/base/core/java/android/content/res/AssetManager.java</span>
+<span style="color: #4f97d7; font-weight: bold;">public</span> <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">read</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">byte</span><span style="color: #bc6ec5;">[]</span> <span style="color: #7590db;">b</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">throws</span> <span style="color: #ce537a; font-weight: bold;">IOException</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> readAsset<span style="color: #bc6ec5;">(</span>mAsset, b, <span style="color: #a45bad;">0</span>, b.length<span style="color: #bc6ec5;">)</span>;
+<span style="color: #4f97d7;">}</span>
+<span style="color: #4f97d7; font-weight: bold;">public</span> <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">read</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">byte</span><span style="color: #bc6ec5;">[]</span> <span style="color: #7590db;">b</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">off</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">len</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold;">throws</span> <span style="color: #ce537a; font-weight: bold;">IOException</span> <span style="color: #4f97d7;">{</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> readAsset<span style="color: #bc6ec5;">(</span>mAsset, b, off, len<span style="color: #bc6ec5;">)</span>;
+</pre>
+</div>
+<p>
+Java 层对readAsset 的定义如下：
+</p>
+<div class="org-src-container">
+<pre class="src src-java"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">frameworks/base/core/java/android/content/res/AssetManager.java</span>
+<span style="color: #4f97d7; font-weight: bold;">private</span> <span style="color: #4f97d7; font-weight: bold;">native</span> <span style="color: #4f97d7; font-weight: bold;">final</span> <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">readAsset</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">long</span> <span style="color: #7590db;">asset</span>, <span style="color: #ce537a; font-weight: bold;">byte</span><span style="color: #bc6ec5;">[]</span> <span style="color: #7590db;">b</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">off</span>, <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">len</span><span style="color: #4f97d7;">)</span>;
+</pre>
+</div>
+<p>
+与 Java 层对应的 Native 层的函数的名称是*andorid_content_AssetManager_readAsset*。这个
+函数的具体的实现如下：
+</p>
+
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">frameworks/base/core/jni/android_util_AssetManager.cpp</span>
+<span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #bc6ec5; font-weight: bold;">android_content_AssetManager_readAsset</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">JNIEnv</span>* <span style="color: #7590db;">env</span>, <span style="color: #ce537a; font-weight: bold;">jobject</span> <span style="color: #7590db;">clazz</span>,
+                                                <span style="color: #ce537a; font-weight: bold;">jlong</span> <span style="color: #7590db;">assetHandle</span>, <span style="color: #ce537a; font-weight: bold;">jbyteArray</span> <span style="color: #7590db;">bArray</span>,
+                                                <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #7590db;">off</span>, <span style="color: #ce537a; font-weight: bold;">jint</span> <span style="color: #7590db;">len</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">assetHandle &#23545;&#24212;&#20110; native &#23618;&#30340; Asset &#31867;&#22411;&#12290;&#26159;&#21542;&#27599;&#20010;&#25991;&#20214;&#37117;&#23545;&#24212;&#20110;&#19968;&#20010; assetHandle &#21602;&#65311;</span>
+    <span style="color: #ce537a; font-weight: bold;">Asset</span>* <span style="color: #7590db;">a</span> = <span style="color: #4f97d7; font-weight: bold;">reinterpret_cast</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">Asset</span>*<span style="color: #bc6ec5;">&gt;(</span>assetHandle<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>a == <span style="color: #a45bad;">NULL</span> || bArray == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        jniThrowNullPointerException<span style="color: #2d9574;">(</span>env, <span style="color: #2d9574;">"asset"</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>len == <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #ce537a; font-weight: bold;">jsize</span> <span style="color: #7590db;">bLen</span> = env-&gt;GetArrayLength<span style="color: #bc6ec5;">(</span>bArray<span style="color: #bc6ec5;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">off</span> <span style="color: #2d9574;">&lt;</span> <span style="color: #a45bad;">0</span> || off &gt;= bLen || <span style="color: #ce537a; font-weight: bold;">len</span> <span style="color: #67b11d;">&lt;</span> <span style="color: #a45bad;">0</span> || len <span style="color: #67b11d;">&gt;</span> bLen || <span style="color: #67b11d;">(</span>off+len<span style="color: #67b11d;">)</span> <span style="color: #2d9574;">&gt;</span> <span style="color: #7590db;">bLen</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        jniThrowException<span style="color: #2d9574;">(</span>env, <span style="color: #2d9574;">"java/lang/IndexOutOfBoundsException"</span>, <span style="color: #2d9574;">""</span><span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #ce537a; font-weight: bold;">jbyte</span>* <span style="color: #7590db;">b</span> = env-&gt;GetByteArrayElements<span style="color: #bc6ec5;">(</span>bArray, <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>;
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20851;&#38190;&#20195;&#30721;&#65292;&#35843;&#29992; Asset &#30340; read &#20989;&#25968;&#23545;APK &#20013;&#30340;&#36164;&#28304;&#36827;&#34892;&#35835;&#21462;</span>
+    <span style="color: #ce537a; font-weight: bold;">ssize_t</span> <span style="color: #7590db;">res</span> = a-&gt;read<span style="color: #bc6ec5;">(</span>b+off, len<span style="color: #bc6ec5;">)</span>;
+    env-&gt;ReleaseByteArrayElements<span style="color: #bc6ec5;">(</span>bArray, b, <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>res &gt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #4f97d7; font-weight: bold;">static_cast</span><span style="color: #bc6ec5;">&lt;</span><span style="color: #ce537a; font-weight: bold;">jint</span><span style="color: #bc6ec5;">&gt;(</span>res<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>res &lt; <span style="color: #a45bad;">0</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        jniThrowException<span style="color: #2d9574;">(</span>env, <span style="color: #2d9574;">"java/io/IOException"</span>, <span style="color: #2d9574;">""</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+<p>
+Asset类的 read 函数的实现如下：
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">frameworks/base/libs/androidfw/Asset.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Read data from a chunk of compressed data.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * [For now, that's just copying data out of a buffer.]</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #ce537a; font-weight: bold;">ssize_t</span> <span style="color: #a45bad;">_CompressedAsset</span>::<span style="color: #bc6ec5; font-weight: bold;">read</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">void</span>* <span style="color: #7590db;">buf</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">count</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">maxLen</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">actual</span>;
+
+    assert<span style="color: #bc6ec5;">(</span>mOffset &gt;= <span style="color: #a45bad;">0</span> &amp;&amp; mOffset &lt;= mUncompressedLen<span style="color: #bc6ec5;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">If we're relying on a streaming inflater, go through that */</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#22914;&#26524;&#25991;&#20214;&#35299;&#21387;&#32553;&#21518;&#30340;&#38271;&#24230;&#22823;&#20110;StreamingZipInflater::OUTPUT_CHUNK_SIZE&#65288;64*1024&#65289;&#65292;mZipInflaget &#30340;&#20540;&#23601;&#19981;&#20250;&#20026;&#31354;&#12290;</span>
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mZipInflater<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20851;&#38190;&#20989;&#25968;: read</span>
+        actual = mZipInflater-&gt;read<span style="color: #2d9574;">(</span>buf, count<span style="color: #2d9574;">)</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#22914;&#26524;&#25991;&#20214;&#35299;&#21387;&#32553;&#21518;&#30340;&#38271;&#24230;&#23567;&#20110; 64*1024&#65292;&#23601;&#20250;&#36208;&#19979;&#38754;&#30340;&#27969;&#31243;</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>mBuf == <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20851;&#38190;&#20989;&#25968;: getBuffer</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>getBuffer<span style="color: #b1951d;">(</span><span style="color: #a45bad;">false</span><span style="color: #b1951d;">)</span> == <span style="color: #a45bad;">NULL</span><span style="color: #67b11d;">)</span>
+                <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+        <span style="color: #2d9574;">}</span>
+        assert<span style="color: #2d9574;">(</span>mBuf != <span style="color: #a45bad;">NULL</span><span style="color: #2d9574;">)</span>;
+
+        <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">adjust count if we're near EOF */</span>
+        maxLen = mUncompressedLen - mOffset;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>count &gt; maxLen<span style="color: #2d9574;">)</span>
+            count = maxLen;
+
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span><span style="color: #a45bad;">!</span>count<span style="color: #2d9574;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">return</span> <span style="color: #a45bad;">0</span>;
+
+        <span style="color: #2aa1ae; background-color: #292e34;">/* </span><span style="color: #2aa1ae; background-color: #292e34;">copy from buffer */</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">//</span><span style="color: #2aa1ae; background-color: #292e34;">printf("comp buf read\n");</span>
+        memcpy<span style="color: #2d9574;">(</span>buf, <span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">char</span>*<span style="color: #67b11d;">)</span>mBuf + mOffset, count<span style="color: #2d9574;">)</span>;
+        actual = count;
+    <span style="color: #bc6ec5;">}</span>
+
+    mOffset += actual;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> actual;
+<span style="color: #4f97d7;">}</span>
+
+</pre>
+</div>
+<p>
+mZipInflater 的类型为 StreamingZipInflater，StreamZipInflater 中的 read 的定义如
+下：
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">frameworks/base/include/androidfw/StreamingZipInflater.h</span>
+<span style="color: #4f97d7; font-weight: bold;">namespace</span> <span style="color: #a45bad;">android</span> <span style="color: #4f97d7;">{</span>
+
+<span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">StreamingZipInflater</span> <span style="color: #bc6ec5;">{</span>
+<span style="color: #4f97d7; font-weight: bold;">public</span>:
+    <span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">INPUT_CHUNK_SIZE</span> = <span style="color: #a45bad;">64</span> * <span style="color: #a45bad;">1024</span>;
+    <span style="color: #4f97d7; font-weight: bold;">static</span> <span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">OUTPUT_CHUNK_SIZE</span> = <span style="color: #a45bad;">64</span> * <span style="color: #a45bad;">1024</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Flavor that pages in the compressed data from a fd</span>
+    <span style="color: #bc6ec5; font-weight: bold;">StreamingZipInflater</span><span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">fd</span>, <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">compDataStart</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">uncompSize</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">compSize</span><span style="color: #2d9574;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Flavor that gets the compressed data from an in-memory buffer</span>
+    <span style="color: #bc6ec5; font-weight: bold;">StreamingZipInflater</span><span style="color: #2d9574;">(</span><span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #7590db;">dataMap</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">uncompSize</span><span style="color: #2d9574;">)</span>;
+
+    ~<span style="color: #bc6ec5; font-weight: bold;">StreamingZipInflater</span><span style="color: #2d9574;">()</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">read 'count' bytes of uncompressed data from the current position.  outBuf may</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">be NULL, in which case the data is consumed and discarded.</span>
+    <span style="color: #ce537a; font-weight: bold;">ssize_t</span> <span style="color: #bc6ec5; font-weight: bold;">read</span><span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">void</span>* <span style="color: #7590db;">outBuf</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">count</span><span style="color: #2d9574;">)</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">seeking backwards requires uncompressing fom the beginning, so is very</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">expensive.  seeking forwards only requires uncompressing from the current</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">position to the destination.</span>
+    <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #bc6ec5; font-weight: bold;">seekAbsolute</span><span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">absoluteInputPosition</span><span style="color: #2d9574;">)</span>;
+<span style="color: #4f97d7; font-weight: bold;">private</span>:
+    <span style="color: #2aa1ae; background-color: #292e34;">//  </span><span style="color: #2aa1ae; background-color: #292e34;">StreamingZipInflater&#20013;&#23450;&#20041;&#30340;&#25968;&#25454;&#32467;&#26500;&#65292;&#36825;&#20123;&#25968;&#25454;&#32467;&#26500;&#29992;&#26469;</span>
+    <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">initInflateState</span><span style="color: #2d9574;">()</span>;
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #bc6ec5; font-weight: bold;">readNextChunk</span><span style="color: #2d9574;">()</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">where to find the uncompressed data</span>
+    <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">mFd</span>;
+    <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">mInFileStart</span>;         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">where the compressed data lives in the file</span>
+    <span style="color: #4f97d7; font-weight: bold;">class</span> <span style="color: #ce537a; font-weight: bold;">FileMap</span>* <span style="color: #7590db;">mDataMap</span>;
+
+    <span style="color: #ce537a; font-weight: bold;">z_stream</span> <span style="color: #7590db;">mInflateState</span>;
+    <span style="color: #ce537a; font-weight: bold;">bool</span> <span style="color: #7590db;">mStreamNeedsInit</span>;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">output invariants for this asset</span>
+    <span style="color: #ce537a; font-weight: bold;">uint8_t</span>* <span style="color: #7590db;">mOutBuf</span>;           <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">output buf for decompressed bytes</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mOutBufSize</span>;         <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">allocated size of mOutBuf</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mOutTotalSize</span>;       <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">total uncompressed size of the blob</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">current output state bookkeeping</span>
+    <span style="color: #ce537a; font-weight: bold;">off64_t</span> <span style="color: #7590db;">mOutCurPosition</span>;      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">current position in total offset</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mOutLastDecoded</span>;     <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">last decoded byte + 1 in mOutbuf</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mOutDeliverable</span>;     <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">next undelivered byte of decoded output in mOutBuf</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">input invariants</span>
+    <span style="color: #ce537a; font-weight: bold;">uint8_t</span>* <span style="color: #7590db;">mInBuf</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mInBufSize</span>;          <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">allocated size of mInBuf;</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mInTotalSize</span>;        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">total size of compressed data for this blob</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">input state bookkeeping</span>
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">mInNextChunkOffset</span>;  <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">offset from start of blob at which the next input chunk lies</span>
+    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">the z_stream contains state about input block consumption</span>
+<span style="color: #bc6ec5;">}</span>;
+
+
+<span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">frameworks/base/libs/androidfw/StreamingZipInflater.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Basic approach:</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * 1. If we have undelivered uncompressed data, send it.  At this point</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    either we've satisfied the request, or we've exhausted the available</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    output data in mOutBuf.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * 2. While we haven't sent enough data to satisfy the request:</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    0. if the request is for more data than exists, bail.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    a. if there is no input data to decode, read some into the input buffer</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *       and readjust the z_stream input pointers</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    b. point the output to the start of the output buffer and decode what we can</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *    c. deliver whatever output data we can</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #ce537a; font-weight: bold;">ssize_t</span> <span style="color: #a45bad;">StreamingZipInflater</span>::<span style="color: #bc6ec5; font-weight: bold;">read</span><span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">void</span>* <span style="color: #7590db;">outBuf</span>, <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">count</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">uint8_t</span>* <span style="color: #7590db;">dest</span> = <span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">uint8_t</span>*<span style="color: #2d9574;">)</span> outBuf;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">bytesRead</span> = <span style="color: #a45bad;">0</span>;
+    <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">toRead</span> = min_of<span style="color: #2d9574;">(</span>count, size_t<span style="color: #67b11d;">(</span>mOutTotalSize - mOutCurPosition<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>;
+    <span style="color: #4f97d7; font-weight: bold;">while</span> <span style="color: #2d9574;">(</span>toRead &gt; <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">First, write from whatever we already have decoded and ready to go</span>
+        <span style="color: #ce537a; font-weight: bold;">size_t</span> <span style="color: #7590db;">deliverable</span> = min_of<span style="color: #67b11d;">(</span>toRead, mOutLastDecoded - mOutDeliverable<span style="color: #67b11d;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>deliverable &gt; <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#31532;&#19968;&#27425;&#19981;&#25191;&#34892;&#65292;&#31561;&#21040;&#21518;&#38754;&#22312;&#25191;&#34892;&#65292;&#35201;&#20808;&#31561;&#21518;&#38754; inflate &#26041;&#27861;&#25191;&#34892;&#20043;&#21518;&#25165;&#20250;&#25191;&#34892;</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>outBuf != <span style="color: #a45bad;">NULL</span><span style="color: #b1951d;">)</span> memcpy<span style="color: #b1951d;">(</span>dest, mOutBuf + mOutDeliverable, deliverable<span style="color: #b1951d;">)</span>;
+            mOutDeliverable += deliverable;
+            mOutCurPosition += deliverable;
+            dest += deliverable;
+            bytesRead += deliverable;
+            toRead -= deliverable;
+        <span style="color: #67b11d;">}</span>
+
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">need more data?  time to decode some.</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #67b11d;">(</span>toRead &gt; <span style="color: #a45bad;">0</span><span style="color: #67b11d;">)</span> <span style="color: #67b11d;">{</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">if we don't have any data to decode, read some in.  If we're working</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">from mmapped data this won't happen, because the clipping to total size</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">will prevent reading off the end of the mapped input chunk.</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span><span style="color: #4f97d7;">(</span>mInflateState.avail_in == <span style="color: #a45bad;">0</span><span style="color: #4f97d7;">)</span> &amp;&amp; <span style="color: #4f97d7;">(</span>mDataMap == <span style="color: #a45bad;">NULL</span><span style="color: #4f97d7;">)</span><span style="color: #b1951d;">)</span> <span style="color: #b1951d;">{</span>
+                <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">err</span> = readNextChunk<span style="color: #4f97d7;">()</span>;
+                <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>err &lt; <span style="color: #a45bad;">0</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+                    ALOGE<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"Unable to access asset data: %d"</span>, err<span style="color: #bc6ec5;">)</span>;
+                    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span><span style="color: #a45bad;">!</span>mStreamNeedsInit<span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+                        ::inflateEnd<span style="color: #2d9574;">(</span>&amp;mInflateState<span style="color: #2d9574;">)</span>;
+                        initInflateState<span style="color: #2d9574;">()</span>;
+                    <span style="color: #bc6ec5;">}</span>
+                    <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+                <span style="color: #4f97d7;">}</span>
+            <span style="color: #b1951d;">}</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">we know we've drained whatever is in the out buffer now, so just</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">start from scratch there, reading all the input we have at present.</span>
+            mInflateState.next_out = <span style="color: #b1951d;">(</span><span style="color: #ce537a; font-weight: bold;">Bytef</span>*<span style="color: #b1951d;">)</span> mOutBuf;
+            mInflateState.avail_out = mOutBufSize;
+
+            <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">            ALOGV("Inflating to outbuf: avail_in=%u avail_out=%u next_in=%p next_out=%p",</span>
+<span style="color: #2aa1ae; background-color: #292e34;">                    mInflateState.avail_in, mInflateState.avail_out,</span>
+<span style="color: #2aa1ae; background-color: #292e34;">                    mInflateState.next_in, mInflateState.next_out);</span>
+<span style="color: #2aa1ae; background-color: #292e34;">            */</span>
+            <span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">result</span> = Z_OK;
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>mStreamNeedsInit<span style="color: #b1951d;">)</span> <span style="color: #b1951d;">{</span>
+                ALOGV<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Initializing zlib to inflate"</span><span style="color: #4f97d7;">)</span>;
+                result = inflateInit2<span style="color: #4f97d7;">(</span>&amp;mInflateState, -MAX_WBITS<span style="color: #4f97d7;">)</span>;
+                mStreamNeedsInit = <span style="color: #a45bad;">false</span>;
+            <span style="color: #b1951d;">}</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20851;&#38190;&#20195;&#30721;&#65292; Zlib &#24211;&#20013;&#30340;&#20989;&#25968;&#65292;&#29992;&#26469;&#20174; APK &#20013;&#35299;&#21387;&#32553;&#20869;&#23384;&#25968;&#25454;</span>
+            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#31532;&#19968;&#27425;&#25191;&#34892;&#30340;&#26102;&#20505;&#65292;&#37117;&#20250;&#20248;&#20808;&#36208;&#21040;&#36825;&#19968;&#27493;&#20013;&#26469;</span>
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>result == Z_OK<span style="color: #b1951d;">)</span> result = ::inflate<span style="color: #b1951d;">(</span>&amp;mInflateState, Z_SYNC_FLUSH<span style="color: #b1951d;">)</span>;
+            <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #b1951d;">(</span>result &lt; <span style="color: #a45bad;">0</span><span style="color: #b1951d;">)</span> <span style="color: #b1951d;">{</span>
+                <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Whoops, inflation failed</span>
+                ALOGE<span style="color: #4f97d7;">(</span><span style="color: #2d9574;">"Error inflating asset: %d"</span>, result<span style="color: #4f97d7;">)</span>;
+                ::inflateEnd<span style="color: #4f97d7;">(</span>&amp;mInflateState<span style="color: #4f97d7;">)</span>;
+                initInflateState<span style="color: #4f97d7;">()</span>;
+                <span style="color: #4f97d7; font-weight: bold;">return</span> -<span style="color: #a45bad;">1</span>;
+            <span style="color: #b1951d;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #b1951d;">{</span>
+                <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #4f97d7;">(</span>result == Z_STREAM_END<span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
+                    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">we know we have to have reached the target size here and will</span>
+                    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">not try to read any further, so just wind things up.</span>
+                    ::inflateEnd<span style="color: #bc6ec5;">(</span>&amp;mInflateState<span style="color: #bc6ec5;">)</span>;
+                <span style="color: #4f97d7;">}</span>
+
+                <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">Note how much data we got, and off we go</span>
+                mOutDeliverable = <span style="color: #a45bad;">0</span>;
+                mOutLastDecoded = mOutBufSize - mInflateState.avail_out;
+            <span style="color: #b1951d;">}</span>
+        <span style="color: #67b11d;">}</span>
+    <span style="color: #2d9574;">}</span>
+    <span style="color: #4f97d7; font-weight: bold;">return</span> bytesRead;
+<span style="color: #bc6ec5;">}</span>
+</pre>
+</div>
+<p>
+上面 read 方法实现了对资源文件的解压缩操作.以上的操作只是针对解压缩长度大于
+64*1024的文件,如果文件的解压缩的长度小于64 *1024, 则在_CompressedAsset::read 方
+法中,会调用 getBuffer 操作, getBuffer 源码如下所示:
+</p>
+<div class="org-src-container">
+<pre class="src src-C++"><span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">location: /frameworks/base/libs/androidfw/Asset.cpp</span>
+<span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * Get a pointer to a read-only buffer of data.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> *</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * The first time this is called, we expand the compressed data into a</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> * buffer.</span>
+<span style="color: #2aa1ae; background-color: #292e34;"> */</span>
+<span style="color: #4f97d7; font-weight: bold;">const</span> <span style="color: #ce537a; font-weight: bold;">void</span>* <span style="color: #a45bad;">_CompressedAsset</span>::<span style="color: #bc6ec5; font-weight: bold;">getBuffer</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">bool</span><span style="color: #4f97d7;">)</span>
+<span style="color: #4f97d7;">{</span>
+    <span style="color: #ce537a; font-weight: bold;">unsigned</span> <span style="color: #ce537a; font-weight: bold;">char</span>* <span style="color: #7590db;">buf</span> = <span style="color: #a45bad;">NULL</span>;
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mBuf != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span>
+        <span style="color: #4f97d7; font-weight: bold;">return</span> mBuf;
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * Allocate a buffer and read the file into it.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+    buf = <span style="color: #4f97d7; font-weight: bold;">new</span> <span style="color: #ce537a; font-weight: bold;">unsigned</span> <span style="color: #ce537a; font-weight: bold;">char</span><span style="color: #bc6ec5;">[</span>mUncompressedLen<span style="color: #bc6ec5;">]</span>;
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>buf == <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        ALOGW<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"alloc %ld bytes failed\n"</span>, <span style="color: #67b11d;">(</span><span style="color: #ce537a; font-weight: bold;">long</span><span style="color: #67b11d;">)</span> mUncompressedLen<span style="color: #2d9574;">)</span>;
+        <span style="color: #4f97d7; font-weight: bold;">goto</span> <span style="color: #a45bad;">bail</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #bc6ec5;">(</span>mMap != <span style="color: #a45bad;">NULL</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
+        <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">&#20851;&#38190;&#20989;&#25968;: &#35843;&#29992; zipUtils &#20013;&#30340;&#25805;&#20316;&#36827;&#34892;&#35299;&#21387;&#25805;&#20316;</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span><span style="color: #a45bad;">!</span><span style="color: #a45bad;">ZipUtils</span>::inflateToBuffer<span style="color: #67b11d;">(</span>mMap-&gt;getDataPtr<span style="color: #b1951d;">()</span>, buf,
+                mUncompressedLen, mCompressedLen<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">goto</span> <span style="color: #a45bad;">bail</span>;
+    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold;">else</span> <span style="color: #bc6ec5;">{</span>
+        assert<span style="color: #2d9574;">(</span>mFd &gt;= <span style="color: #a45bad;">0</span><span style="color: #2d9574;">)</span>;
+
+        <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">         * Seek to the start of the compressed data.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">         */</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span>lseek<span style="color: #67b11d;">(</span>mFd, mStart, SEEK_SET<span style="color: #67b11d;">)</span> != mStart<span style="color: #2d9574;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">goto</span> <span style="color: #a45bad;">bail</span>;
+
+        <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">         * Expand the data into it.</span>
+<span style="color: #2aa1ae; background-color: #292e34;">         */</span>
+        <span style="color: #4f97d7; font-weight: bold;">if</span> <span style="color: #2d9574;">(</span><span style="color: #a45bad;">!</span><span style="color: #a45bad;">ZipUtils</span>::inflateToBuffer<span style="color: #67b11d;">(</span>mFd, buf, mUncompressedLen,
+                mCompressedLen<span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span>
+            <span style="color: #4f97d7; font-weight: bold;">goto</span> <span style="color: #a45bad;">bail</span>;
+    <span style="color: #bc6ec5;">}</span>
+
+    <span style="color: #2aa1ae; background-color: #292e34;">/*</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * Success - now that we have the full asset in RAM we</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     * no longer need the streaming inflater</span>
+<span style="color: #2aa1ae; background-color: #292e34;">     */</span>
+    <span style="color: #4f97d7; font-weight: bold;">delete</span> mZipInflater;
+    mZipInflater = <span style="color: #a45bad;">NULL</span>;
+
+    mBuf = buf;
+    buf = <span style="color: #a45bad;">NULL</span>;
+
+<span style="color: #a45bad;">bail</span>:
+    <span style="color: #4f97d7; font-weight: bold;">delete</span><span style="color: #bc6ec5;">[]</span> buf;
+    <span style="color: #4f97d7; font-weight: bold;">return</span> mBuf;
+<span style="color: #4f97d7;">}</span>
+</pre>
+</div>
+</div>
+</div>
+
+
+
+
+<div id="outline-container-orge4e2525" class="outline-2">
+<h2 id="orge4e2525">参考连接</h2>
+<div class="outline-text-2" id="text-orge4e2525">
+<p>
+1.<a href="http://www.tasfa.cn/index.php/2017/09/22/android-assets_sourcecode/">Android Assets打开调用过程源码分析 | Tasfa's world</a>
+</p>
+</div>
+</div>

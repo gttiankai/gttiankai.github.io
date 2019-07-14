@@ -1,11 +1,11 @@
 #+STARTUP: showall
 #+STARTUP: hidestars
-#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t
+#+OPTIONS: H:2 num:nil tags:nil toc:nil timestamps:t ^:nil
 #+LAYOUT: post
 #+AUTHOR: tiankai
 #+DATE: 2019-06-02 日 21:50
 #+TITLE: Android系统加载资源文件源码分析
-#+DESCRIPTION: 
+#+DESCRIPTION: Android
 #+TAGS: Android
 #+CATEGORIES: Android
 
@@ -14,9 +14,567 @@
 2. 讲解一下 Java 层的加载流程
 3. 讲解一下 native 层的加载流程
 
-* Android 记载资源文件的过程 
+* Android 如何加载 asset 中的资源文件
 
-* Native 层资源文件加载过程分析。
+在 Android 开发时, 如果想要加载 assets 文件夹下面的文件, 可以使用如下的方式对文
+件进行加载
+
+ #+begin_src java
+private Bitmap getImageFromAssetsFile(String fileName) {
+    Bitmap image = null;
+    AssetManager am = getResources().getAssets();
+    if (am == null)
+    {
+        return null;
+    }
+    try
+    {
+        InputStream is = am.open(fileName);
+        image = BitmapFactory.decodeStream(is);
+        is.close();
+    }
+    catch (IOException e)
+    {
+        e.printStackTrace();
+    }
+    return image;
+}
+ #+end_src
+首先获取到 AssetManager 对象,然后使用 AssetManager对象对文件进行 open,获取到
+InputStream 了,接下来就可以对得到的数据进行读取了.
+
+总结下来 Android 系统对资源文件的处理,主要氛围三步:
+1.创建/获取 AssetManager
+2.使用 AssetManager 打开需要加载的资源文件
+3.读取资源文件的内容,然后按照自己的要求进行处理
+在上面的三个步骤中,第二和第二步是最重要的, 这两个操作在源码时如何实现的呢?接下来
+我们会分别对上面的两步进行分析
+* Android 加载资源文件并创建 InputStream 的过程 
+ Android 系统加载资源文件主要使用的系统方法是 AssetManager 类, 这个类定义在*
+ /frameworks/base/core/java/android/content/res/AssetManager.java *这个类中定义
+ 了加载资源文件的操作.其中比较重要的函数 open 的定义如下:
+
+#+begin_src java
+/**
+     * Open an asset using ACCESS_STREAMING mode.  This provides access to
+     * files that have been bundled with an application as assets -- that is,
+     * files placed in to the "assets" directory.
+     *
+     * @param fileName The name of the asset to open.  This name can be
+     *                 hierarchical.
+     *
+     * @see #open(String, int)
+     * @see #list
+     */
+    public final InputStream open(String fileName) throws IOException {
+        return open(fileName, ACCESS_STREAMING);
+    }
+
+    /**
+     * Open an asset using an explicit access mode, returning an InputStream to
+     * read its contents.  This provides access to files that have been bundled
+     * with an application as assets -- that is, files placed in to the
+     * "assets" directory.
+     *
+     * @param fileName The name of the asset to open.  This name can be
+     *                 hierarchical.
+     * @param accessMode Desired access mode for retrieving the data.
+     *
+     * @see #ACCESS_UNKNOWN
+     * @see #ACCESS_STREAMING
+     * @see #ACCESS_RANDOM
+     * @see #ACCESS_BUFFER
+     * @see #open(String)
+     * @see #list
+     */
+    public final InputStream open(String fileName, int accessMode)
+        throws IOException {
+        synchronized (this) {
+            if (!mOpen) {
+                throw new RuntimeException("Assetmanager has been closed");
+            }
+            long asset = openAsset(fileName, accessMode);
+            if (asset != 0) {
+                AssetInputStream res = new AssetInputStream(asset);
+                incRefsLocked(res.hashCode());
+                return res;
+            }
+        }
+        throw new FileNotFoundException("Asset file: " + fileName);
+    }
+#+end_src
+
+其中 openAsset 的源码如下:
+
+#+begin_src java
+private native final long openAsset(String fileName, int accessMode);
+#+end_src
+通过上面的定义,发现 openAsset 是一个 native 方法,所以需要对这个方法在 native 层
+对应的方法进行追踪.通过查找源码发现 openAsset 的定义在*/frameworks/base/core/jni/android_util_AssetManager.cpp*
+#+begin_src C++
+// location: /frameworks/base/core/jni/android_util_AssetManager.cpp
+static jlong android_content_AssetManager_openAsset(JNIEnv* env, jobject clazz,
+                                                jstring fileName, jint mode)
+{
+    AssetManager* am = assetManagerForJavaObject(env, clazz);
+    if (am == NULL) {
+        return 0;
+    }
+
+    ALOGV("openAsset in %p (Java object %p)\n", am, clazz);
+
+    ScopedUtfChars fileName8(env, fileName);
+    if (fileName8.c_str() == NULL) {
+        jniThrowException(env, "java/lang/IllegalArgumentException", "Empty file name");
+        return -1;
+    }
+
+    if (mode != Asset::ACCESS_UNKNOWN && mode != Asset::ACCESS_RANDOM
+        && mode != Asset::ACCESS_STREAMING && mode != Asset::ACCESS_BUFFER) {
+        jniThrowException(env, "java/lang/IllegalArgumentException", "Bad access mode");
+        return -1;
+    }
+
+    Asset* a = am->open(fileName8.c_str(), (Asset::AccessMode)mode);
+
+    if (a == NULL) {
+        jniThrowException(env, "java/io/FileNotFoundException", fileName8.c_str());
+        return -1;
+    }
+
+    //printf("Created Asset Stream: %p\n", a);
+
+    return reinterpret_cast<jlong>(a);
+}
+
+#+end_src
+从上面的代码中可以看到,核心的逻辑实在 native 层的 AssetManager 的 open 函数,也就
+是说 Java 层和 Native 层分别都有 AssetManager 类的定义.native 层的 AssetManager
+中的 open 的定义如下:
+#+begin_src C++
+// location: /frameworks/base/libs/androidfw/AssetManager.cpp
+/*
+ * Open an asset.
+ *
+ * The data could be;
+ *  - In a file on disk (assetBase + fileName).
+ *  - In a compressed file on disk (assetBase + fileName.gz).
+ *  - In a Zip archive, uncompressed or compressed.
+ *
+ * It can be in a number of different directories and Zip archives.
+ * The search order is:
+ *  - [appname]
+ *    - locale + vendor
+ *    - "default" + vendor
+ *    - locale + "default"
+ *    - "default + "default"
+ *  - "common"
+ *    - (same as above)
+ *
+ * To find a particular file, we have to try up to eight paths with
+ * all three forms of data.
+ *
+ * We should probably reject requests for "illegal" filenames, e.g. those
+ * with illegal characters or "../" backward relative paths.
+ */
+Asset* AssetManager::open(const char* fileName, AccessMode mode)
+{
+    AutoMutex _l(mLock);
+
+    LOG_FATAL_IF(mAssetPaths.size() == 0, "No assets added to AssetManager");
+
+
+    if (mCacheMode != CACHE_OFF && !mCacheValid)
+        loadFileNameCacheLocked();
+
+    String8 assetName(kAssetsRoot);
+    assetName.appendPath(fileName);
+
+    /*
+     * For each top-level asset path, search for the asset.
+     */
+
+    size_t i = mAssetPaths.size();
+    while (i > 0) {
+        i--;
+        ALOGV("Looking for asset '%s' in '%s'\n",
+                assetName.string(), mAssetPaths.itemAt(i).path.string());
+        Asset* pAsset = openNonAssetInPathLocked(assetName.string(), mode, mAssetPaths.itemAt(i));
+        if (pAsset != NULL) {
+            return pAsset != kExcludedAsset ? pAsset : NULL;
+        }
+    }
+
+    return NULL;
+}
+
+#+end_src
+接下来的关键的函数是openNonAssetInPathLocked, 其中assetName为需要加载的资源文件
+的名称, mode 是加载资源文件的模式, mAssetPaths 是一个 vector,里面包含当前 APK 能
+够进行资源加载的路径.
+
+#+begin_src C++
+// location: /frameworks/base/libs/androidfw/AssetManager.cpp
+/*
+ * Open a non-asset file as if it were an asset, searching for it in the
+ * specified app.
+ *
+ * Pass in a NULL values for "appName" if the common app directory should
+ * be used.
+ */
+Asset* AssetManager::openNonAssetInPathLocked(const char* fileName, AccessMode mode,
+    const asset_path& ap)
+{
+    Asset* pAsset = NULL;
+
+    /* look at the filesystem on disk */
+    if (ap.type == kFileTypeDirectory) {
+        String8 path(ap.path);
+        path.appendPath(fileName);
+
+        pAsset = openAssetFromFileLocked(path, mode);
+
+        if (pAsset == NULL) {
+            /* try again, this time with ".gz" */
+            path.append(".gz");
+            pAsset = openAssetFromFileLocked(path, mode);
+        }
+
+        if (pAsset != NULL) {
+            //printf("FOUND NA '%s' on disk\n", fileName);
+            pAsset->setAssetSource(path);
+        }
+
+    /* look inside the zip file */
+    } else {
+        String8 path(fileName);
+
+        /* check the appropriate Zip file */
+        ZipFileRO* pZip = getZipFileLocked(ap);
+        if (pZip != NULL) {
+            //printf("GOT zip, checking NA '%s'\n", (const char*) path);
+            ZipEntryRO entry = pZip->findEntryByName(path.string());
+            if (entry != NULL) {
+                //printf("FOUND NA in Zip file for %s\n", appName ? appName : kAppCommon);
+                pAsset = openAssetFromZipLocked(pZip, entry, mode, path);
+                pZip->releaseEntry(entry);
+            }
+        }
+
+        if (pAsset != NULL) {
+            /* create a "source" name, for debug/display */
+            pAsset->setAssetSource(
+                    createZipSourceNameLocked(ZipSet::getPathName(ap.path.string()), String8(""),
+                                                String8(fileName)));
+        }
+    }
+
+    return pAsset;
+}
+#+end_src
+因为我们的资源文件是在 apk 中,所以我们是走下面的分支, 首先创建 ZipEntryRO 对象,
+然后通过需要加载的资源文件的名称获取到需要加载的 entry,然后调用
+openAssetFromZipLocked 进行加载.
+#+begin_src C++
+// location: /frameworks/base/libs/androidfw/AssetManager.cpp
+/*
+ * Given an entry in a Zip archive, create a new Asset object.
+ *
+ * If the entry is uncompressed, we may want to create or share a
+ * slice of shared memory.
+ */
+Asset* AssetManager::openAssetFromZipLocked(const ZipFileRO* pZipFile,
+    const ZipEntryRO entry, AccessMode mode, const String8& entryName)
+{
+    Asset* pAsset = NULL;
+
+    // TODO: look for previously-created shared memory slice?
+    int method;
+    size_t uncompressedLen;
+
+    //printf("USING Zip '%s'\n", pEntry->getFileName());
+
+    //pZipFile->getEntryInfo(entry, &method, &uncompressedLen, &compressedLen,
+    //    &offset);
+    if (!pZipFile->getEntryInfo(entry, &method, &uncompressedLen, NULL, NULL,
+            NULL, NULL))
+    {
+        ALOGW("getEntryInfo failed\n");
+        return NULL;
+    }
+
+    FileMap* dataMap = pZipFile->createEntryFileMap(entry);
+    if (dataMap == NULL) {
+        ALOGW("create map from entry failed\n");
+        return NULL;
+    }
+
+    if (method == ZipFileRO::kCompressStored) {
+        //文件以存储方式在 apk 中存在
+        pAsset = Asset::createFromUncompressedMap(dataMap, mode);
+        ALOGV("Opened uncompressed entry %s in zip %s mode %d: %p", entryName.string(),
+                dataMap->getFileName(), mode, pAsset);
+    } else {
+        // 文件以压缩方式在 apk 中存在
+        pAsset = Asset::createFromCompressedMap(dataMap, method,
+            uncompressedLen, mode);
+        ALOGV("Opened compressed entry %s in zip %s mode %d: %p", entryName.string(),
+                dataMap->getFileName(), mode, pAsset);
+    }
+    if (pAsset == NULL) {
+        /* unexpected */
+        ALOGW("create from segment failed\n");
+    }
+
+    return pAsset;
+}
+#+end_src
+该函数使用 pZipFile->createEntryFileMap 函数将资源文件数据加载到内存中, 并创建了
+FileMap 的对象
+#+begin_src C++
+/*
+ * Create a new FileMap object that spans the data in "entry".
+ */
+FileMap* ZipFileRO::createEntryFileMap(ZipEntryRO entry) const
+{
+    const _ZipEntryRO *zipEntry = reinterpret_cast<_ZipEntryRO*>(entry);
+    const ZipEntry& ze = zipEntry->entry;
+    int fd = GetFileDescriptor(mHandle);
+    size_t actualLen = 0;
+
+    if (ze.method == kCompressStored) {
+        actualLen = ze.uncompressed_length;
+    } else {
+        actualLen = ze.compressed_length;
+    }
+
+    FileMap* newMap = new FileMap();
+    if (!newMap->create(mFileName, fd, ze.offset, actualLen, true)) {
+        newMap->release();
+        return NULL;
+    }
+
+    return newMap;
+}
+#+end_src
+从上面的代码中可以看到最终使用 FileMap 的 create 对文件进行创建,接下来就要简单了
+解一下FileMap了.FileMap 是什么样的类呢? 我们直接看源码中的解释:
+#+begin_src C++
+/system/core/include/utils/FileMap.h
+/*
+ * This represents a memory-mapped file.  It might be the entire file or
+ * only part of it.  This requires a little bookkeeping because the mapping
+ * needs to be aligned on page boundaries, and in some cases we'd like to
+ * have multiple references to the mapped area without creating additional
+ * maps.
+ *
+ * This always uses MAP_SHARED.
+ *
+ * TODO: we should be able to create a new FileMap that is a subset of
+ * an existing FileMap and shares the underlying mapped pages.  Requires
+ * completing the refcounting stuff and possibly introducing the notion
+ * of a FileMap hierarchy.
+ */
+#+end_src
+接下来我们看 FileMap 中的 create 方法的定义:
+
+#+begin_src C++
+// Create a new mapping on an open file.
+//
+// Closing the file descriptor does not unmap the pages, so we don't
+// claim ownership of the fd.
+//
+// Returns "false" on failure.
+bool FileMap::create(const char* origFileName, int fd, off64_t offset, size_t length,
+        bool readOnly)
+{
+#ifdef HAVE_WIN32_FILEMAP
+    int     adjust;
+    off64_t adjOffset;
+    size_t  adjLength;
+
+    if (mPageSize == -1) {
+        SYSTEM_INFO  si;
+
+        GetSystemInfo( &si );
+        mPageSize = si.dwAllocationGranularity;
+    }
+
+    DWORD  protect = readOnly ? PAGE_READONLY : PAGE_READWRITE;
+
+    mFileHandle  = (HANDLE) _get_osfhandle(fd);
+    mFileMapping = CreateFileMapping( mFileHandle, NULL, protect, 0, 0, NULL);
+    if (mFileMapping == NULL) {
+        ALOGE("CreateFileMapping(%p, %" PRIx32 ") failed with error %" PRId32 "\n",
+              mFileHandle, protect, GetLastError() );
+        return false;
+    }
+
+    adjust    = offset % mPageSize;
+    adjOffset = offset - adjust;
+    adjLength = length + adjust;
+
+    mBasePtr = MapViewOfFile( mFileMapping,
+                              readOnly ? FILE_MAP_READ : FILE_MAP_ALL_ACCESS,
+                              0,
+                              (DWORD)(adjOffset),
+                              adjLength );
+    if (mBasePtr == NULL) {
+        ALOGE("MapViewOfFile(%" PRId64 ", %zu) failed with error %" PRId32 "\n",
+              adjOffset, adjLength, GetLastError() );
+        CloseHandle(mFileMapping);
+        mFileMapping = INVALID_HANDLE_VALUE;
+        return false;
+    }
+#endif
+
+// 因为不是 window 系统,所以走下面的流程
+#ifdef HAVE_POSIX_FILEMAP
+    int     prot, flags, adjust;
+    off64_t adjOffset;
+    size_t  adjLength;
+
+    void* ptr;
+
+    assert(mRefCount == 1);
+    assert(fd >= 0);
+    assert(offset >= 0);
+    assert(length > 0);
+
+    // init on first use
+    if (mPageSize == -1) {
+#if NOT_USING_KLIBC
+        mPageSize = sysconf(_SC_PAGESIZE);
+        if (mPageSize == -1) {
+            ALOGE("could not get _SC_PAGESIZE\n");
+            return false;
+        }
+#else
+        // this holds for Linux, Darwin, Cygwin, and doesn't pain the ARM
+        mPageSize = 4096;
+#endif
+    }
+
+    adjust   = offset % mPageSize;
+try_again:
+    adjOffset = offset - adjust;
+    adjLength = length + adjust;
+
+    flags = MAP_SHARED;
+    prot = PROT_READ;
+    if (!readOnly)
+        prot |= PROT_WRITE;
+
+    ptr = mmap(NULL, adjLength, prot, flags, fd, adjOffset);
+    if (ptr == MAP_FAILED) {
+        // Cygwin does not seem to like file mapping files from an offset.
+        // So if we fail, try again with offset zero
+        if (adjOffset > 0) {
+            adjust = offset;
+            goto try_again;
+        }
+
+        ALOGE("mmap(%lld,%zu) failed: %s\n",
+            (long long)adjOffset, adjLength, strerror(errno));
+        return false;
+    }
+    mBasePtr = ptr;
+#endif // HAVE_POSIX_FILEMAP
+
+    mFileName = origFileName != NULL ? strdup(origFileName) : NULL;
+    mBaseLength = adjLength;
+    mDataOffset = offset;
+    mDataPtr = (char*) mBasePtr + adjust;
+    mDataLength = length;
+
+    assert(mBasePtr != NULL);
+
+    ALOGV("MAP: base %p/%zu data %p/%zu\n",
+        mBasePtr, mBaseLength, mDataPtr, mDataLength);
+
+    return true;
+}
+#+end_src
+通过上面的代码创建完成 FileMap 对象之后,就要返回到openAssetFromZipLocked 方法中,
+使用创建的 FileMap 对象创建 Asset 对象,在 openAssetFromFileLocked 中创建 Asset
+对象的方法是: Asset::createFromCompressedMap
+
+#+begin_src C++
+/*
+/frameworks/base/libs/androidfw/Asset.cpp
+*/
+/*
+ * Create a new Asset from compressed data in a memory mapping.
+ */
+/*static*/ Asset* Asset::createFromCompressedMap(FileMap* dataMap,
+    int method, size_t uncompressedLen, AccessMode mode)
+{
+    _CompressedAsset* pAsset;
+    status_t result;
+
+    pAsset = new _CompressedAsset;
+    result = pAsset->openChunk(dataMap, method, uncompressedLen);
+    if (result != NO_ERROR)
+        return NULL;
+
+    pAsset->mAccessMode = mode;
+    return pAsset;
+}
+#+end_src
+
+#+begin_src C++
+/*
+/frameworks/base/libs/androidfw/Asset.cpp
+,*/
+status_t _CompressedAsset::openChunk(FileMap* dataMap, int compressionMethod,
+    size_t uncompressedLen)
+{
+    assert(mFd < 0);        // no re-open
+    assert(mMap == NULL);
+    assert(dataMap != NULL);
+
+    if (compressionMethod != ZipFileRO::kCompressDeflated) {
+        assert(false);
+        return UNKNOWN_ERROR;
+    }
+
+    mMap = dataMap;
+    mStart = -1;        // not used
+    mCompressedLen = dataMap->getDataLength();
+    mUncompressedLen = uncompressedLen;
+    assert(mOffset == 0);
+
+    // 关键点:
+    // 如果长度大于64*1024, 则初始化 StreamingZipInflater
+    if (uncompressedLen > StreamingZipInflater::OUTPUT_CHUNK_SIZE) {
+        mZipInflater = new StreamingZipInflater(dataMap, uncompressedLen);
+    }
+    return NO_ERROR;
+}
+#+end_src
+
+截止到这里,Android 系统已经完成了对资源文件的加载的过程,总结下来就是根据需要加载
+的文件的名称,在 APK 中进行创建 zipEntry 进行记载,并构建 Asset 对象.注意如果加载
+的文件是以压缩格式存储的(ps:大部分在 apk 中的文件,都是以压缩文件格式存储的),
+Asset 对象指向的只是内存中 APK 中的相应的压缩文件的偏移量,长度,压缩后大小以及压
+缩前大小等信息,此时*并没有对压缩的数据进行解压缩操作*,这一点尤其需要注意.
+
+
+* Android 读取资源文件过程分析
+
+ Android 系统在 AssetManager 类中的 open 等函数返回的是 InputStream,这个
+ InputStream 其实是 AssetManager 中定义的一个内部类AssetInputStream,这个子类继承了
+ InputStream 类,并实现了其中的reade 等方法.AssetInputStream中定义的 read 方法的
+ 定义如下:
+
+#+begin_src java
+// frameworks/base/core/java/android/content/res/AssetManager.java
+public final int read(byte[] b) throws IOException {
+    return readAsset(mAsset, b, 0, b.length);
+}
+public final int read(byte[] b, int off, int len) throws IOException {
+    return readAsset(mAsset, b, off, len);
+#+end_src
 Java 层对readAsset 的定义如下：
 #+begin_src java
 // frameworks/base/core/java/android/content/res/AssetManager.java
@@ -80,10 +638,12 @@ ssize_t _CompressedAsset::read(void* buf, size_t count)
     /* If we're relying on a streaming inflater, go through that */
     // 如果文件解压缩后的长度大于StreamingZipInflater::OUTPUT_CHUNK_SIZE（64*1024），mZipInflaget 的值就不会为空。
     if (mZipInflater) {
+        // 关键函数: read
         actual = mZipInflater->read(buf, count);
     } else {
     // 如果文件解压缩后的长度小于 64*1024，就会走下面的流程
         if (mBuf == NULL) {
+            // 关键函数: getBuffer
             if (getBuffer(false) == NULL)
                 return -1;
         }
@@ -258,4 +818,76 @@ ssize_t StreamingZipInflater::read(void* outBuf, size_t count) {
     return bytesRead;
 }
 #+end_src
-上面 read 方法实现了对资源文件的解压缩操作
+上面 read 方法实现了对资源文件的解压缩操作.以上的操作只是针对解压缩长度大于
+64*1024的文件,如果文件的解压缩的长度小于64 *1024, 则在_CompressedAsset::read 方
+法中,会调用 getBuffer 操作, getBuffer 源码如下所示:
+#+begin_src C++
+// location: /frameworks/base/libs/androidfw/Asset.cpp
+/*
+ * Get a pointer to a read-only buffer of data.
+ *
+ * The first time this is called, we expand the compressed data into a
+ * buffer.
+ */
+const void* _CompressedAsset::getBuffer(bool)
+{
+    unsigned char* buf = NULL;
+
+    if (mBuf != NULL)
+        return mBuf;
+
+    /*
+     * Allocate a buffer and read the file into it.
+     */
+    buf = new unsigned char[mUncompressedLen];
+    if (buf == NULL) {
+        ALOGW("alloc %ld bytes failed\n", (long) mUncompressedLen);
+        goto bail;
+    }
+
+    if (mMap != NULL) {
+        // 关键函数: 调用 zipUtils 中的操作进行解压操作
+        if (!ZipUtils::inflateToBuffer(mMap->getDataPtr(), buf,
+                mUncompressedLen, mCompressedLen))
+            goto bail;
+    } else {
+        assert(mFd >= 0);
+
+        /*
+         * Seek to the start of the compressed data.
+         */
+        if (lseek(mFd, mStart, SEEK_SET) != mStart)
+            goto bail;
+
+        /*
+         * Expand the data into it.
+         */
+        if (!ZipUtils::inflateToBuffer(mFd, buf, mUncompressedLen,
+                mCompressedLen))
+            goto bail;
+    }
+
+    /*
+     * Success - now that we have the full asset in RAM we
+     * no longer need the streaming inflater
+     */
+    delete mZipInflater;
+    mZipInflater = NULL;
+
+    mBuf = buf;
+    buf = NULL;
+
+bail:
+    delete[] buf;
+    return mBuf;
+}
+#+end_src
+
+
+
+
+* 参考连接
+1.[[http://www.tasfa.cn/index.php/2017/09/22/android-assets_sourcecode/][Android Assets打开调用过程源码分析 | Tasfa's world]]
+ 
+
+
