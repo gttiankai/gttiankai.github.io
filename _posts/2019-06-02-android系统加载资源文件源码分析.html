@@ -166,7 +166,9 @@ Android 系统加载资源文件主要使用的系统方法是 AssetManager 类,
 </pre>
 </div>
 <p>
-从上面的代码中可以看到,核心的逻辑实在 native 层的 AssetManager 的 open 函数,也就
+从上面的代码中可以看到,Native 层的 openAsset 函数主要工作就是调用 AssetManager
+中的 open 方法,并将生成的 Asset对象的指针返回给 Java层,后面对该文件的操作都是
+通过这个 Asset 对象完成的完成的.所以这段代码的核心逻辑是在 native 层的 AssetManager 的 open 函数,也就
 是说 Java 层和 Native 层分别都有 AssetManager 类的定义.native 层的 AssetManager
 中的 open 的定义如下:
 </p>
