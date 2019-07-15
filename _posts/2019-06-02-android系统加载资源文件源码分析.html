@@ -10,17 +10,6 @@ categories:
 - Android
 ---
 
-<div id="outline-container-org3ae92b0" class="outline-2">
-<h2 id="org3ae92b0">大纲</h2>
-<div class="outline-text-2" id="text-org3ae92b0">
-<ol class="org-ol">
-<li>大体上讲解一下 Android 系统加载资源文件的过程。</li>
-<li>讲解一下 Java 层的加载流程</li>
-<li>讲解一下 native 层的加载流程</li>
-</ol>
-</div>
-</div>
-
 <div id="outline-container-org848faae" class="outline-2">
 <h2 id="org848faae">Android 如何加载 asset 中的资源文件</h2>
 <div class="outline-text-2" id="text-org848faae">
@@ -398,8 +387,10 @@ FileMap 的对象
 </pre>
 </div>
 <p>
-从上面的代码中可以看到最终使用 FileMap 的 create 对文件进行创建,接下来就要简单了
-解一下FileMap了.FileMap 是什么样的类呢? 我们直接看源码中的解释:
+从上面的代码中可以看到最终使用 FileMap 的 create 对文件进行创建. 此时需要注意的
+是 create 的参数 mFileName是 apk 的名称(
+/data/app/example.com.jstest-2/base.apk),并不是 APK 中需要解压的文件的名称.接下
+来了解一下FileMap类.FileMap 是什么呢? 我们直接看源码中的解释:
 </p>
 <div class="org-src-container">
 <pre class="src src-C++">/system/core/include/utils/FileMap.h

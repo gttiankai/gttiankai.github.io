@@ -9,11 +9,6 @@
 #+TAGS: Android
 #+CATEGORIES: Android
 
-* 大纲
-1. 大体上讲解一下 Android 系统加载资源文件的过程。
-2. 讲解一下 Java 层的加载流程
-3. 讲解一下 native 层的加载流程
-
 * Android 如何加载 asset 中的资源文件
 
 在 Android 开发时, 如果想要加载 assets 文件夹下面的文件, 可以使用如下的方式对文
@@ -357,8 +352,10 @@ FileMap* ZipFileRO::createEntryFileMap(ZipEntryRO entry) const
     return newMap;
 }
 #+end_src
-从上面的代码中可以看到最终使用 FileMap 的 create 对文件进行创建,接下来就要简单了
-解一下FileMap了.FileMap 是什么样的类呢? 我们直接看源码中的解释:
+从上面的代码中可以看到最终使用 FileMap 的 create 对文件进行创建. 此时需要注意的
+是 create 的参数 mFileName是 apk 的名称(
+/data/app/example.com.jstest-2/base.apk),并不是 APK 中需要解压的文件的名称.接下
+来了解一下FileMap类.FileMap 是什么呢? 我们直接看源码中的解释:
 #+begin_src C++
 /system/core/include/utils/FileMap.h
 /*
