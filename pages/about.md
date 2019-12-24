@@ -1,7 +1,7 @@
 ---
 layout: page
 title: About
-description: 生死看淡，不服就干
+description: 贵有恒何需三更起五更眠,最无益只怕一日曝十日寒!
 keywords: Tiankai
 comments: true
 menu: 关于
