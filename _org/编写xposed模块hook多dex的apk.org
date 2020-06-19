@@ -31,7 +31,7 @@ public class HookVerifyCode implements IXposedHookLoadPackage {
 
     private static final String class_name = "the class name ";
     public static String phone_number = "";      // this argument is a global
-    private static final String PACKAGENAME = "com.payegis.hookmoule";
+    private static final String PACKAGENAME = "com.test.hookmoule";
     private static final String XPOSEDINSTALLER = "de.robv.android.xposed.installer";
     private static final String SMSPACKAGENAME = "com.google.android.talk";
     private static final String TARGETPACKAGENAME = "the target process name";

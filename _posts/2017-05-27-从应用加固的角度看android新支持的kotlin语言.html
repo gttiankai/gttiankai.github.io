@@ -1,19 +1,18 @@
 ---
-date: 2017-05-27
-tags: 
-- Android
+date: 2017-05-27 13:11
 author: tiankai
 layout: post
 title: 从应用加固的角度看Android新支持的Kotlin语言
 excerpt: 加固
+tags: 
 categories: 
 - Android
 ---
 
 
-<div id="outline-container-orgc7f5be9" class="outline-2">
-<h2 id="orgc7f5be9">Kotlin语言是什么</h2>
-<div class="outline-text-2" id="text-orgc7f5be9">
+<div id="outline-container-org8c1aabe" class="outline-2">
+<h2 id="org8c1aabe">Kotlin语言是什么</h2>
+<div class="outline-text-2" id="text-org8c1aabe">
 <p>
 2017年5月18日Google在I/O大会上宣布,支持将Kotlin语言作为Android开发的编程语言.
 一夜之间网络上多了很多关于Kotlin语言的介绍.我也因此对该语言产生了兴趣,于是就对Kotin做了一定的调研.
@@ -44,9 +43,9 @@ Kotlin的特性
 </div>
 </div>
 
-<div id="outline-container-org93eb8be" class="outline-2">
-<h2 id="org93eb8be">Kotlin与Java语言的对比</h2>
-<div class="outline-text-2" id="text-org93eb8be">
+<div id="outline-container-org98b3b7f" class="outline-2">
+<h2 id="org98b3b7f">Kotlin与Java语言的对比</h2>
+<div class="outline-text-2" id="text-org98b3b7f">
 <p>
 Kotlin语言的解决了Java语言不能解决的问题.Kotlin解决的
 问题主要有:
@@ -87,9 +86,9 @@ Kotlin语言引入的新特征有:
 </ol>
 </div>
 </div>
-<div id="outline-container-org74f4c31" class="outline-2">
-<h2 id="org74f4c31">加固是否支持Kotlin语言</h2>
-<div class="outline-text-2" id="text-org74f4c31">
+<div id="outline-container-orga259c70" class="outline-2">
+<h2 id="orga259c70">加固是否支持Kotlin语言</h2>
+<div class="outline-text-2" id="text-orga259c70">
 <p>
 因为我目前研究的是移动应用的程序保护方向.当看到Kotlin语言的时候,我就在想当前的
 加固手段能否处理Kotlin语言吗?从原理上来说Koltin语言是基于JVM的语言,也就是说Kotlin
@@ -103,25 +102,25 @@ Kotlin语言引入的新特征有:
 首先使用Java语言实现一个打印日志的功能.源代码如下所示:
 </p>
 <div class="org-src-container">
-<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">util</span>.<span style="color: #ce537a; font-weight: bold;">Log</span>;
+<pre class="src src-java"><span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">util</span>.<span style="color: #ECBE7B;">Log</span>;
 
-<span style="color: #9f8766;">/**</span>
-<span style="color: #9f8766;"> * Created by ** on 2017/5/27.</span>
-<span style="color: #9f8766;"> */</span>
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span> <span style="color: #ce537a; font-weight: bold;">LoggingSub</span> <span style="color: #4f97d7;">{</span>
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">Flag</span> = <span style="color: #2d9574;">"a"</span>;
+<span style="color: #7d7d7d;">/**</span>
+<span style="color: #7d7d7d;"> * Created by ** on 2017/5/27.</span>
+<span style="color: #7d7d7d;"> */</span>
+<span style="color: #51afef;">public</span> <span style="color: #51afef;">class</span> <span style="color: #ECBE7B;">LoggingSub</span> <span style="color: #51afef;">{</span>
+    <span style="color: #51afef;">public</span> <span style="color: #51afef;">static</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">Flag</span> = <span style="color: #99bb66;">"a"</span>;
 
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">pintflog</span><span style="color: #bc6ec5;">(){</span>
-        <span style="color: #4f97d7; font-weight: bold; font-style: italic;">for</span> <span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">int</span> <span style="color: #7590db;">i</span> = <span style="color: #a45bad;">0</span>; i &lt; <span style="color: #a45bad;">10</span>; i++<span style="color: #2d9574;">){</span>
-            Log.d<span style="color: #67b11d;">(</span>Flag, <span style="color: #2d9574;">"this is log.d"</span><span style="color: #67b11d;">)</span>;
-            Log.e<span style="color: #67b11d;">(</span>Flag, <span style="color: #2d9574;">"this is log.e"</span><span style="color: #67b11d;">)</span>;
-            Log.i<span style="color: #67b11d;">(</span>Flag, <span style="color: #2d9574;">"this is log.i"</span><span style="color: #67b11d;">)</span>;
-            Log.w<span style="color: #67b11d;">(</span>Flag, <span style="color: #2d9574;">"this is log.w"</span><span style="color: #67b11d;">)</span>;
-            Log.v<span style="color: #67b11d;">(</span>Flag, <span style="color: #2d9574;">"this is log.v"</span><span style="color: #67b11d;">)</span>;
-        <span style="color: #2d9574;">}</span>
+    <span style="color: #51afef;">public</span> <span style="color: #51afef;">static</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">pintflog</span><span style="color: #c678dd;">(){</span>
+        <span style="color: #51afef;">for</span> <span style="color: #99bb66;">(</span><span style="color: #ECBE7B;">int</span> <span style="color: #dcaeea;">i</span> = <span style="color: #dd8844; font-weight: bold;">0</span>; i &lt; <span style="color: #dd8844; font-weight: bold;">10</span>; i++<span style="color: #99bb66;">){</span>
+            Log.d<span style="color: #51afef;">(</span>Flag, <span style="color: #99bb66;">"this is log.d"</span><span style="color: #51afef;">)</span>;
+            Log.e<span style="color: #51afef;">(</span>Flag, <span style="color: #99bb66;">"this is log.e"</span><span style="color: #51afef;">)</span>;
+            Log.i<span style="color: #51afef;">(</span>Flag, <span style="color: #99bb66;">"this is log.i"</span><span style="color: #51afef;">)</span>;
+            Log.w<span style="color: #51afef;">(</span>Flag, <span style="color: #99bb66;">"this is log.w"</span><span style="color: #51afef;">)</span>;
+            Log.v<span style="color: #51afef;">(</span>Flag, <span style="color: #99bb66;">"this is log.v"</span><span style="color: #51afef;">)</span>;
+        <span style="color: #99bb66;">}</span>
 
-    <span style="color: #bc6ec5;">}</span>
-<span style="color: #4f97d7;">}</span>
+    <span style="color: #c678dd;">}</span>
+<span style="color: #51afef;">}</span>
 </pre>
 </div>
 
@@ -135,7 +134,7 @@ import android.util.Log
  * Created by **  on 2017/5/25.
  */
 object Logging {
-    var Flag = "payegis"
+    var Flag = "Flags"
     fun printlog() {
         for (i in 0..5) {
             Log.d(Flag, "this is log.d")
@@ -181,7 +180,7 @@ object Logging {
 是对Java语言做了一定的拓展和封装.例如Kotlin语法在Logging的类中添加了下面的属性:
 </p>
 <div class="org-src-container">
-<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">Logging</span> <span style="color: #7590db;">INSTANCE</span>;
+<pre class="src src-java"><span style="color: #51afef;">public</span> <span style="color: #51afef;">static</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">Logging</span> <span style="color: #dcaeea;">INSTANCE</span>;
 </pre>
 </div>
 
@@ -189,10 +188,10 @@ object Logging {
 而且Kotlin语言还对类中的属性自动添加了set方法,构造方法如下所示:
 </p>
 <div class="org-src-container">
-<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">setFlag</span><span style="color: #4f97d7;">(</span><span style="color: #a45bad;">@NotNnull</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">args</span><span style="color: #4f97d7;">){</span>
-    Intrinsics.checkParameterIsNotNull<span style="color: #bc6ec5;">(</span>arg2, <span style="color: #2d9574;">"&lt;set-?&gt;"</span><span style="color: #bc6ec5;">)</span>;
-    <span style="color: #a45bad;">Logging</span>.Flag = arg2;
-<span style="color: #4f97d7;">}</span>
+<pre class="src src-java"><span style="color: #51afef;">public</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">setFlag</span><span style="color: #51afef;">(</span><span style="color: #a9a1e1;">@NotNnull</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">args</span><span style="color: #51afef;">){</span>
+    Intrinsics.checkParameterIsNotNull<span style="color: #c678dd;">(</span>arg2, <span style="color: #99bb66;">"&lt;set-?&gt;"</span><span style="color: #c678dd;">)</span>;
+    <span style="color: #a9a1e1;">Logging</span>.Flag = arg2;
+<span style="color: #51afef;">}</span>
 </pre>
 </div>
 <p>
@@ -218,9 +217,9 @@ Jar的内容如下图所示:
 </div>
 </div>
 
-<div id="outline-container-org9328586" class="outline-2">
-<h2 id="org9328586">写在文章的最后</h2>
-<div class="outline-text-2" id="text-org9328586">
+<div id="outline-container-orgbd7e3af" class="outline-2">
+<h2 id="orgbd7e3af">写在文章的最后</h2>
+<div class="outline-text-2" id="text-orgbd7e3af">
 <p>
 由于本人能力有限,加之对本文涉及内容的研究时间较短,文章中难免有错误或者遗漏之处.
 请大家多多包含,也欢迎大家指正.

@@ -1,92 +1,91 @@
 ---
-date: 2017-08-31
-tags: 
-- Android
+date: 2017-08-31 22:55
 author: tiankai
 layout: post
 title: 编写Xposed模块Hook多dex的APK
 excerpt: xposed hook multi dex
+tags: 
 categories: 
 - Android
 ---
 
-<div id="outline-container-org8017550" class="outline-2">
-<h2 id="org8017550">编写Xposed模块Hook多Dex的apk</h2>
-<div class="outline-text-2" id="text-org8017550">
+<div id="outline-container-org765b344" class="outline-2">
+<h2 id="org765b344">编写Xposed模块Hook多Dex的apk</h2>
+<div class="outline-text-2" id="text-org765b344">
 <p>
 最近在研究使用Xposed去Hook一个apk,但是在Hook的过程中发现,无论如何都不能hook成功.经过进一步对该APK进行研究发现,我需要的对象在第二个dex文件中. Xposed是默认没有办法处理多Dex的情况的. 所以hook多个dex文件的代码需要自己去实现.经过查找资料之后发现有办法可以解决多dex的hook的问题.关键部分的代码如下:
 </p>
 
 <div class="org-src-container">
-<pre class="src src-java"><span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">app</span>.<span style="color: #ce537a; font-weight: bold;">Application</span>;
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">content</span>.<span style="color: #ce537a; font-weight: bold;">Context</span>;
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">content</span>.<span style="color: #a45bad;">pm</span>.<span style="color: #ce537a; font-weight: bold;">ApplicationInfo</span>;
+<pre class="src src-java"><span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">app</span>.<span style="color: #ECBE7B;">Application</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">content</span>.<span style="color: #ECBE7B;">Context</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">content</span>.<span style="color: #a9a1e1;">pm</span>.<span style="color: #ECBE7B;">ApplicationInfo</span>;
 
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">de</span>.<span style="color: #a45bad;">robv</span>.<span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">xposed</span>.<span style="color: #ce537a; font-weight: bold;">IXposedHookLoadPackage</span>;
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">de</span>.<span style="color: #a45bad;">robv</span>.<span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">xposed</span>.<span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span>;
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">de</span>.<span style="color: #a45bad;">robv</span>.<span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">xposed</span>.<span style="color: #ce537a; font-weight: bold;">XposedBridge</span>;
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">de</span>.<span style="color: #a45bad;">robv</span>.<span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">xposed</span>.<span style="color: #ce537a; font-weight: bold;">XposedHelpers</span>;
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">import</span> <span style="color: #a45bad;">de</span>.<span style="color: #a45bad;">robv</span>.<span style="color: #a45bad;">android</span>.<span style="color: #a45bad;">xposed</span>.<span style="color: #a45bad;">callbacks</span>.<span style="color: #a45bad;">XC_LoadPackage</span>.<span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">de</span>.<span style="color: #a9a1e1;">robv</span>.<span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">xposed</span>.<span style="color: #ECBE7B;">IXposedHookLoadPackage</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">de</span>.<span style="color: #a9a1e1;">robv</span>.<span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">xposed</span>.<span style="color: #ECBE7B;">XC_MethodHook</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">de</span>.<span style="color: #a9a1e1;">robv</span>.<span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">xposed</span>.<span style="color: #ECBE7B;">XposedBridge</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">de</span>.<span style="color: #a9a1e1;">robv</span>.<span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">xposed</span>.<span style="color: #ECBE7B;">XposedHelpers</span>;
+<span style="color: #51afef;">import</span> <span style="color: #a9a1e1;">de</span>.<span style="color: #a9a1e1;">robv</span>.<span style="color: #a9a1e1;">android</span>.<span style="color: #a9a1e1;">xposed</span>.<span style="color: #a9a1e1;">callbacks</span>.<span style="color: #a9a1e1;">XC_LoadPackage</span>.<span style="color: #ECBE7B;">LoadPackageParam</span>;
 
-<span style="color: #9f8766;">/**</span>
-<span style="color: #9f8766;"> * Created by tiankai on 17-8-23.</span>
-<span style="color: #9f8766;"> */</span>
+<span style="color: #7d7d7d;">/**</span>
+<span style="color: #7d7d7d;"> * Created by tiankai on 17-8-23.</span>
+<span style="color: #7d7d7d;"> */</span>
 
-<span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span> <span style="color: #ce537a; font-weight: bold;">HookVerifyCode</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">implements</span> <span style="color: #ce537a; font-weight: bold;">IXposedHookLoadPackage</span> <span style="color: #4f97d7;">{</span>
+<span style="color: #51afef;">public</span> <span style="color: #51afef;">class</span> <span style="color: #ECBE7B;">HookVerifyCode</span> <span style="color: #51afef;">implements</span> <span style="color: #ECBE7B;">IXposedHookLoadPackage</span> <span style="color: #51afef;">{</span>
 
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">private</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">class_name</span> = <span style="color: #2d9574;">"the class name "</span>;
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">phone_number</span> = <span style="color: #2d9574;">""</span>;      <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">this argument is a global</span>
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">private</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">PACKAGENAME</span> = <span style="color: #2d9574;">"com.payegis.hookmoule"</span>;
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">private</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">XPOSEDINSTALLER</span> = <span style="color: #2d9574;">"de.robv.android.xposed.installer"</span>;
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">private</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">SMSPACKAGENAME</span> = <span style="color: #2d9574;">"com.google.android.talk"</span>;
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">private</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">static</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">final</span> <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">TARGETPACKAGENAME</span> = <span style="color: #2d9574;">"the target process name"</span>;
+    <span style="color: #51afef;">private</span> <span style="color: #51afef;">static</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">class_name</span> = <span style="color: #99bb66;">"the class name "</span>;
+    <span style="color: #51afef;">public</span> <span style="color: #51afef;">static</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">phone_number</span> = <span style="color: #99bb66;">""</span>;      <span style="color: #525252;">// </span><span style="color: #525252;">this argument is a global</span>
+    <span style="color: #51afef;">private</span> <span style="color: #51afef;">static</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">PACKAGENAME</span> = <span style="color: #99bb66;">"com.test.hookmoule"</span>;
+    <span style="color: #51afef;">private</span> <span style="color: #51afef;">static</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">XPOSEDINSTALLER</span> = <span style="color: #99bb66;">"de.robv.android.xposed.installer"</span>;
+    <span style="color: #51afef;">private</span> <span style="color: #51afef;">static</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">SMSPACKAGENAME</span> = <span style="color: #99bb66;">"com.google.android.talk"</span>;
+    <span style="color: #51afef;">private</span> <span style="color: #51afef;">static</span> <span style="color: #51afef;">final</span> <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">TARGETPACKAGENAME</span> = <span style="color: #99bb66;">"the target process name"</span>;
 
 
-    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">public</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">handleLoadPackage</span><span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">LoadPackageParam</span> <span style="color: #7590db;">lpparam</span><span style="color: #bc6ec5;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #bc6ec5;">{</span>
+    <span style="color: #51afef;">public</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">handleLoadPackage</span><span style="color: #c678dd;">(</span><span style="color: #ECBE7B;">LoadPackageParam</span> <span style="color: #dcaeea;">lpparam</span><span style="color: #c678dd;">)</span> <span style="color: #51afef;">throws</span> <span style="color: #ECBE7B;">Throwable</span> <span style="color: #c678dd;">{</span>
 
-        <span style="color: #4f97d7; font-weight: bold; font-style: italic;">if</span> <span style="color: #2d9574;">(</span>lpparam.appInfo != <span style="color: #a45bad;">null</span> &amp;&amp; lpparam.isFirstApplication
-                &amp;&amp; <span style="color: #67b11d;">(</span>SMSPACKAGENAME.equals<span style="color: #b1951d;">(</span>lpparam.packageName<span style="color: #b1951d;">)</span> || OFOPACKAGENAME.equals<span style="color: #b1951d;">(</span>lpparam.packageName<span style="color: #b1951d;">)</span><span style="color: #67b11d;">)</span><span style="color: #2d9574;">)</span> <span style="color: #2d9574;">{</span>
-            <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">hook android.app.Application.attach method</span>
-            XposedHelpers.findAndHookMethod<span style="color: #67b11d;">(</span>Application.<span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span>, <span style="color: #2d9574;">"attach"</span>, Context.<span style="color: #4f97d7; font-weight: bold; font-style: italic;">class</span>, <span style="color: #4f97d7; font-weight: bold; font-style: italic;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #b1951d;">()</span> <span style="color: #b1951d;">{</span>
-                <span style="color: #a45bad;">@Override</span>
-                <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">beforeHookedMethod</span><span style="color: #4f97d7;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #4f97d7;">{</span>
-                     <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">this will be called before the clock was updated by the original method</span>
-                <span style="color: #4f97d7;">}</span>
+        <span style="color: #51afef;">if</span> <span style="color: #99bb66;">(</span>lpparam.appInfo != <span style="color: #a9a1e1;">null</span> &amp;&amp; lpparam.isFirstApplication
+                &amp;&amp; <span style="color: #51afef;">(</span>SMSPACKAGENAME.equals<span style="color: #c678dd;">(</span>lpparam.packageName<span style="color: #c678dd;">)</span> || OFOPACKAGENAME.equals<span style="color: #c678dd;">(</span>lpparam.packageName<span style="color: #c678dd;">)</span><span style="color: #51afef;">)</span><span style="color: #99bb66;">)</span> <span style="color: #99bb66;">{</span>
+            <span style="color: #525252;">// </span><span style="color: #525252;">hook android.app.Application.attach method</span>
+            XposedHelpers.findAndHookMethod<span style="color: #51afef;">(</span>Application.<span style="color: #51afef;">class</span>, <span style="color: #99bb66;">"attach"</span>, Context.<span style="color: #51afef;">class</span>, <span style="color: #51afef;">new</span> <span style="color: #ECBE7B;">XC_MethodHook</span><span style="color: #c678dd;">()</span> <span style="color: #c678dd;">{</span>
+                <span style="color: #a9a1e1;">@Override</span>
+                <span style="color: #51afef;">protected</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">beforeHookedMethod</span><span style="color: #99bb66;">(</span><span style="color: #ECBE7B;">MethodHookParam</span> <span style="color: #dcaeea;">param</span><span style="color: #99bb66;">)</span> <span style="color: #51afef;">throws</span> <span style="color: #ECBE7B;">Throwable</span> <span style="color: #99bb66;">{</span>
+                     <span style="color: #525252;">// </span><span style="color: #525252;">this will be called before the clock was updated by the original method</span>
+                <span style="color: #99bb66;">}</span>
 
-                <span style="color: #a45bad;">@Override</span>
-                <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">afterHookedMethod</span><span style="color: #4f97d7;">(</span><span style="color: #a45bad;">XC_MethodHook</span>.<span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #4f97d7;">{</span>
-                    <span style="color: #ce537a; font-weight: bold;">ClassLoader</span> <span style="color: #7590db;">cl</span> = <span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">(</span><span style="color: #ce537a; font-weight: bold;">Context</span><span style="color: #2d9574;">)</span> param.args<span style="color: #2d9574;">[</span><span style="color: #a45bad;">0</span><span style="color: #2d9574;">]</span><span style="color: #bc6ec5;">)</span>.getClassLoader<span style="color: #bc6ec5;">()</span>;
-                    <span style="color: #ce537a; font-weight: bold;">Class</span><span style="color: #bc6ec5;">&lt;</span>?<span style="color: #bc6ec5;">&gt;</span> <span style="color: #7590db;">hookclass</span> = <span style="color: #a45bad;">null</span>;
-                    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">try</span> <span style="color: #bc6ec5;">{</span>
-                        hookclass = cl.loadClass<span style="color: #2d9574;">(</span>class_name<span style="color: #2d9574;">)</span>;
-                    <span style="color: #bc6ec5;">}</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">catch</span> <span style="color: #bc6ec5;">(</span><span style="color: #ce537a; font-weight: bold;">Exception</span> <span style="color: #7590db;">e</span><span style="color: #bc6ec5;">)</span> <span style="color: #bc6ec5;">{</span>
-                        Logger.log<span style="color: #2d9574;">(</span><span style="color: #2d9574;">"[Failed!]Can not find "</span> + class_name<span style="color: #2d9574;">)</span>;
-                        <span style="color: #4f97d7; font-weight: bold; font-style: italic;">return</span>;
-                    <span style="color: #bc6ec5;">}</span>
-                    Logger.log<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"[success!]Find class "</span> + class_name<span style="color: #bc6ec5;">)</span>;
+                <span style="color: #a9a1e1;">@Override</span>
+                <span style="color: #51afef;">protected</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">afterHookedMethod</span><span style="color: #99bb66;">(</span><span style="color: #a9a1e1;">XC_MethodHook</span>.<span style="color: #ECBE7B;">MethodHookParam</span> <span style="color: #dcaeea;">param</span><span style="color: #99bb66;">)</span> <span style="color: #51afef;">throws</span> <span style="color: #ECBE7B;">Throwable</span> <span style="color: #99bb66;">{</span>
+                    <span style="color: #ECBE7B;">ClassLoader</span> <span style="color: #dcaeea;">cl</span> = <span style="color: #51afef;">(</span><span style="color: #c678dd;">(</span><span style="color: #ECBE7B;">Context</span><span style="color: #c678dd;">)</span> param.args<span style="color: #c678dd;">[</span><span style="color: #dd8844; font-weight: bold;">0</span><span style="color: #c678dd;">]</span><span style="color: #51afef;">)</span>.getClassLoader<span style="color: #51afef;">()</span>;
+                    <span style="color: #ECBE7B;">Class</span><span style="color: #51afef;">&lt;</span>?<span style="color: #51afef;">&gt;</span> <span style="color: #dcaeea;">hookclass</span> = <span style="color: #a9a1e1;">null</span>;
+                    <span style="color: #51afef;">try</span> <span style="color: #51afef;">{</span>
+                        hookclass = cl.loadClass<span style="color: #c678dd;">(</span>class_name<span style="color: #c678dd;">)</span>;
+                    <span style="color: #51afef;">}</span> <span style="color: #51afef;">catch</span> <span style="color: #51afef;">(</span><span style="color: #ECBE7B;">Exception</span> <span style="color: #dcaeea;">e</span><span style="color: #51afef;">)</span> <span style="color: #51afef;">{</span>
+                        Logger.log<span style="color: #c678dd;">(</span><span style="color: #99bb66;">"[Failed!]Can not find "</span> + class_name<span style="color: #c678dd;">)</span>;
+                        <span style="color: #51afef;">return</span>;
+                    <span style="color: #51afef;">}</span>
+                    Logger.log<span style="color: #51afef;">(</span><span style="color: #99bb66;">"[success!]Find class "</span> + class_name<span style="color: #51afef;">)</span>;
 
-                    XposedHelpers.findAndHookMethod<span style="color: #bc6ec5;">(</span>hookclass,
-                            <span style="color: #2d9574;">"getVerifyCode"</span>, <span style="color: #4f97d7; font-weight: bold; font-style: italic;">new</span> <span style="color: #ce537a; font-weight: bold;">XC_MethodHook</span><span style="color: #2d9574;">()</span> <span style="color: #2d9574;">{</span>
-                                <span style="color: #a45bad;">@Override</span>
-                                <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">beforeHookedMethod</span><span style="color: #9cb6ad;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #9cb6ad;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #9cb6ad;">{</span>
-                                    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">this will be called before the clock was updated by the original method</span>
-                                <span style="color: #9cb6ad;">}</span>
+                    XposedHelpers.findAndHookMethod<span style="color: #51afef;">(</span>hookclass,
+                            <span style="color: #99bb66;">"getVerifyCode"</span>, <span style="color: #51afef;">new</span> <span style="color: #ECBE7B;">XC_MethodHook</span><span style="color: #c678dd;">()</span> <span style="color: #c678dd;">{</span>
+                                <span style="color: #a9a1e1;">@Override</span>
+                                <span style="color: #51afef;">protected</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">beforeHookedMethod</span><span style="color: #99bb66;">(</span><span style="color: #ECBE7B;">MethodHookParam</span> <span style="color: #dcaeea;">param</span><span style="color: #99bb66;">)</span> <span style="color: #51afef;">throws</span> <span style="color: #ECBE7B;">Throwable</span> <span style="color: #99bb66;">{</span>
+                                    <span style="color: #525252;">// </span><span style="color: #525252;">this will be called before the clock was updated by the original method</span>
+                                <span style="color: #99bb66;">}</span>
 
-                                <span style="color: #a45bad;">@Override</span>
-                                <span style="color: #4f97d7; font-weight: bold; font-style: italic;">protected</span> <span style="color: #ce537a; font-weight: bold;">void</span> <span style="color: #bc6ec5; font-weight: bold;">afterHookedMethod</span><span style="color: #9cb6ad;">(</span><span style="color: #ce537a; font-weight: bold;">MethodHookParam</span> <span style="color: #7590db;">param</span><span style="color: #9cb6ad;">)</span> <span style="color: #4f97d7; font-weight: bold; font-style: italic;">throws</span> <span style="color: #ce537a; font-weight: bold;">Throwable</span> <span style="color: #9cb6ad;">{</span>
-                                    <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">this will be called after the clock was updated by the original method</span>
-                                    <span style="color: #ce537a; font-weight: bold;">String</span> <span style="color: #7590db;">verify_code</span> = param.getResult<span style="color: #4f97d7;">()</span>.toString<span style="color: #4f97d7;">()</span>;
-                                    <span style="color: #4f97d7; font-weight: bold; font-style: italic;">if</span> <span style="color: #4f97d7;">(</span>verify_code.length<span style="color: #bc6ec5;">()</span> == <span style="color: #a45bad;">4</span><span style="color: #4f97d7;">)</span> <span style="color: #4f97d7;">{</span>
-                                        Logger.log<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"the verify code:"</span> + verify_code<span style="color: #bc6ec5;">)</span>;
-                                        Logger.log<span style="color: #bc6ec5;">(</span><span style="color: #2d9574;">"the final phone number: "</span> + HookManager.phone_number<span style="color: #bc6ec5;">)</span>;
-                                    <span style="color: #4f97d7;">}</span>
-                                <span style="color: #9cb6ad;">}</span>
-                            <span style="color: #2d9574;">}</span><span style="color: #bc6ec5;">)</span>;
-                <span style="color: #4f97d7;">}</span>
-            <span style="color: #b1951d;">}</span><span style="color: #67b11d;">)</span>;  <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">end of findAndHookMethod</span>
-        <span style="color: #2d9574;">}</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">end of if </span>
-    <span style="color: #bc6ec5;">}</span>  <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">end of handlePackage</span>
-<span style="color: #4f97d7;">}</span> <span style="color: #2aa1ae; background-color: #292e34;">// </span><span style="color: #2aa1ae; background-color: #292e34;">end of class</span>
+                                <span style="color: #a9a1e1;">@Override</span>
+                                <span style="color: #51afef;">protected</span> <span style="color: #ECBE7B;">void</span> <span style="color: #c678dd;">afterHookedMethod</span><span style="color: #99bb66;">(</span><span style="color: #ECBE7B;">MethodHookParam</span> <span style="color: #dcaeea;">param</span><span style="color: #99bb66;">)</span> <span style="color: #51afef;">throws</span> <span style="color: #ECBE7B;">Throwable</span> <span style="color: #99bb66;">{</span>
+                                    <span style="color: #525252;">// </span><span style="color: #525252;">this will be called after the clock was updated by the original method</span>
+                                    <span style="color: #ECBE7B;">String</span> <span style="color: #dcaeea;">verify_code</span> = param.getResult<span style="color: #51afef;">()</span>.toString<span style="color: #51afef;">()</span>;
+                                    <span style="color: #51afef;">if</span> <span style="color: #51afef;">(</span>verify_code.length<span style="color: #c678dd;">()</span> == <span style="color: #dd8844; font-weight: bold;">4</span><span style="color: #51afef;">)</span> <span style="color: #51afef;">{</span>
+                                        Logger.log<span style="color: #c678dd;">(</span><span style="color: #99bb66;">"the verify code:"</span> + verify_code<span style="color: #c678dd;">)</span>;
+                                        Logger.log<span style="color: #c678dd;">(</span><span style="color: #99bb66;">"the final phone number: "</span> + HookManager.phone_number<span style="color: #c678dd;">)</span>;
+                                    <span style="color: #51afef;">}</span>
+                                <span style="color: #99bb66;">}</span>
+                            <span style="color: #c678dd;">}</span><span style="color: #51afef;">)</span>;
+                <span style="color: #99bb66;">}</span>
+            <span style="color: #c678dd;">}</span><span style="color: #51afef;">)</span>;  <span style="color: #525252;">// </span><span style="color: #525252;">end of findAndHookMethod</span>
+        <span style="color: #99bb66;">}</span> <span style="color: #525252;">// </span><span style="color: #525252;">end of if </span>
+    <span style="color: #c678dd;">}</span>  <span style="color: #525252;">// </span><span style="color: #525252;">end of handlePackage</span>
+<span style="color: #51afef;">}</span> <span style="color: #525252;">// </span><span style="color: #525252;">end of class</span>
 </pre>
 </div>
 </div>

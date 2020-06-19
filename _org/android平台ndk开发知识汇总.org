@@ -203,7 +203,7 @@ Java_类的全路径名_方法名(在类的全路径名中要将"/"装换成"_",
 先看 C 语言版本的动态注册方式:
 
 #+begin_src C
-static const char *mainClass = "payegis/com/jstest/MainActivity"; // path of Java file
+static const char *mainClass = "test/com/jstest/MainActivity"; // path of Java file
 
 #define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 

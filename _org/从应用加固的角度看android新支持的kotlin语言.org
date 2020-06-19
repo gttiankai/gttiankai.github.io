@@ -97,7 +97,7 @@ import android.util.Log
  * Created by **  on 2017/5/25.
  */
 object Logging {
-    var Flag = "payegis"
+    var Flag = "Flags"
     fun printlog() {
         for (i in 0..5) {
             Log.d(Flag, "this is log.d")
