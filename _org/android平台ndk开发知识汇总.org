@@ -245,7 +245,7 @@ JNIEXPORT jint JNI_OnLoad(JavaVM *vm, void *reserved) {
 C++版本的动态注册如下所示：
 
 #+begin_src C++
-static const char *mainClass = "payegis/com/jstest/MainActivity"; // path of Java file
+static const char *mainClass = "test/com/jstest/MainActivity"; // path of Java file
 
 #define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 
